@@ -3,6 +3,6 @@ builder = "nixpacks"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && node prisma/seed-safe.js && npm run start"
+startCommand = "node -e \"console.log('DB vars present:', { DATABASE_URL: !!process.env.DATABASE_URL, DATABASE_PRIVATE_URL: !!process.env.DATABASE_PRIVATE_URL, DATABASE_PUBLIC_URL: !!process.env.DATABASE_PUBLIC_URL, POSTGRES_URL: !!process.env.POSTGRES_URL })\" && npx prisma migrate deploy && node prisma/seed-safe.js && npm run start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
