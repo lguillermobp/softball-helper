@@ -175,7 +175,7 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                               </button>
                             </>
                           )}
-                          {isAdmin && game.status === "COMPLETED" && (
+                          {isAdmin && (game.status === "SCHEDULED" || game.status === "IN_PROGRESS") && (
                             <button
                               disabled
                               className="text-xs font-semibold px-3 py-1 rounded-lg opacity-60 cursor-not-allowed"
