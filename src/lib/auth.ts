@@ -1,11 +1,15 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
+// NOTE: We intentionally do NOT include the PrismaAdapter here.
+// NextAuth v5 throws ?error=Configuration when an adapter is present
+// alongside the Credentials provider + JWT strategy, because the adapter
+// tries to persist sessions to the DB which conflicts with JWT sessions.
+// Users are created directly via prisma.user.create() in the register flow.
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
