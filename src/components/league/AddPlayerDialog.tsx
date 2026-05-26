@@ -62,7 +62,7 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
             <Label htmlFor="email">Email address *</Label>
             <Input id="email" name="email" type="email" placeholder="player@example.com" required />
             <p className="text-xs text-gray-500">
-              If this player already has a Softball Helper account, they will be linked automatically.
+              If they already have an account they will be linked and notified. Otherwise an invitation to set up their profile will be sent.
             </p>
           </div>
           <div className="space-y-1">

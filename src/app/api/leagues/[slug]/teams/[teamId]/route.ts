@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendStaffInviteEmail, sendMemberInviteEmail } from "@/lib/email";
+import { sendStaffInviteEmail, sendMemberInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string; teamId: string }> }
 
@@ -25,6 +25,7 @@ async function upsertStaff(
 ) {
   let user = await tx.user.findUnique({ where: { email: staff.email } });
   const isNew = !user;
+  const wasVerified = !isNew && !!user!.emailVerified;
 
   if (!user) {
     user = await tx.user.create({
@@ -40,7 +41,7 @@ async function upsertStaff(
     create: { userId: user.id, leagueId, role },
   });
 
-  return { user, isNew };
+  return { user, isNew, wasVerified };
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -91,16 +92,35 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return { updated, managerResult, assistantResult };
   });
 
-  // Fire-and-forget emails for newly created users
+  // Fire-and-forget emails
   if (managerResult.isNew) {
     sendStaffInviteEmail(manager.email, manager.name, league.name, "TEAM_MANAGER").catch(
       (e) => console.error("[TEAMS PATCH] manager invite failed:", e)
     );
-  }
-  if (assistantResult?.isNew) {
-    sendStaffInviteEmail(assistant.email, assistant.name, league.name, "TEAM_ASSISTANT").catch(
-      (e) => console.error("[TEAMS PATCH] assistant invite failed:", e)
+  } else if (!managerResult.wasVerified) {
+    sendMemberInviteEmail(manager.email, league.name, "TEAM_MANAGER").catch(
+      (e) => console.error("[TEAMS PATCH] manager verify failed:", e)
     );
+  } else {
+    sendRoleNotificationEmail(manager.email, managerResult.user.name, league.name, "team manager").catch(
+      (e) => console.error("[TEAMS PATCH] manager notification failed:", e)
+    );
+  }
+
+  if (assistantResult) {
+    if (assistantResult.isNew) {
+      sendStaffInviteEmail(assistant.email, assistant.name, league.name, "TEAM_ASSISTANT").catch(
+        (e) => console.error("[TEAMS PATCH] assistant invite failed:", e)
+      );
+    } else if (!assistantResult.wasVerified) {
+      sendMemberInviteEmail(assistant.email, league.name, "TEAM_ASSISTANT").catch(
+        (e) => console.error("[TEAMS PATCH] assistant verify failed:", e)
+      );
+    } else {
+      sendRoleNotificationEmail(assistant.email, assistantResult.user.name, league.name, "team assistant").catch(
+        (e) => console.error("[TEAMS PATCH] assistant notification failed:", e)
+      );
+    }
   }
 
   return NextResponse.json(updated);

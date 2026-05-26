@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const ROLES = [
-  { value: "LEAGUE_ADMIN", label: "League Admin" },
-  { value: "UMPIRE", label: "Umpire" },
-  { value: "SCORER", label: "Scorer" },
-  { value: "TEAM_MANAGER", label: "Team Manager" },
-  { value: "TEAM_ASSISTANT", label: "Team Assistant" },
+  { value: "LEAGUE_ADMIN",    label: "League Admin" },
+  { value: "UMPIRE",          label: "Umpire" },
+  { value: "SCORER",          label: "Scorer" },
+  { value: "TEAM_MANAGER",    label: "Team Manager" },
+  { value: "TEAM_ASSISTANT",  label: "Team Assistant" },
 ];
 
 export function AddMemberDialog({ slug }: { slug: string }) {
@@ -20,6 +20,8 @@ export function AddMemberDialog({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  function handleClose() { setOpen(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,7 +31,11 @@ export function AddMemberDialog({ slug }: { slug: string }) {
     const res = await fetch(`/api/leagues/${slug}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: fd.get("email"), role: fd.get("role") }),
+      body: JSON.stringify({
+        name:  fd.get("name"),
+        email: fd.get("email"),
+        role:  fd.get("role"),
+      }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -37,12 +43,12 @@ export function AddMemberDialog({ slug }: { slug: string }) {
       setError(data.error ?? "Something went wrong");
       return;
     }
-    setOpen(false);
+    handleClose();
     router.refresh();
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
       <DialogTrigger asChild>
         <Button size="sm">+ Add member</Button>
       </DialogTrigger>
@@ -52,10 +58,17 @@ export function AddMemberDialog({ slug }: { slug: string }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
+            <Label htmlFor="name">Full name *</Label>
+            <Input id="name" name="name" placeholder="Jane Smith" required />
+            <p className="text-xs text-gray-500">
+              Required if this person doesn&apos;t have an account yet.
+            </p>
+          </div>
+          <div className="space-y-1">
             <Label htmlFor="email">Email address *</Label>
             <Input id="email" name="email" type="email" placeholder="user@example.com" required />
             <p className="text-xs text-gray-500">
-              The person must already have a Softball Helper account.
+              If they already have a Softball Helper account they will be linked automatically and notified. Otherwise an invitation to set up their profile will be sent.
             </p>
           </div>
           <div className="space-y-1">
@@ -63,7 +76,7 @@ export function AddMemberDialog({ slug }: { slug: string }) {
             <select
               id="role"
               name="role"
-              defaultValue="PLAYER"
+              defaultValue="LEAGUE_ADMIN"
               className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {ROLES.map((r) => (
@@ -73,12 +86,8 @@ export function AddMemberDialog({ slug }: { slug: string }) {
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Adding…" : "Add member"}
-            </Button>
+            <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Adding…" : "Add member"}</Button>
           </div>
         </form>
       </DialogContent>

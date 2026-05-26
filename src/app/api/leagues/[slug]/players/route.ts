@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendPlayerInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -51,21 +52,38 @@ export async function POST(req: NextRequest, { params }: Params) {
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  // Link to an existing user account if the email matches
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  // Look up or create a user account for this player
+  let user = await prisma.user.findUnique({ where: { email } });
+  const isNew = !user;
+  const wasVerified = !isNew && !!user!.emailVerified;
+
+  if (!user) {
+    user = await prisma.user.create({ data: { name, email } });
+  }
 
   const player = await prisma.player.upsert({
     where: { email_teamId: { email, teamId } },
-    update: { name, jerseyNumber: jerseyNumber || null, userId: existingUser?.id ?? null },
+    update: { name, jerseyNumber: jerseyNumber || null, userId: user.id },
     create: {
       name,
       email,
       jerseyNumber: jerseyNumber || null,
       teamId,
       leagueId: league.id,
-      userId: existingUser?.id ?? null,
+      userId: user.id,
     },
   });
+
+  if (isNew) {
+    sendPlayerInviteEmail(email, name, team.name, league.name).catch(
+      (e) => console.error("[PLAYERS] invite failed:", e)
+    );
+  } else if (wasVerified) {
+    sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
+      (e) => console.error("[PLAYERS] notification failed:", e)
+    );
+  }
+  // existing unverified user: they already have a pending invite, don't spam
 
   return NextResponse.json(player, { status: 201 });
 }

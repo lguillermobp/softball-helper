@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendMemberInviteEmail } from "@/lib/email";
+import {
+  sendStaffInviteEmail,
+  sendMemberInviteEmail,
+  sendRoleNotificationEmail,
+} from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -20,31 +24,42 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { email, role } = await req.json();
+  const { name, email, role } = await req.json();
   if (!email || !role)
     return NextResponse.json({ error: "email and role are required" }, { status: 400 });
 
-  // Players are managed via the /players endpoint, not as league members
   if (role === "PLAYER")
     return NextResponse.json({ error: "Players are added per team, not as members" }, { status: 400 });
 
-  const targetUser = await prisma.user.findUnique({ where: { email } });
-  if (!targetUser)
-    return NextResponse.json(
-      { error: `No account found for ${email}. They must register first.` },
-      { status: 404 }
-    );
+  // Look up or create the user
+  let user = await prisma.user.findUnique({ where: { email } });
+  const isNew = !user;
+  const wasVerified = !isNew && !!user!.emailVerified;
+
+  if (!user) {
+    if (!name) return NextResponse.json({ error: "Full name is required for new users" }, { status: 400 });
+    user = await prisma.user.create({ data: { name, email } });
+  }
 
   const membership = await prisma.userLeagueRole.upsert({
-    where: { userId_leagueId_role: { userId: targetUser.id, leagueId: league.id, role } },
+    where: { userId_leagueId_role: { userId: user.id, leagueId: league.id, role } },
     update: {},
-    create: { userId: targetUser.id, leagueId: league.id, role },
+    create: { userId: user.id, leagueId: league.id, role },
   });
 
-  // Send verification email if not yet verified
-  if (!targetUser.emailVerified) {
-    sendMemberInviteEmail(email, league.name, role).catch((e) =>
-      console.error("[MEMBERS] invite email failed:", e)
+  const roleLabel = role.replace(/_/g, " ").toLowerCase();
+
+  if (isNew) {
+    sendStaffInviteEmail(email, name!, league.name, role).catch(
+      (e) => console.error("[MEMBERS] invite failed:", e)
+    );
+  } else if (!wasVerified) {
+    sendMemberInviteEmail(email, league.name, role).catch(
+      (e) => console.error("[MEMBERS] verify email failed:", e)
+    );
+  } else {
+    sendRoleNotificationEmail(email, user.name, league.name, roleLabel).catch(
+      (e) => console.error("[MEMBERS] notification failed:", e)
     );
   }
 
