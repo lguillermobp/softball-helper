@@ -236,82 +236,124 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
 
   function TeamCard({ team, inactive }: { team: Team; inactive?: boolean }) {
     return (
-      <div className="rounded-xl border p-4" style={{ ...card, opacity: inactive ? 0.65 : 1 }}>
-        <div className="flex items-start justify-between mb-2">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: "#1a3d1a", color: "#4ade80" }}>
-            {team.name.charAt(0).toUpperCase()}
-          </div>
-          {isAdmin && (
-            <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              {!inactive && (
-                <>
-                  <EditTeamDialog
-                    slug={slug}
-                    team={team}
-                    seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
-                    categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-                  />
-                  <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
-                </>
-              )}
-              <button
-                onClick={() => toggleActive(team)}
-                className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-                style={inactive
-                  ? { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }
-                  : { borderColor: "#78350f", color: "#fbbf24", background: "transparent" }}
-              >
-                {inactive ? "Reactivate" : "Deactivate"}
-              </button>
-              {inactive && (
+      <div className="rounded-xl border overflow-hidden" style={{ ...card, opacity: inactive ? 0.7 : 1 }}>
+
+        {/* ── Header ── */}
+        <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid #1e3a1e" }}>
+          <div className="flex items-start justify-between gap-3">
+            {/* Left: name + badges */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                <span className="font-bold text-base" style={head}>{team.name}</span>
+                {inactive && (
+                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "#78350f", color: "#fbbf24" }}>Inactive</span>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {team.season && (
+                  <span className="text-xs rounded-full px-2.5 py-0.5 font-medium" style={{ background: "#1a3d1a", color: "#4ade80" }}>
+                    📅 {team.season.name}
+                  </span>
+                )}
+                {team.category && (
+                  <span className="text-xs rounded-full px-2.5 py-0.5 font-medium" style={{ background: "#1e3a5f", color: "#93c5fd" }}>
+                    🏷️ {team.category.name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right: action buttons */}
+            {isAdmin && (
+              <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
+                {!inactive && (
+                  <>
+                    <EditTeamDialog
+                      slug={slug}
+                      team={team}
+                      seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
+                      categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                    />
+                    <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
+                  </>
+                )}
                 <button
-                  onClick={() => deleteTeam(team)}
+                  onClick={() => toggleActive(team)}
                   className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-                  style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                  style={inactive
+                    ? { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }
+                    : { borderColor: "#78350f", color: "#fbbf24", background: "transparent" }}
                 >
-                  Delete
+                  {inactive ? "Reactivate" : "Deactivate"}
                 </button>
+                {inactive && (
+                  <button
+                    onClick={() => deleteTeam(team)}
+                    className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
+                    style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Staff row */}
+          {(team.manager || team.assistant) && (
+            <div className="flex flex-wrap gap-x-6 gap-y-0.5 mt-2.5">
+              {team.manager && (
+                <p className="text-xs" style={dim}>
+                  <span className="font-semibold" style={{ color: "#4ade80" }}>Manager</span>
+                  {" · "}
+                  <span style={head}>{team.manager.name ?? "—"}</span>
+                  <span className="ml-1" style={dim}>{team.manager.email}</span>
+                </p>
+              )}
+              {team.assistant && (
+                <p className="text-xs" style={dim}>
+                  <span className="font-semibold" style={{ color: "#86efac" }}>Assistant</span>
+                  {" · "}
+                  <span style={head}>{team.assistant.name ?? "—"}</span>
+                  <span className="ml-1" style={dim}>{team.assistant.email}</span>
+                </p>
               )}
             </div>
           )}
+
+          {teamError[team.id] && (
+            <p className="text-xs mt-2" style={{ color: "#f87171" }}>{teamError[team.id]}</p>
+          )}
         </div>
-        <p className="font-semibold mb-1" style={head}>{team.name}</p>
-        {teamError[team.id] && <p className="text-xs mb-1" style={{ color: "#f87171" }}>{teamError[team.id]}</p>}
-        <div className="flex gap-2 flex-wrap mb-2">
-          {team.season && <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1a3d1a", color: "#4ade80" }}>{team.season.name}</span>}
-          {team.category && <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1e3a5f", color: "#93c5fd" }}>{team.category.name}</span>}
-        </div>
-        {(team.manager || team.assistant) && (
-          <div className="space-y-0.5 mb-2">
-            {team.manager && (
-              <p className="text-xs" style={dim}>
-                <span style={{ color: "#4ade80" }}>Manager:</span> {team.manager.name ?? team.manager.email}
-              </p>
-            )}
-            {team.assistant && (
-              <p className="text-xs" style={dim}>
-                <span style={{ color: "#4ade80" }}>Assistant:</span> {team.assistant.name ?? team.assistant.email}
-              </p>
-            )}
-          </div>
-        )}
-        {team.players.length > 0 && (
-          <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "#1e3a1e" }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>Players ({team.players.length})</p>
-            {team.players.map((p) => (
-              <div key={p.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {p.jerseyNumber && (
-                    <span className="text-xs font-bold rounded px-1 py-0.5 min-w-[22px] text-center" style={{ background: "#0a1a0a", color: "#4ade80", border: "1px solid #1e3a1e" }}>
-                      {p.jerseyNumber}
-                    </span>
-                  )}
-                  <span className="text-sm" style={head}>{p.name}</span>
-                </div>
-                {p.userId && <span className="text-xs" style={muted}>✓</span>}
-              </div>
-            ))}
-          </div>
+
+        {/* ── Player roster ── */}
+        {team.players.length === 0 ? (
+          <p className="px-4 py-3 text-xs" style={dim}>No players yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>#</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>Name</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Account</th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.players.map((p) => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #0f2310" }}>
+                  <td className="px-4 py-2 text-center">
+                    {p.jerseyNumber
+                      ? <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.jerseyNumber}</span>
+                      : <span style={dim}>—</span>}
+                  </td>
+                  <td className="px-4 py-2 font-medium" style={head}>{p.name}</td>
+                  <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
+                    {p.userId ? "✓" : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     );
@@ -340,7 +382,7 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
           No active teams.{isAdmin && " Click «+ Add team» to add one."}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
           {activeTeams.map((team) => <TeamCard key={team.id} team={team} />)}
         </div>
       )}
@@ -348,7 +390,7 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
       {showInactive && inactiveTeams.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>Inactive</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-4">
             {inactiveTeams.map((team) => <TeamCard key={team.id} team={team} inactive />)}
           </div>
         </div>
