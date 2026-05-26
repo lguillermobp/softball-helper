@@ -150,21 +150,11 @@ export default async function DashboardPage() {
             {leagueRoles.map(({ league, role }: { league: any; role: string }) => (
               <Link key={league.id} href={`/league/${league.slug}`} className="group block">
                 <div
-                  className="rounded-2xl border p-5 h-full transition-all duration-200 group-hover:scale-[1.02]"
+                  className="rounded-2xl border p-5 h-full transition-all duration-200 group-hover:scale-[1.02] group-hover:border-[#4ade80] group-hover:shadow-[0_0_20px_rgba(74,222,128,0.15)]"
                   style={{
                     borderColor: "#1e3a1e",
                     background: "#0f2310",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "#4ade80";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "0 0 20px rgba(74,222,128,0.15)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "#1e3a1e";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "0 2px 8px rgba(0,0,0,0.4)";
                   }}
                 >
                   {/* Card header */}
