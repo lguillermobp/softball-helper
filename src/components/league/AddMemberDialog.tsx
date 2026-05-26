@@ -64,7 +64,7 @@ export function AddMemberDialog({ slug }: { slug: string }) {
               id="role"
               name="role"
               defaultValue="PLAYER"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>

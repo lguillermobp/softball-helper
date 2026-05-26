@@ -68,7 +68,7 @@ export function AddTeamDialog({
               <select
                 id="seasonId"
                 name="seasonId"
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">— No season —</option>
                 {seasons.map((s) => (
@@ -83,7 +83,7 @@ export function AddTeamDialog({
               <select
                 id="categoryId"
                 name="categoryId"
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">— No category —</option>
                 {categories.map((c) => (
