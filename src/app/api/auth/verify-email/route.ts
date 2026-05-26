@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createVerificationToken } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -17,13 +18,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=expired-token", req.url));
   }
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { email },
-      data: { emailVerified: new Date() },
-    }),
-    prisma.verificationToken.delete({ where: { token } }),
-  ]);
+  const user = await prisma.user.update({
+    where: { email },
+    data: { emailVerified: new Date() },
+    select: { password: true },
+  });
+  await prisma.verificationToken.delete({ where: { token } });
+
+  // Admin-created users have no password — send them to set one
+  if (!user.password) {
+    const setToken = await createVerificationToken(email);
+    return NextResponse.redirect(
+      new URL(`/set-password?token=${setToken}&email=${encodeURIComponent(email)}`, req.url)
+    );
+  }
 
   return NextResponse.redirect(new URL("/login?verified=1", req.url));
 }

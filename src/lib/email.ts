@@ -38,6 +38,35 @@ export async function sendVerificationEmail(email: string, name: string | null) 
   });
 }
 
+// Sent to admin-created users (no password) — link leads to verify → set password
+export async function sendStaffInviteEmail(
+  email: string,
+  name: string,
+  leagueName: string,
+  role: string
+) {
+  const token = await createVerificationToken(email);
+  const url = `${APP_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+  const roleLabel = role.replace(/_/g, " ").toLowerCase();
+
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `You've been added to ${leagueName} on Softball Helper`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
+        <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">Welcome, ${name}!</h1>
+        <p style="color:#86efac;margin-bottom:8px;">You've been added to <strong style="color:#f0fdf4;">${leagueName}</strong> as <strong style="color:#f0fdf4;">${roleLabel}</strong>.</p>
+        <p style="color:#86efac;margin-bottom:24px;">Click below to verify your email and set your password to access Softball Helper.</p>
+        <a href="${url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+          Verify email &amp; set password
+        </a>
+        <p style="color:#4ade80;font-size:12px;margin-top:24px;">This link expires in 24 hours.</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendMemberInviteEmail(
   email: string,
   leagueName: string,

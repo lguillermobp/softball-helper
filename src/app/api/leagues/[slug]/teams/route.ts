@@ -1,8 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendStaffInviteEmail, sendMemberInviteEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string }> }
+
+interface StaffInput { name: string; email: string; phone?: string }
+
+async function upsertStaff(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  leagueId: string,
+  staff: StaffInput,
+  role: "TEAM_MANAGER" | "TEAM_ASSISTANT"
+) {
+  let user = await tx.user.findUnique({ where: { email: staff.email } });
+  const isNew = !user;
+
+  if (!user) {
+    user = await tx.user.create({
+      data: { name: staff.name, email: staff.email, phone: staff.phone ?? null },
+    });
+  } else if (staff.phone && !user.phone) {
+    user = await tx.user.update({ where: { id: user.id }, data: { phone: staff.phone } });
+  }
+
+  await tx.userLeagueRole.upsert({
+    where: { userId_leagueId_role: { userId: user.id, leagueId, role } },
+    update: {},
+    create: { userId: user.id, leagueId, role },
+  });
+
+  return { user, isNew };
+}
 
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -19,17 +48,48 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, seasonId, categoryId } = await req.json();
-  if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
+  const { name, seasonId, categoryId, manager, assistant } = await req.json();
+  if (!name)
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  if (!manager?.name || !manager?.email)
+    return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
-  const team = await prisma.team.create({
-    data: {
-      leagueId: league.id,
-      name,
-      seasonId: seasonId || null,
-      categoryId: categoryId || null,
-    },
+  const { team, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
+    const team = await tx.team.create({
+      data: { leagueId: league.id, name, seasonId: seasonId || null, categoryId: categoryId || null },
+    });
+
+    const managerResult = await upsertStaff(tx, league.id, manager, "TEAM_MANAGER");
+    const assistantResult =
+      assistant?.name && assistant?.email
+        ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
+        : null;
+
+    return { team, managerResult, assistantResult };
   });
+
+  // Fire-and-forget emails
+  if (managerResult.isNew) {
+    sendStaffInviteEmail(manager.email, manager.name, league.name, "TEAM_MANAGER").catch(
+      (e) => console.error("[TEAMS] manager invite failed:", e)
+    );
+  } else if (!managerResult.user.emailVerified) {
+    sendMemberInviteEmail(manager.email, league.name, "TEAM_MANAGER").catch(
+      (e) => console.error("[TEAMS] manager verify failed:", e)
+    );
+  }
+
+  if (assistantResult) {
+    if (assistantResult.isNew) {
+      sendStaffInviteEmail(assistant.email, assistant.name, league.name, "TEAM_ASSISTANT").catch(
+        (e) => console.error("[TEAMS] assistant invite failed:", e)
+      );
+    } else if (!assistantResult.user.emailVerified) {
+      sendMemberInviteEmail(assistant.email, league.name, "TEAM_ASSISTANT").catch(
+        (e) => console.error("[TEAMS] assistant verify failed:", e)
+      );
+    }
+  }
 
   return NextResponse.json(team, { status: 201 });
 }

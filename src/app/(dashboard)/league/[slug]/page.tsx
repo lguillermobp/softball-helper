@@ -23,7 +23,7 @@ export default async function LeaguePage({ params }: PageProps) {
     include: {
       plan: true,
       userRoles: {
-        include: { user: { select: { id: true, name: true, email: true, emailVerified: true } } },
+        include: { user: { select: { id: true, name: true, email: true, phone: true, emailVerified: true } } },
       },
       seasons: { orderBy: { startDate: "desc" } },
       categories: true,
@@ -319,6 +319,7 @@ export default async function LeaguePage({ params }: PageProps) {
                   <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={dimStyle}>Phone</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Role</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Verified</th>
                   </tr>
@@ -330,6 +331,7 @@ export default async function LeaguePage({ params }: PageProps) {
                         {ur.user.name ?? "—"}
                       </td>
                       <td className="px-4 py-3" style={dimStyle}>{ur.user.email}</td>
+                      <td className="px-4 py-3 hidden sm:table-cell" style={dimStyle}>{ur.user.phone ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span
                           className="text-xs font-semibold rounded-full px-2.5 py-0.5"

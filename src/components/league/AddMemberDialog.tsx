@@ -12,6 +12,7 @@ const ROLES = [
   { value: "UMPIRE", label: "Umpire" },
   { value: "SCORER", label: "Scorer" },
   { value: "TEAM_MANAGER", label: "Team Manager" },
+  { value: "TEAM_ASSISTANT", label: "Team Assistant" },
 ];
 
 export function AddMemberDialog({ slug }: { slug: string }) {
