@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 
 interface Params { params: Promise<{ slug: string }> }
 
+const gameInclude = {
+  homeTeam: { select: { id: true, name: true } },
+  awayTeam: { select: { id: true, name: true } },
+  category: { select: { id: true, name: true } },
+  field:    { select: { id: true, name: true } },
+} as const;
+
 export async function GET(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,11 +24,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const games = await prisma.game.findMany({
     where: { leagueId: league.id, ...(seasonId ? { seasonId } : {}) },
-    include: {
-      homeTeam: { select: { id: true, name: true } },
-      awayTeam: { select: { id: true, name: true } },
-      category: { select: { id: true, name: true } },
-    },
+    include: gameInclude,
     orderBy: { scheduledAt: "asc" },
   });
 
@@ -43,9 +46,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { seasonId, categoryId, homeTeamId, awayTeamId, scheduledAt, location } = await req.json();
+  const { seasonId, categoryId, homeTeamId, awayTeamId, fieldId, scheduledAt, homeAwayTbd } =
+    await req.json();
+
   if (!seasonId || !homeTeamId || !awayTeamId || !scheduledAt)
-    return NextResponse.json({ error: "seasonId, homeTeamId, awayTeamId and scheduledAt are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "seasonId, homeTeamId, awayTeamId and scheduledAt are required" },
+      { status: 400 }
+    );
 
   if (homeTeamId === awayTeamId)
     return NextResponse.json({ error: "Home and away teams must be different" }, { status: 400 });
@@ -57,14 +65,11 @@ export async function POST(req: NextRequest, { params }: Params) {
       categoryId: categoryId || null,
       homeTeamId,
       awayTeamId,
+      fieldId: fieldId || null,
       scheduledAt: new Date(scheduledAt),
-      location: location || null,
+      homeAwayTbd: homeAwayTbd === true,
     },
-    include: {
-      homeTeam: { select: { id: true, name: true } },
-      awayTeam: { select: { id: true, name: true } },
-      category: { select: { id: true, name: true } },
-    },
+    include: gameInclude,
   });
 
   return NextResponse.json(game, { status: 201 });

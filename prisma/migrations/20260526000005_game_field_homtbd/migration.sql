@@ -1,0 +1,4 @@
+ALTER TABLE "games" ADD COLUMN "fieldId" TEXT;
+ALTER TABLE "games" ADD COLUMN "homeAwayTbd" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "games" ADD CONSTRAINT "games_fieldId_fkey" FOREIGN KEY ("fieldId") REFERENCES "fields"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "games" DROP COLUMN "location";

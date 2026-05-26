@@ -220,6 +220,7 @@ model Field {
   createdAt DateTime    @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  games  Game[]
 
   @@map("fields")
 }
@@ -233,23 +234,25 @@ enum FieldType {
 // ─── Games ───────────────────────────────────────────────────────────────────
 
 model Game {
-  id          String     @id @default(cuid())
-  leagueId    String
-  seasonId    String
-  categoryId  String?
-  homeTeamId  String
-  awayTeamId  String
-  scheduledAt DateTime
-  location    String?
-  status      GameStatus @default(SCHEDULED)
-  homeScore   Int?
-  awayScore   Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  leagueId     String
+  seasonId     String
+  categoryId   String?
+  homeTeamId   String
+  awayTeamId   String
+  fieldId      String?
+  scheduledAt  DateTime
+  homeAwayTbd  Boolean    @default(false)
+  status       GameStatus @default(SCHEDULED)
+  homeScore    Int?
+  awayScore    Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   league   League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   season   Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id])
+  field    Field?    @relation(fields: [fieldId], references: [id])
   homeTeam Team      @relation("HomeGames", fields: [homeTeamId], references: [id])
   awayTeam Team      @relation("AwayGames", fields: [awayTeamId], references: [id])
 

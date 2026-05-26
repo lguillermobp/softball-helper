@@ -20,6 +20,7 @@ export default async function SeasonPage({ params }: PageProps) {
       userRoles: { where: { userId: session.user.id } },
       categories: true,
       teams: { where: { seasonId: id }, orderBy: { name: "asc" } },
+      fields: { orderBy: { name: "asc" } },
     },
   });
   if (!league) notFound();
@@ -40,6 +41,7 @@ export default async function SeasonPage({ params }: PageProps) {
       homeTeam: { select: { id: true, name: true } },
       awayTeam: { select: { id: true, name: true } },
       category: { select: { id: true, name: true } },
+      field:    { select: { id: true, name: true } },
     },
     orderBy: { scheduledAt: "asc" },
   });
@@ -102,6 +104,8 @@ export default async function SeasonPage({ params }: PageProps) {
     scheduledAt: g.scheduledAt.toISOString(),
   }));
 
+  const serializedFields = league.fields.map((f) => ({ id: f.id, name: f.name }));
+
   return (
     <div className="min-h-screen" style={{ background: "#0a1a0a" }}>
       {/* Header */}
@@ -139,6 +143,7 @@ export default async function SeasonPage({ params }: PageProps) {
               seasonId={id}
               teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
               categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
+              fields={serializedFields}
             />
           )}
         </div>
@@ -151,6 +156,7 @@ export default async function SeasonPage({ params }: PageProps) {
           games={serializedGames}
           teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
           categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
+          fields={serializedFields}
           standings={standings}
         />
       </main>

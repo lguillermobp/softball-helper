@@ -4,18 +4,20 @@ import { useState } from "react";
 
 interface Team { id: string; name: string }
 interface Category { id: string; name: string }
+interface Field    { id: string; name: string }
 interface Game {
   id: string;
   homeTeamId: string;
   awayTeamId: string;
   scheduledAt: string;
-  location: string | null;
+  homeAwayTbd: boolean;
   status: string;
   homeScore: number | null;
   awayScore: number | null;
   homeTeam: { id: string; name: string };
   awayTeam: { id: string; name: string };
   category: { id: string; name: string } | null;
+  field: Field | null;
 }
 
 interface Standing {
@@ -37,6 +39,7 @@ interface Props {
   games: Game[];
   teams: Team[];
   categories: Category[];
+  fields: Field[];
   standings: Standing[];
 }
 
@@ -52,7 +55,7 @@ function statusBadge(status: string) {
   return { bg: "#1e3a5f", color: "#93c5fd", text: "Scheduled" };
 }
 
-export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categories, standings }: Props) {
+export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categories, fields, standings }: Props) {
   const [tab, setTab] = useState<Tab>("schedule");
 
   const tabs: { key: Tab; label: string }[] = [
@@ -104,7 +107,9 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="text-right flex-1">
                           <p className="font-bold truncate" style={{ color: "#f0fdf4" }}>{game.homeTeam.name}</p>
-                          <p className="text-xs" style={{ color: "#4ade80" }}>Home</p>
+                          <p className="text-xs" style={{ color: game.homeAwayTbd ? "#fbbf24" : "#4ade80" }}>
+                            {game.homeAwayTbd ? "TBD" : "Home"}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {game.status === "COMPLETED" ? (
@@ -117,7 +122,9 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                         </div>
                         <div className="flex-1">
                           <p className="font-bold truncate" style={{ color: "#f0fdf4" }}>{game.awayTeam.name}</p>
-                          <p className="text-xs" style={{ color: "#4ade80" }}>Away</p>
+                          <p className="text-xs" style={{ color: game.homeAwayTbd ? "#fbbf24" : "#4ade80" }}>
+                            {game.homeAwayTbd ? "TBD" : "Away"}
+                          </p>
                         </div>
                       </div>
 
@@ -144,7 +151,7 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                         <p className="text-xs" style={dimStyle}>
                           {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
-                        {game.location && <p className="text-xs" style={{ color: "#4ade80" }}>📍 {game.location}</p>}
+                        {game.field && <p className="text-xs" style={{ color: "#4ade80" }}>🏟️ {game.field.name}</p>}
                         {game.category && <p className="text-xs" style={{ color: "#93c5fd" }}>{game.category.name}</p>}
                       </div>
                     </div>
