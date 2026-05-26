@@ -19,11 +19,14 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
 interface Player { id: string; name: string; jerseyNumber: string | null; userId: string | null }
+interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; isActive: boolean;
   seasonId: string | null; categoryId: string | null;
   season: { id: string; name: string } | null;
   category: { id: string; name: string } | null;
+  manager: StaffMember | null;
+  assistant: StaffMember | null;
   players: Player[];
 }
 interface Member {
@@ -242,7 +245,12 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
               {!inactive && (
                 <>
-                  <EditTeamDialog slug={slug} team={team} seasons={seasons.map((s) => ({ id: s.id, name: s.name }))} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
+                  <EditTeamDialog
+                    slug={slug}
+                    team={team}
+                    seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
+                    categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                  />
                   <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
                 </>
               )}
@@ -273,6 +281,20 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
           {team.season && <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1a3d1a", color: "#4ade80" }}>{team.season.name}</span>}
           {team.category && <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1e3a5f", color: "#93c5fd" }}>{team.category.name}</span>}
         </div>
+        {(team.manager || team.assistant) && (
+          <div className="space-y-0.5 mb-2">
+            {team.manager && (
+              <p className="text-xs" style={dim}>
+                <span style={{ color: "#4ade80" }}>Manager:</span> {team.manager.name ?? team.manager.email}
+              </p>
+            )}
+            {team.assistant && (
+              <p className="text-xs" style={dim}>
+                <span style={{ color: "#4ade80" }}>Assistant:</span> {team.assistant.name ?? team.assistant.email}
+              </p>
+            )}
+          </div>
+        )}
         {team.players.length > 0 && (
           <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "#1e3a1e" }}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>Players ({team.players.length})</p>

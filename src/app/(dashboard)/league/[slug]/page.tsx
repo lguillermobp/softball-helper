@@ -26,6 +26,8 @@ export default async function LeaguePage({ params }: PageProps) {
         include: {
           season: { select: { id: true, name: true } },
           category: { select: { id: true, name: true } },
+          manager: { select: { id: true, name: true, email: true, phone: true } },
+          assistant: { select: { id: true, name: true, email: true, phone: true } },
           players: { orderBy: { name: "asc" } },
         },
         orderBy: { name: "asc" },
@@ -67,6 +69,12 @@ export default async function LeaguePage({ params }: PageProps) {
     categoryId: t.categoryId,
     season: t.season,
     category: t.category,
+    manager: t.manager
+      ? { id: t.manager.id, name: t.manager.name, email: t.manager.email, phone: t.manager.phone }
+      : null,
+    assistant: t.assistant
+      ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email, phone: t.assistant.phone }
+      : null,
     players: t.players.map((p) => ({
       id: p.id,
       name: p.name,

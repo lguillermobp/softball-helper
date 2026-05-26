@@ -55,15 +55,22 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
   const { team, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
-    const team = await tx.team.create({
-      data: { leagueId: league.id, name, seasonId: seasonId || null, categoryId: categoryId || null },
-    });
-
     const managerResult = await upsertStaff(tx, league.id, manager, "TEAM_MANAGER");
     const assistantResult =
       assistant?.name && assistant?.email
         ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
         : null;
+
+    const team = await tx.team.create({
+      data: {
+        leagueId: league.id,
+        name,
+        seasonId: seasonId || null,
+        categoryId: categoryId || null,
+        managerId: managerResult.user.id,
+        assistantId: assistantResult?.user.id ?? null,
+      },
+    });
 
     return { team, managerResult, assistantResult };
   });

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendStaffInviteEmail, sendMemberInviteEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string; teamId: string }> }
+
+interface StaffInput { name: string; email: string; phone?: string }
 
 async function getAdminLeague(slug: string, userId: string, isMasterAdmin: boolean) {
   const league = await prisma.league.findUnique({
@@ -12,6 +15,32 @@ async function getAdminLeague(slug: string, userId: string, isMasterAdmin: boole
   if (!league) return null;
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   return isAdmin ? league : null;
+}
+
+async function upsertStaff(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  leagueId: string,
+  staff: StaffInput,
+  role: "TEAM_MANAGER" | "TEAM_ASSISTANT"
+) {
+  let user = await tx.user.findUnique({ where: { email: staff.email } });
+  const isNew = !user;
+
+  if (!user) {
+    user = await tx.user.create({
+      data: { name: staff.name, email: staff.email, phone: staff.phone ?? null },
+    });
+  } else if (staff.phone && !user.phone) {
+    user = await tx.user.update({ where: { id: user.id }, data: { phone: staff.phone } });
+  }
+
+  await tx.userLeagueRole.upsert({
+    where: { userId_leagueId_role: { userId: user.id, leagueId, role } },
+    update: {},
+    create: { userId: user.id, leagueId, role },
+  });
+
+  return { user, isNew };
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -36,13 +65,44 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(updated);
   }
 
-  const { name, seasonId, categoryId } = body;
+  const { name, seasonId, categoryId, manager, assistant } = body;
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
+  if (!manager?.name || !manager?.email)
+    return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
-  const updated = await prisma.team.update({
-    where: { id: teamId },
-    data: { name, seasonId: seasonId || null, categoryId: categoryId || null },
+  const { updated, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
+    const managerResult = await upsertStaff(tx, league.id, manager, "TEAM_MANAGER");
+    const assistantResult =
+      assistant?.name && assistant?.email
+        ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
+        : null;
+
+    const updated = await tx.team.update({
+      where: { id: teamId },
+      data: {
+        name,
+        seasonId: seasonId || null,
+        categoryId: categoryId || null,
+        managerId: managerResult.user.id,
+        assistantId: assistantResult?.user.id ?? null,
+      },
+    });
+
+    return { updated, managerResult, assistantResult };
   });
+
+  // Fire-and-forget emails for newly created users
+  if (managerResult.isNew) {
+    sendStaffInviteEmail(manager.email, manager.name, league.name, "TEAM_MANAGER").catch(
+      (e) => console.error("[TEAMS PATCH] manager invite failed:", e)
+    );
+  }
+  if (assistantResult?.isNew) {
+    sendStaffInviteEmail(assistant.email, assistant.name, league.name, "TEAM_ASSISTANT").catch(
+      (e) => console.error("[TEAMS PATCH] assistant invite failed:", e)
+    );
+  }
+
   return NextResponse.json(updated);
 }
 

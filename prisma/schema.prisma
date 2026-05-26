@@ -20,10 +20,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts    Account[]
-  sessions    Session[]
-  leagueRoles UserLeagueRole[]
-  players     Player[]
+  accounts      Account[]
+  sessions      Session[]
+  leagueRoles   UserLeagueRole[]
+  players       Player[]
+  managedTeams  Team[] @relation("TeamManager")
+  assistedTeams Team[] @relation("TeamAssistant")
 
   @@map("users")
 }
@@ -185,21 +187,25 @@ model Category {
 // ─── Teams ───────────────────────────────────────────────────────────────────
 
 model Team {
-  id         String   @id @default(cuid())
-  leagueId   String
-  seasonId   String?
-  categoryId String?
-  name       String
-  isActive   Boolean  @default(true)
-  logoUrl    String?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  leagueId    String
+  seasonId    String?
+  categoryId  String?
+  managerId   String?
+  assistantId String?
+  name        String
+  isActive    Boolean  @default(true)
+  logoUrl     String?
+  createdAt   DateTime @default(now())
 
-  league     League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  season     Season?   @relation(fields: [seasonId], references: [id])
-  category   Category? @relation(fields: [categoryId], references: [id])
-  homeGames  Game[]    @relation("HomeGames")
-  awayGames  Game[]    @relation("AwayGames")
-  players    Player[]
+  league    League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season    Season?   @relation(fields: [seasonId], references: [id])
+  category  Category? @relation(fields: [categoryId], references: [id])
+  manager   User?     @relation("TeamManager", fields: [managerId], references: [id])
+  assistant User?     @relation("TeamAssistant", fields: [assistantId], references: [id])
+  homeGames Game[]    @relation("HomeGames")
+  awayGames Game[]    @relation("AwayGames")
+  players   Player[]
 
   @@map("teams")
 }
