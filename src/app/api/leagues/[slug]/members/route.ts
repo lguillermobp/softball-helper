@@ -31,6 +31,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (role === "PLAYER")
     return NextResponse.json({ error: "Players are added per team, not as members" }, { status: 400 });
 
+  if (role === "TEAM_MANAGER" || role === "TEAM_ASSISTANT")
+    return NextResponse.json({ error: "Team Manager and Team Assistant are assigned when creating or editing a team" }, { status: 400 });
+
   // Look up or create the user
   let user = await prisma.user.findUnique({ where: { email } });
   const isNew = !user;

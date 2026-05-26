@@ -8,11 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const ROLES = [
-  { value: "LEAGUE_ADMIN",    label: "League Admin" },
-  { value: "UMPIRE",          label: "Umpire" },
-  { value: "SCORER",          label: "Scorer" },
-  { value: "TEAM_MANAGER",    label: "Team Manager" },
-  { value: "TEAM_ASSISTANT",  label: "Team Assistant" },
+  { value: "LEAGUE_ADMIN", label: "League Admin" },
+  { value: "UMPIRE",       label: "Umpire" },
+  { value: "SCORER",       label: "Scorer" },
 ];
 
 export function AddMemberDialog({ slug }: { slug: string }) {
