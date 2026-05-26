@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { EditGameDialog } from "@/components/league/EditGameDialog";
 
 interface Team { id: string; name: string }
 interface Category { id: string; name: string }
@@ -9,6 +11,8 @@ interface Game {
   id: string;
   homeTeamId: string;
   awayTeamId: string;
+  fieldId: string | null;
+  categoryId: string | null;
   scheduledAt: string;
   homeAwayTbd: boolean;
   status: string;
@@ -56,7 +60,20 @@ function statusBadge(status: string) {
 }
 
 export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categories, fields, standings }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("schedule");
+  const [gameError, setGameError] = useState<Record<string, string>>({});
+
+  async function deleteGame(gameId: string) {
+    setGameError({});
+    const res = await fetch(`/api/leagues/${slug}/games/${gameId}`, { method: "DELETE" });
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setGameError((prev) => ({ ...prev, [gameId]: data.error ?? "Cannot delete" }));
+    }
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "schedule",  label: "Schedule" },
@@ -102,6 +119,9 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                 const date = new Date(game.scheduledAt);
                 return (
                   <div key={game.id} className="rounded-xl border p-4" style={cardStyle}>
+                    {gameError[game.id] && (
+                      <p className="text-xs mb-2" style={{ color: "#f87171" }}>{gameError[game.id]}</p>
+                    )}
                     <div className="flex items-center justify-between gap-4">
                       {/* Teams & score */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -128,16 +148,34 @@ export function SeasonDashboard({ slug, seasonId, isAdmin, games, teams, categor
                         </div>
                       </div>
 
-                      {/* Meta + Score button */}
+                      {/* Meta + actions */}
                       <div className="text-right shrink-0 space-y-1">
-                        <div className="flex items-center gap-2 justify-end">
+                        <div className="flex items-center gap-2 justify-end flex-wrap">
                           <span
                             className="text-xs font-semibold rounded-full px-2.5 py-0.5"
                             style={{ background: badge.bg, color: badge.color }}
                           >
                             {badge.text}
                           </span>
-                          {isAdmin && game.status !== "CANCELLED" && (
+                          {isAdmin && game.status === "SCHEDULED" && (
+                            <>
+                              <EditGameDialog
+                                slug={slug}
+                                game={game}
+                                teams={teams}
+                                categories={categories}
+                                fields={fields}
+                              />
+                              <button
+                                onClick={() => deleteGame(game.id)}
+                                className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
+                                style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {isAdmin && game.status === "COMPLETED" && (
                             <button
                               disabled
                               className="text-xs font-semibold px-3 py-1 rounded-lg opacity-60 cursor-not-allowed"

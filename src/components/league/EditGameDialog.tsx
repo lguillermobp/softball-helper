@@ -11,9 +11,19 @@ interface Team     { id: string; name: string }
 interface Category { id: string; name: string }
 interface Field    { id: string; name: string }
 
+interface GameData {
+  id: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  fieldId: string | null;
+  categoryId: string | null;
+  scheduledAt: string;
+  homeAwayTbd: boolean;
+}
+
 interface Props {
   slug: string;
-  seasonId: string;
+  game: GameData;
   teams: Team[];
   categories: Category[];
   fields: Field[];
@@ -22,29 +32,34 @@ interface Props {
 const selectClass =
   "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
-export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Props) {
+function toDatetimeLocal(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function EditGameDialog({ slug, game, teams, categories, fields }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [homeAwayTbd, setHomeAwayTbd] = useState(false);
+  const [homeAwayTbd, setHomeAwayTbd] = useState(game.homeAwayTbd);
 
-  function handleClose() { setOpen(false); setHomeAwayTbd(false); setError(""); }
+  function handleClose() { setOpen(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
     const fd = new FormData(e.currentTarget);
-    const res = await fetch(`/api/leagues/${slug}/games`, {
-      method: "POST",
+    const res = await fetch(`/api/leagues/${slug}/games/${game.id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        seasonId,
-        categoryId:  fd.get("categoryId") || null,
         homeTeamId:  fd.get("homeTeamId"),
         awayTeamId:  fd.get("awayTeamId"),
         fieldId:     fd.get("fieldId") || null,
+        categoryId:  fd.get("categoryId") || null,
         scheduledAt: fd.get("scheduledAt"),
         homeAwayTbd,
       }),
@@ -62,31 +77,35 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
       <DialogTrigger asChild>
-        <Button size="sm">+ Add game</Button>
+        <button
+          className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
+          style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
+        >
+          Edit
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule a Game</DialogTitle>
+          <DialogTitle>Edit Game</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="homeTeamId">{homeAwayTbd ? "Team A" : "Home team"} *</Label>
-              <select id="homeTeamId" name="homeTeamId" required className={selectClass}>
+              <select id="homeTeamId" name="homeTeamId" defaultValue={game.homeTeamId} required className={selectClass}>
                 <option value="">Select team</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="awayTeamId">{homeAwayTbd ? "Team B" : "Away team"} *</Label>
-              <select id="awayTeamId" name="awayTeamId" required className={selectClass}>
+              <select id="awayTeamId" name="awayTeamId" defaultValue={game.awayTeamId} required className={selectClass}>
                 <option value="">Select team</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Home/Away TBD checkbox */}
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -101,12 +120,18 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
 
           <div className="space-y-1">
             <Label htmlFor="scheduledAt">Date & time *</Label>
-            <Input id="scheduledAt" name="scheduledAt" type="datetime-local" required />
+            <Input
+              id="scheduledAt"
+              name="scheduledAt"
+              type="datetime-local"
+              defaultValue={toDatetimeLocal(game.scheduledAt)}
+              required
+            />
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="fieldId">Field</Label>
-            <select id="fieldId" name="fieldId" className={selectClass}>
+            <select id="fieldId" name="fieldId" defaultValue={game.fieldId ?? ""} className={selectClass}>
               <option value="">— No field assigned —</option>
               {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
@@ -115,7 +140,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
           {categories.length > 0 && (
             <div className="space-y-1">
               <Label htmlFor="categoryId">Category</Label>
-              <select id="categoryId" name="categoryId" className={selectClass}>
+              <select id="categoryId" name="categoryId" defaultValue={game.categoryId ?? ""} className={selectClass}>
                 <option value="">All categories</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -125,7 +150,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Schedule game"}</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Save changes"}</Button>
           </div>
         </form>
       </DialogContent>
