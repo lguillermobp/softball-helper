@@ -7,6 +7,7 @@ import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { AddMemberDialog } from "@/components/league/AddMemberDialog";
 import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
+import { EditTeamDialog } from "@/components/league/EditTeamDialog";
 import { ResendVerificationButton } from "@/components/league/ResendVerificationButton";
 
 interface PageProps {
@@ -257,7 +258,15 @@ export default async function LeaguePage({ params }: PageProps) {
                       {team.name.charAt(0).toUpperCase()}
                     </div>
                     {isAdmin && (
-                      <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
+                      <div className="flex items-center gap-2">
+                        <EditTeamDialog
+                          slug={slug}
+                          team={{ id: team.id, name: team.name, seasonId: team.seasonId, categoryId: team.categoryId }}
+                          seasons={league.seasons.map((s) => ({ id: s.id, name: s.name }))}
+                          categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
+                        />
+                        <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
+                      </div>
                     )}
                   </div>
                   <p className="font-semibold mb-1" style={{ color: "#f0fdf4" }}>{team.name}</p>
