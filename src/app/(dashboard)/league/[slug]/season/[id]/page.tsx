@@ -45,11 +45,11 @@ export default async function SeasonPage({ params }: PageProps) {
   });
 
   // ── Compute standings from completed games ──────────────────────────────────
-  const teamMap = new Map(league.teams.map((t) => [t.id, t]));
+  type SlimTeam = { id: string; name: string };
+  const zero = (team: SlimTeam) => ({ team, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
 
-  // Seed every team with zeroed stats
-  const statsMap = new Map(
-    league.teams.map((t) => [t.id, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 }])
+  const statsMap = new Map<string, ReturnType<typeof zero>>(
+    league.teams.map((t) => [t.id, zero({ id: t.id, name: t.name })])
   );
 
   for (const game of games) {
@@ -57,15 +57,10 @@ export default async function SeasonPage({ params }: PageProps) {
     const hs = game.homeScore ?? 0;
     const as_ = game.awayScore ?? 0;
 
-    // Ensure both teams are in the map (teams added after season created)
-    if (!statsMap.has(game.homeTeamId)) {
-      const t = game.homeTeam as { id: string; name: string };
-      statsMap.set(game.homeTeamId, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-    }
-    if (!statsMap.has(game.awayTeamId)) {
-      const t = game.awayTeam as { id: string; name: string };
-      statsMap.set(game.awayTeamId, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-    }
+    if (!statsMap.has(game.homeTeamId))
+      statsMap.set(game.homeTeamId, zero(game.homeTeam));
+    if (!statsMap.has(game.awayTeamId))
+      statsMap.set(game.awayTeamId, zero(game.awayTeam));
 
     const home = statsMap.get(game.homeTeamId)!;
     const away = statsMap.get(game.awayTeamId)!;
