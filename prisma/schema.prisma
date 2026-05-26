@@ -107,6 +107,7 @@ model League {
   teams      Team[]
   games      Game[]
   players    Player[]
+  fields     Field[]
 
   @@map("leagues")
 }
@@ -189,6 +190,7 @@ model Team {
   seasonId   String?
   categoryId String?
   name       String
+  isActive   Boolean  @default(true)
   logoUrl    String?
   createdAt  DateTime @default(now())
 
@@ -200,6 +202,26 @@ model Team {
   players    Player[]
 
   @@map("teams")
+}
+
+// ─── Fields ──────────────────────────────────────────────────────────────────
+
+model Field {
+  id        String      @id @default(cuid())
+  leagueId  String
+  name      String
+  types     FieldType[]
+  createdAt DateTime    @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@map("fields")
+}
+
+enum FieldType {
+  MORNING
+  AFTERNOON
+  NIGHT
 }
 
 // ─── Games ───────────────────────────────────────────────────────────────────
