@@ -11,6 +11,7 @@ import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
 import { AddMemberDialog } from "@/components/league/AddMemberDialog";
 import { ResendVerificationButton } from "@/components/league/ResendVerificationButton";
 import { AddFieldDialog } from "@/components/league/AddFieldDialog";
+import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -275,6 +276,7 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
                       categories={categories.map((c) => ({ id: c.id, name: c.name }))}
                     />
                     <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
+                    <UploadPlayersDialog slug={slug} teamId={team.id} teamName={team.name} />
                   </>
                 )}
                 <button
