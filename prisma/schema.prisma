@@ -9,19 +9,20 @@ datasource db {
 // ─── Global User Directory ───────────────────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   name          String?
   password      String?
   emailVerified DateTime?
   image         String?
-  isMasterAdmin Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isMasterAdmin Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  leagueRoles   UserLeagueRole[]
+  accounts    Account[]
+  sessions    Session[]
+  leagueRoles UserLeagueRole[]
+  players     Player[]
 
   @@map("users")
 }
@@ -71,13 +72,13 @@ model VerificationToken {
 // ─── Plans ───────────────────────────────────────────────────────────────────
 
 model Plan {
-  id          String  @id @default(cuid())
-  name        String  @unique  // e.g. "Free", "Starter", "Pro"
-  maxTeams    Int
-  maxSeasons  Int
-  maxPlayers  Int
-  price       Float
-  isActive    Boolean @default(true)
+  id        String  @id @default(cuid())
+  name      String  @unique
+  maxTeams  Int
+  maxSeasons Int
+  maxPlayers Int
+  price     Float
+  isActive  Boolean @default(true)
 
   leagues League[]
 
@@ -87,22 +88,24 @@ model Plan {
 // ─── Leagues ─────────────────────────────────────────────────────────────────
 
 model League {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique  // URL-friendly identifier
-  logoUrl     String?
-  city        String?
-  state       String?
-  status      LeagueStatus @default(ACTIVE)
-  planId      String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  logoUrl   String?
+  city      String?
+  state     String?
+  status    LeagueStatus @default(ACTIVE)
+  planId    String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  plan        Plan             @relation(fields: [planId], references: [id])
-  userRoles   UserLeagueRole[]
-  seasons     Season[]
-  categories  Category[]
-  teams       Team[]
+  plan       Plan             @relation(fields: [planId], references: [id])
+  userRoles  UserLeagueRole[]
+  seasons    Season[]
+  categories Category[]
+  teams      Team[]
+  games      Game[]
+  players    Player[]
 
   @@map("leagues")
 }
@@ -125,7 +128,7 @@ model UserLeagueRole {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, leagueId, role])  // same user can have only one of each role per league
+  @@unique([userId, leagueId, role])
   @@map("user_league_roles")
 }
 
@@ -142,14 +145,15 @@ enum LeagueRole {
 model Season {
   id        String       @id @default(cuid())
   leagueId  String
-  name      String        // e.g. "Spring 2025"
+  name      String
   startDate DateTime
   endDate   DateTime
-  status    SeasonStatus  @default(UPCOMING)
-  createdAt DateTime      @default(now())
+  status    SeasonStatus @default(UPCOMING)
+  createdAt DateTime     @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   teams  Team[]
+  games  Game[]
 
   @@map("seasons")
 }
@@ -163,13 +167,14 @@ enum SeasonStatus {
 // ─── Categories ──────────────────────────────────────────────────────────────
 
 model Category {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   leagueId    String
-  name        String   // e.g. "Men's A", "Co-Ed", "Under 16"
+  name        String
   description String?
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   teams  Team[]
+  games  Game[]
 
   @@map("categories")
 }
@@ -177,7 +182,7 @@ model Category {
 // ─── Teams ───────────────────────────────────────────────────────────────────
 
 model Team {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   leagueId   String
   seasonId   String?
   categoryId String?
@@ -185,9 +190,65 @@ model Team {
   logoUrl    String?
   createdAt  DateTime @default(now())
 
-  league   League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  season   Season?   @relation(fields: [seasonId], references: [id])
-  category Category? @relation(fields: [categoryId], references: [id])
+  league     League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season     Season?   @relation(fields: [seasonId], references: [id])
+  category   Category? @relation(fields: [categoryId], references: [id])
+  homeGames  Game[]    @relation("HomeGames")
+  awayGames  Game[]    @relation("AwayGames")
+  players    Player[]
 
   @@map("teams")
+}
+
+// ─── Games ───────────────────────────────────────────────────────────────────
+
+model Game {
+  id          String     @id @default(cuid())
+  leagueId    String
+  seasonId    String
+  categoryId  String?
+  homeTeamId  String
+  awayTeamId  String
+  scheduledAt DateTime
+  location    String?
+  status      GameStatus @default(SCHEDULED)
+  homeScore   Int?
+  awayScore   Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  league   League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season   Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+  homeTeam Team      @relation("HomeGames", fields: [homeTeamId], references: [id])
+  awayTeam Team      @relation("AwayGames", fields: [awayTeamId], references: [id])
+
+  @@map("games")
+}
+
+enum GameStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ─── Players ─────────────────────────────────────────────────────────────────
+
+model Player {
+  id           String   @id @default(cuid())
+  name         String
+  email        String
+  jerseyNumber String?
+  teamId       String
+  leagueId     String
+  userId       String?
+  createdAt    DateTime @default(now())
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@unique([email, teamId])
+  @@map("players")
 }

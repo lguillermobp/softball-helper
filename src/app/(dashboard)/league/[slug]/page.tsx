@@ -6,6 +6,8 @@ import { AddSeasonDialog } from "@/components/league/AddSeasonDialog";
 import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { AddMemberDialog } from "@/components/league/AddMemberDialog";
+import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
+import { ResendVerificationButton } from "@/components/league/ResendVerificationButton";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -21,12 +23,16 @@ export default async function LeaguePage({ params }: PageProps) {
     include: {
       plan: true,
       userRoles: {
-        include: { user: { select: { id: true, name: true, email: true } } },
+        include: { user: { select: { id: true, name: true, email: true, emailVerified: true } } },
       },
       seasons: { orderBy: { startDate: "desc" } },
       categories: true,
       teams: {
-        include: { season: true, category: true },
+        include: {
+          season: true,
+          category: true,
+          players: { orderBy: { name: "asc" } },
+        },
         orderBy: { name: "asc" },
       },
     },
@@ -50,11 +56,7 @@ export default async function LeaguePage({ params }: PageProps) {
     return { bg: "#78350f", color: "#fbbf24", text: "Upcoming" };
   }
 
-  const cardStyle = {
-    borderColor: "#1e3a1e",
-    background: "#0f2310",
-  };
-
+  const cardStyle = { borderColor: "#1e3a1e", background: "#0f2310" };
   const sectionHeadStyle = { color: "#f0fdf4" };
   const mutedStyle = { color: "#4ade80" };
   const dimStyle = { color: "#6b7280" };
@@ -83,11 +85,7 @@ export default async function LeaguePage({ params }: PageProps) {
           <div className="flex items-center gap-3">
             <span
               className="text-xs font-medium border rounded-full px-2.5 py-0.5"
-              style={{
-                background: "#1a3d1a",
-                color: "#4ade80",
-                borderColor: "#2d5a2d",
-              }}
+              style={{ background: "#1a3d1a", color: "#4ade80", borderColor: "#2d5a2d" }}
             >
               {roleLabel(role)}
             </span>
@@ -110,14 +108,8 @@ export default async function LeaguePage({ params }: PageProps) {
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-8">
         {/* ── Stat row ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {/* League info */}
-          <div
-            className="col-span-2 rounded-2xl border p-5"
-            style={cardStyle}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dimStyle}>
-              League Info
-            </p>
+          <div className="col-span-2 rounded-2xl border p-5" style={cardStyle}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dimStyle}>League Info</p>
             {(league.city || league.state) && (
               <p className="text-sm mb-1" style={mutedStyle}>
                 📍 {[league.city, league.state].filter(Boolean).join(", ")}
@@ -139,15 +131,11 @@ export default async function LeaguePage({ params }: PageProps) {
               </span>
             </p>
           </div>
-
-          {/* Seasons stat */}
           <div className="rounded-2xl border p-5 flex flex-col justify-between" style={cardStyle}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dimStyle}>Seasons</p>
             <p className="text-4xl font-bold" style={{ color: "#4ade80" }}>{league.seasons.length}</p>
             <p className="text-xs mt-1" style={dimStyle}>total</p>
           </div>
-
-          {/* Teams stat */}
           <div className="rounded-2xl border p-5 flex flex-col justify-between" style={cardStyle}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dimStyle}>Teams</p>
             <p className="text-4xl font-bold" style={{ color: "#4ade80" }}>{league.teams.length}</p>
@@ -173,25 +161,33 @@ export default async function LeaguePage({ params }: PageProps) {
               {league.seasons.map((season) => {
                 const badge = seasonBadge(season.status);
                 return (
-                  <div
+                  <Link
                     key={season.id}
-                    className="rounded-xl border p-4 flex items-center justify-between"
-                    style={cardStyle}
+                    href={`/league/${slug}/season/${season.id}`}
+                    className="group block"
                   >
-                    <div>
-                      <p className="font-semibold" style={{ color: "#f0fdf4" }}>{season.name}</p>
-                      <p className="text-xs mt-0.5" style={dimStyle}>
-                        {new Date(season.startDate).toLocaleDateString()} –{" "}
-                        {new Date(season.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span
-                      className="text-xs font-semibold rounded-full px-3 py-1"
-                      style={{ background: badge.bg, color: badge.color }}
+                    <div
+                      className="rounded-xl border p-4 flex items-center justify-between transition-colors group-hover:border-[#4ade80]"
+                      style={cardStyle}
                     >
-                      {badge.text}
-                    </span>
-                  </div>
+                      <div>
+                        <p className="font-semibold group-hover:text-green-300 transition-colors" style={{ color: "#f0fdf4" }}>
+                          {season.name}
+                        </p>
+                        <p className="text-xs mt-0.5" style={dimStyle}>
+                          {new Date(season.startDate).toLocaleDateString()} –{" "}
+                          {new Date(season.endDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: "#4ade80" }}>View schedule →</p>
+                      </div>
+                      <span
+                        className="text-xs font-semibold rounded-full px-3 py-1 shrink-0"
+                        style={{ background: badge.bg, color: badge.color }}
+                      >
+                        {badge.text}
+                      </span>
+                    </div>
+                  </Link>
                 );
               })}
             </div>
@@ -217,17 +213,11 @@ export default async function LeaguePage({ params }: PageProps) {
                 <span
                   key={cat.id}
                   className="rounded-full border px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    borderColor: "#2d5a2d",
-                    background: "#1a3d1a",
-                    color: "#86efac",
-                  }}
+                  style={{ borderColor: "#2d5a2d", background: "#1a3d1a", color: "#86efac" }}
                 >
                   {cat.name}
                   {cat.description && (
-                    <span style={{ color: "#4ade80", fontWeight: 400 }}>
-                      {" "}— {cat.description}
-                    </span>
+                    <span style={{ color: "#4ade80", fontWeight: 400 }}> — {cat.description}</span>
                   )}
                 </span>
               ))}
@@ -255,38 +245,61 @@ export default async function LeaguePage({ params }: PageProps) {
               No teams yet. {isAdmin && "Click «+ Add team» to add one."}
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {league.teams.map((team) => (
-                <div
-                  key={team.id}
-                  className="rounded-xl border p-4"
-                  style={cardStyle}
-                >
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm mb-2"
-                    style={{ background: "#1a3d1a", color: "#4ade80" }}
-                  >
-                    {team.name.charAt(0).toUpperCase()}
+                <div key={team.id} className="rounded-xl border p-4" style={cardStyle}>
+                  {/* Team header */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm"
+                      style={{ background: "#1a3d1a", color: "#4ade80" }}
+                    >
+                      {team.name.charAt(0).toUpperCase()}
+                    </div>
+                    {isAdmin && (
+                      <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
+                    )}
                   </div>
-                  <p className="font-semibold" style={{ color: "#f0fdf4" }}>{team.name}</p>
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                  <p className="font-semibold mb-1" style={{ color: "#f0fdf4" }}>{team.name}</p>
+                  <div className="flex gap-2 flex-wrap mb-3">
                     {team.season && (
-                      <span
-                        className="text-xs rounded px-1.5 py-0.5"
-                        style={{ background: "#1a3d1a", color: "#4ade80" }}
-                      >
+                      <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1a3d1a", color: "#4ade80" }}>
                         {team.season.name}
                       </span>
                     )}
                     {team.category && (
-                      <span
-                        className="text-xs rounded px-1.5 py-0.5"
-                        style={{ background: "#1e3a5f", color: "#93c5fd" }}
-                      >
+                      <span className="text-xs rounded px-1.5 py-0.5" style={{ background: "#1e3a5f", color: "#93c5fd" }}>
                         {team.category.name}
                       </span>
                     )}
                   </div>
+
+                  {/* Players list */}
+                  {team.players.length > 0 && (
+                    <div className="border-t pt-3 mt-1 space-y-1.5" style={{ borderColor: "#1e3a1e" }}>
+                      <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dimStyle}>
+                        Players ({team.players.length})
+                      </p>
+                      {team.players.map((player) => (
+                        <div key={player.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {player.jerseyNumber && (
+                              <span
+                                className="text-xs font-bold rounded px-1 py-0.5 min-w-[22px] text-center"
+                                style={{ background: "#0a1a0a", color: "#4ade80", border: "1px solid #1e3a1e" }}
+                              >
+                                {player.jerseyNumber}
+                              </span>
+                            )}
+                            <span className="text-sm" style={{ color: "#f0fdf4" }}>{player.name}</span>
+                          </div>
+                          {player.userId && (
+                            <span className="text-xs" style={{ color: "#4ade80" }}>✓</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -307,20 +320,16 @@ export default async function LeaguePage({ params }: PageProps) {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dimStyle}>Verified</th>
                   </tr>
                 </thead>
                 <tbody>
                   {league.userRoles.map((ur) => (
-                    <tr
-                      key={ur.id}
-                      style={{ borderBottom: "1px solid #0f2310" }}
-                    >
+                    <tr key={ur.id} style={{ borderBottom: "1px solid #0f2310" }}>
                       <td className="px-4 py-3 font-medium" style={{ color: "#f0fdf4" }}>
                         {ur.user.name ?? "—"}
                       </td>
-                      <td className="px-4 py-3" style={dimStyle}>
-                        {ur.user.email}
-                      </td>
+                      <td className="px-4 py-3" style={dimStyle}>{ur.user.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className="text-xs font-semibold rounded-full px-2.5 py-0.5"
@@ -328,6 +337,13 @@ export default async function LeaguePage({ params }: PageProps) {
                         >
                           {roleLabel(ur.role)}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {ur.user.emailVerified ? (
+                          <span className="text-xs font-semibold" style={{ color: "#4ade80" }}>✓ Verified</span>
+                        ) : (
+                          <ResendVerificationButton email={ur.user.email} />
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -340,3 +356,4 @@ export default async function LeaguePage({ params }: PageProps) {
     </div>
   );
 }
+

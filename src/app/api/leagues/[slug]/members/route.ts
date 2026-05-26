@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendMemberInviteEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!email || !role)
     return NextResponse.json({ error: "email and role are required" }, { status: 400 });
 
+  // Players are managed via the /players endpoint, not as league members
+  if (role === "PLAYER")
+    return NextResponse.json({ error: "Players are added per team, not as members" }, { status: 400 });
+
   const targetUser = await prisma.user.findUnique({ where: { email } });
   if (!targetUser)
     return NextResponse.json(
@@ -30,12 +35,18 @@ export async function POST(req: NextRequest, { params }: Params) {
       { status: 404 }
     );
 
-  // Upsert so calling twice is safe
   const membership = await prisma.userLeagueRole.upsert({
     where: { userId_leagueId_role: { userId: targetUser.id, leagueId: league.id, role } },
     update: {},
     create: { userId: targetUser.id, leagueId: league.id, role },
   });
+
+  // Send verification email if not yet verified
+  if (!targetUser.emailVerified) {
+    sendMemberInviteEmail(email, league.name, role).catch((e) =>
+      console.error("[MEMBERS] invite email failed:", e)
+    );
+  }
 
   return NextResponse.json(membership, { status: 201 });
 }

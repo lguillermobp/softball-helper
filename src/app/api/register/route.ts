@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 import { registerSchema, leagueSetupSchema, seasonSchema } from "@/lib/validations";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -97,6 +98,11 @@ export async function POST(req: NextRequest) {
 
       return { user, league };
     });
+
+    // Fire-and-forget — don't fail registration if email sending fails
+    sendVerificationEmail(email, name).catch((e) =>
+      console.error("[REGISTER] verification email failed:", e)
+    );
 
     return NextResponse.json({ success: true, leagueSlug: result.league.slug });
   } catch (err) {

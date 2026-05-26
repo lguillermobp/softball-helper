@@ -7,14 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const ROLES = [
-  { value: "LEAGUE_ADMIN", label: "League Admin" },
-  { value: "UMPIRE", label: "Umpire" },
-  { value: "SCORER", label: "Scorer" },
-  { value: "TEAM_MANAGER", label: "Team Manager" },
-];
+interface Props {
+  slug: string;
+  teamId: string;
+  teamName: string;
+}
 
-export function AddMemberDialog({ slug }: { slug: string }) {
+export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,10 +24,15 @@ export function AddMemberDialog({ slug }: { slug: string }) {
     setError("");
     setLoading(true);
     const fd = new FormData(e.currentTarget);
-    const res = await fetch(`/api/leagues/${slug}/members`, {
+    const res = await fetch(`/api/leagues/${slug}/players`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: fd.get("email"), role: fd.get("role") }),
+      body: JSON.stringify({
+        name: fd.get("name"),
+        email: fd.get("email"),
+        jerseyNumber: fd.get("jerseyNumber") || null,
+        teamId,
+      }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -43,41 +47,32 @@ export function AddMemberDialog({ slug }: { slug: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">+ Add member</Button>
+        <Button size="sm" variant="outline">+ Add player</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Member</DialogTitle>
+          <DialogTitle>Add Player to {teamName}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
+            <Label htmlFor="name">Full name *</Label>
+            <Input id="name" name="name" placeholder="Jane Smith" required />
+          </div>
+          <div className="space-y-1">
             <Label htmlFor="email">Email address *</Label>
-            <Input id="email" name="email" type="email" placeholder="user@example.com" required />
+            <Input id="email" name="email" type="email" placeholder="player@example.com" required />
             <p className="text-xs text-gray-500">
-              The person must already have a Softball Helper account.
+              If this player already has a Softball Helper account, they will be linked automatically.
             </p>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="role">Role *</Label>
-            <select
-              id="role"
-              name="role"
-              defaultValue="PLAYER"
-              className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
+            <Label htmlFor="jerseyNumber">Jersey number</Label>
+            <Input id="jerseyNumber" name="jerseyNumber" placeholder="e.g. 7" />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Adding…" : "Add member"}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Adding…" : "Add player"}</Button>
           </div>
         </form>
       </DialogContent>
