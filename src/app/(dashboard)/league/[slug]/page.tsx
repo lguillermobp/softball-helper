@@ -33,9 +33,13 @@ export default async function LeaguePage({ params }: PageProps) {
 
   if (!league) notFound();
 
+  // session.user is guaranteed here (we redirected above if missing),
+  // but TypeScript doesn't narrow through redirect(), so assert it.
+  const sessionUser = session.user!;
+
   // Must be a master admin OR have a role in this league
-  const isMasterAdmin = (session.user as any).isMasterAdmin;
-  const userRole = league.userRoles.find((r) => r.userId === session.user.id);
+  const isMasterAdmin = (sessionUser as any).isMasterAdmin;
+  const userRole = league.userRoles.find((r) => r.userId === sessionUser.id);
   if (!isMasterAdmin && !userRole) redirect("/dashboard");
 
   const role = userRole?.role ?? "MASTER_ADMIN";
@@ -72,7 +76,7 @@ export default async function LeaguePage({ params }: PageProps) {
             <span className="text-xs font-medium bg-green-100 text-green-800 rounded-full px-2.5 py-1">
               {roleLabel(role)}
             </span>
-            <span className="text-sm text-gray-600">{session.user.name}</span>
+            <span className="text-sm text-gray-600">{sessionUser.name}</span>
             <form action="/api/auth/signout" method="POST">
               <Button variant="outline" size="sm" type="submit">
                 Sign out
