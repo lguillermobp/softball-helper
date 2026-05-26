@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
+import { SeasonDashboard } from "@/components/league/SeasonDashboard";
 
 interface PageProps {
   params: Promise<{ slug: string; id: string }>;
@@ -18,7 +19,7 @@ export default async function SeasonPage({ params }: PageProps) {
     include: {
       userRoles: { where: { userId: session.user.id } },
       categories: true,
-      teams: { orderBy: { name: "asc" } },
+      teams: { where: { seasonId: id }, orderBy: { name: "asc" } },
     },
   });
   if (!league) notFound();
@@ -30,9 +31,7 @@ export default async function SeasonPage({ params }: PageProps) {
 
   const isAdmin = isMasterAdmin || userRole?.role === "LEAGUE_ADMIN";
 
-  const season = await prisma.season.findFirst({
-    where: { id, leagueId: league.id },
-  });
+  const season = await prisma.season.findFirst({ where: { id, leagueId: league.id } });
   if (!season) notFound();
 
   const games = await prisma.game.findMany({
@@ -45,12 +44,54 @@ export default async function SeasonPage({ params }: PageProps) {
     orderBy: { scheduledAt: "asc" },
   });
 
-  function statusBadge(status: string) {
-    if (status === "COMPLETED")  return { bg: "#14532d", color: "#4ade80", text: "Final" };
-    if (status === "IN_PROGRESS") return { bg: "#78350f", color: "#fbbf24", text: "Live" };
-    if (status === "CANCELLED")  return { bg: "#3f1515", color: "#f87171", text: "Cancelled" };
-    return { bg: "#1e3a5f", color: "#93c5fd", text: "Scheduled" };
+  // ── Compute standings from completed games ──────────────────────────────────
+  const teamMap = new Map(league.teams.map((t) => [t.id, t]));
+
+  // Seed every team with zeroed stats
+  const statsMap = new Map(
+    league.teams.map((t) => [t.id, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 }])
+  );
+
+  for (const game of games) {
+    if (game.status !== "COMPLETED") continue;
+    const hs = game.homeScore ?? 0;
+    const as_ = game.awayScore ?? 0;
+
+    // Ensure both teams are in the map (teams added after season created)
+    if (!statsMap.has(game.homeTeamId)) {
+      const t = game.homeTeam as { id: string; name: string };
+      statsMap.set(game.homeTeamId, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+    }
+    if (!statsMap.has(game.awayTeamId)) {
+      const t = game.awayTeam as { id: string; name: string };
+      statsMap.set(game.awayTeamId, { team: t, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+    }
+
+    const home = statsMap.get(game.homeTeamId)!;
+    const away = statsMap.get(game.awayTeamId)!;
+
+    home.gp++; away.gp++;
+    home.rf += hs; home.ra += as_;
+    away.rf += as_; away.ra += hs;
+
+    if (hs > as_) {
+      home.w++; home.pts += 2;
+      away.l++;
+    } else if (as_ > hs) {
+      away.w++; away.pts += 2;
+      home.l++;
+    } else {
+      home.t++; home.pts += 1;
+      away.t++; away.pts += 1;
+    }
   }
+
+  const standings = Array.from(statsMap.values())
+    .sort((a, b) => b.pts - a.pts || b.rf - b.ra - (a.rf - a.ra))
+    .map((s) => ({
+      ...s,
+      pct: s.gp === 0 ? ".000" : (s.w / s.gp).toFixed(3).replace(/^0/, ""),
+    }));
 
   function seasonBadge(status: string) {
     if (status === "ACTIVE")    return { color: "#4ade80", text: "Active" };
@@ -59,7 +100,12 @@ export default async function SeasonPage({ params }: PageProps) {
   }
 
   const sb = seasonBadge(season.status);
-  const cardStyle = { borderColor: "#1e3a1e", background: "#0f2310" };
+
+  // Serialize dates for client component
+  const serializedGames = games.map((g) => ({
+    ...g,
+    scheduledAt: g.scheduledAt.toISOString(),
+  }));
 
   return (
     <div className="min-h-screen" style={{ background: "#0a1a0a" }}>
@@ -69,19 +115,11 @@ export default async function SeasonPage({ params }: PageProps) {
         style={{ borderColor: "#1e3a1e", background: "#0f2310" }}
       >
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-sm transition-colors hover:opacity-80"
-            style={{ color: "#4ade80" }}
-          >
+          <Link href="/dashboard" className="text-sm hover:opacity-80" style={{ color: "#4ade80" }}>
             ← Dashboard
           </Link>
           <span style={{ color: "#2d5a2d" }}>|</span>
-          <Link
-            href={`/league/${slug}`}
-            className="text-sm transition-colors hover:opacity-80"
-            style={{ color: "#4ade80" }}
-          >
+          <Link href={`/league/${slug}`} className="text-sm hover:opacity-80" style={{ color: "#4ade80" }}>
             {league.name}
           </Link>
           <span style={{ color: "#2d5a2d" }}>|</span>
@@ -90,7 +128,7 @@ export default async function SeasonPage({ params }: PageProps) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        {/* Season info */}
+        {/* Season info row */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: "#f0fdf4" }}>{season.name}</h1>
@@ -110,75 +148,16 @@ export default async function SeasonPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Schedule */}
-        {games.length === 0 ? (
-          <div
-            className="rounded-2xl border py-16 text-center text-sm"
-            style={{ ...cardStyle, color: "#4ade80" }}
-          >
-            No games scheduled yet.{isAdmin && " Click «+ Add game» to schedule the first one."}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {games.map((game) => {
-              const badge = statusBadge(game.status);
-              const date = new Date(game.scheduledAt);
-              return (
-                <div
-                  key={game.id}
-                  className="rounded-xl border p-4"
-                  style={cardStyle}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    {/* Teams */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="text-right flex-1">
-                        <p className="font-bold truncate" style={{ color: "#f0fdf4" }}>
-                          {game.homeTeam.name}
-                        </p>
-                        <p className="text-xs" style={{ color: "#4ade80" }}>Home</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {game.status === "COMPLETED" ? (
-                          <span className="text-xl font-bold" style={{ color: "#4ade80" }}>
-                            {game.homeScore ?? 0} – {game.awayScore ?? 0}
-                          </span>
-                        ) : (
-                          <span className="text-sm font-semibold" style={{ color: "#6b7280" }}>vs</span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold truncate" style={{ color: "#f0fdf4" }}>
-                          {game.awayTeam.name}
-                        </p>
-                        <p className="text-xs" style={{ color: "#4ade80" }}>Away</p>
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="text-right shrink-0">
-                      <span
-                        className="text-xs font-semibold rounded-full px-2.5 py-0.5"
-                        style={{ background: badge.bg, color: badge.color }}
-                      >
-                        {badge.text}
-                      </span>
-                      <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
-                        {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                      {game.location && (
-                        <p className="text-xs" style={{ color: "#4ade80" }}>📍 {game.location}</p>
-                      )}
-                      {game.category && (
-                        <p className="text-xs" style={{ color: "#93c5fd" }}>{game.category.name}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Tabbed dashboard */}
+        <SeasonDashboard
+          slug={slug}
+          seasonId={id}
+          isAdmin={isAdmin}
+          games={serializedGames}
+          teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
+          categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
+          standings={standings}
+        />
       </main>
     </div>
   );
