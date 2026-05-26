@@ -4,7 +4,7 @@ import crypto from "crypto";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = "Softball Helper <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
 const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "http://localhost:3001";
 
 export async function createVerificationToken(email: string): Promise<string> {
