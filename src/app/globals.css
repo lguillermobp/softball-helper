@@ -2,6 +2,38 @@
 
 /* ── Softball Helper design tokens ──────────────────────────────────────── */
 
+/* ── Landing-page tokens ─────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --sh-hero-bg:       #0f1f0f;
+  --sh-nav-bg:        rgba(0,0,0,0.30);
+  --sh-text-dim:      rgba(240,253,244,0.60);
+  --sh-text-muted:    rgba(240,253,244,0.50);
+  --sh-text-faint:    rgba(240,253,244,0.30);
+  --sh-border-soft:   rgba(255,255,255,0.10);
+  --sh-border-dim:    rgba(255,255,255,0.20);
+  --sh-section-bg:    rgba(255,255,255,0.05);
+  --sh-accent-bg:     rgba(74,222,128,0.10);
+  --sh-accent-border: rgba(74,222,128,0.30);
+  --sh-step-bg:       rgba(74,222,128,0.20);
+  --sh-step-border:   rgba(74,222,128,0.30);
+}
+[data-theme="light"] {
+  --sh-hero-bg:       #f0fdf4;
+  --sh-nav-bg:        rgba(255,255,255,0.90);
+  --sh-text-dim:      rgba(20,83,45,0.70);
+  --sh-text-muted:    rgba(20,83,45,0.55);
+  --sh-text-faint:    rgba(20,83,45,0.40);
+  --sh-border-soft:   rgba(22,163,74,0.15);
+  --sh-border-dim:    rgba(22,163,74,0.25);
+  --sh-section-bg:    rgba(22,163,74,0.05);
+  --sh-accent-bg:     rgba(22,163,74,0.10);
+  --sh-accent-border: rgba(22,163,74,0.30);
+  --sh-step-bg:       rgba(22,163,74,0.15);
+  --sh-step-border:   rgba(22,163,74,0.25);
+}
+
+/* ── Dashboard design tokens ─────────────────────────────────────────────── */
 :root,
 [data-theme="dark"] {
   --sh-bg-page:        #0a1a0a;
