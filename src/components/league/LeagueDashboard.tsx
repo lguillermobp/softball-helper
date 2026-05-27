@@ -377,7 +377,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-10" style={dim}>Photo</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Photo</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>#</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>Name</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Account</th>
@@ -388,23 +388,35 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 const photo = playerPhotos[p.id] ?? p.photoUrl;
                 return (
                   <tr key={p.id} style={{ borderBottom: "1px solid #0f2310" }}>
-                    <td className="px-4 py-2">
-                      {isAdmin ? (
-                        <PlayerPhotoDialog
-                          slug={slug}
-                          playerId={p.id}
-                          playerName={p.name}
-                          currentPhotoUrl={photo}
-                          onUpdated={(url) => setPlayerPhotos((prev) => ({ ...prev, [p.id]: url }))}
-                        />
-                      ) : photo ? (
-                        <img src={photo} alt={p.name} className="w-7 h-7 rounded-full object-cover" style={{ border: "1px solid #2d5a2d" }} />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{ background: "#1a3d1a", color: "#4ade80" }}>
-                          {p.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col items-center gap-1">
+                        {/* Avatar — always visible */}
+                        {photo ? (
+                          <img
+                            src={photo}
+                            alt={p.name}
+                            className="w-9 h-9 rounded-full object-cover"
+                            style={{ border: "2px solid #2d5a2d" }}
+                          />
+                        ) : (
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
+                            style={{ background: "#1a3d1a", color: "#4ade80", border: "2px solid #1e3a1e" }}
+                          >
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {/* Edit button — admin only */}
+                        {isAdmin && (
+                          <PlayerPhotoDialog
+                            slug={slug}
+                            playerId={p.id}
+                            playerName={p.name}
+                            currentPhotoUrl={photo}
+                            onUpdated={(url) => setPlayerPhotos((prev) => ({ ...prev, [p.id]: url }))}
+                          />
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-2 text-center">
                       {p.jerseyNumber
