@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import {
@@ -16,6 +16,8 @@ interface Props {
   onUpdated: (photoUrl: string) => void;
 }
 
+type Step = "select" | "camera" | "crop" | "uploading";
+
 function centerAspectCrop(width: number, height: number): Crop {
   return centerCrop(
     makeAspectCrop({ unit: "%", width: 90 }, 1, width, height),
@@ -24,10 +26,7 @@ function centerAspectCrop(width: number, height: number): Crop {
   );
 }
 
-function getCroppedDataUrl(
-  image: HTMLImageElement,
-  crop: Crop,
-): string {
+function getCroppedDataUrl(image: HTMLImageElement, crop: Crop): string {
   const canvas = document.createElement("canvas");
   const size = 600;
   canvas.width = size;
@@ -57,41 +56,96 @@ export function PlayerPhotoDialog({
   slug, playerId, playerName, currentPhotoUrl, onUpdated,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"select" | "crop" | "uploading">("select");
+  const [step, setStep] = useState<Step>("select");
   const [srcUrl, setSrcUrl] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [error, setError] = useState("");
+  const [cameraError, setCameraError] = useState("");
+
   const imgRef = useRef<HTMLImageElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Stop camera stream whenever we leave the camera step or the dialog closes
+  function stopStream() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }
 
   function reset() {
+    stopStream();
     setStep("select");
     setSrcUrl(null);
     setCrop(undefined);
     setCompletedCrop(undefined);
     setError("");
+    setCameraError("");
     if (fileRef.current) fileRef.current.value = "";
   }
+
   function handleClose() { setOpen(false); reset(); }
 
+  // Clean up on unmount
+  useEffect(() => () => stopStream(), []);
+
+  // ── File upload ────────────────────────────────────────────────────────────
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError("");
     const reader = new FileReader();
-    reader.onload = () => {
-      setSrcUrl(reader.result as string);
-      setStep("crop");
-    };
+    reader.onload = () => { setSrcUrl(reader.result as string); setStep("crop"); };
     reader.readAsDataURL(file);
   }
 
+  // ── Camera ─────────────────────────────────────────────────────────────────
+  async function startCamera() {
+    setCameraError("");
+    setStep("camera");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      // Wait for videoRef to be mounted, then attach stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 50);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Camera unavailable";
+      setCameraError(
+        msg.includes("Permission") || msg.includes("NotAllowed")
+          ? "Camera access denied. Please allow camera permission and try again."
+          : "Could not access camera. Make sure it is connected and not in use by another app."
+      );
+    }
+  }
+
+  function captureFrame() {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")!.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    stopStream();
+    setSrcUrl(dataUrl);
+    setStep("crop");
+  }
+
+  // ── Crop ───────────────────────────────────────────────────────────────────
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
     setCrop(centerAspectCrop(width, height));
   }, []);
 
+  // ── Upload ─────────────────────────────────────────────────────────────────
   async function handleUpload() {
     if (!imgRef.current || !completedCrop) return;
     setStep("uploading");
@@ -163,32 +217,24 @@ export function PlayerPhotoDialog({
               accept="image/*"
               onChange={onFileChange}
               className="hidden"
-              id="photoFileInput"
-            />
-            <input
-              type="file"
-              accept="image/*"
-              capture="user"
-              onChange={onFileChange}
-              className="hidden"
-              id="photoCameraInput"
+              id={`photoFile-${playerId}`}
             />
 
             <div className="flex flex-col gap-2">
               <label
-                htmlFor="photoFileInput"
+                htmlFor={`photoFile-${playerId}`}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer font-medium text-sm transition-colors hover:opacity-80"
                 style={{ borderColor: "#2d5a2d", color: "#f0fdf4", background: "#1a3d1a" }}
               >
                 ↑ Upload from device
               </label>
-              <label
-                htmlFor="photoCameraInput"
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer font-medium text-sm transition-colors hover:opacity-80"
+              <button
+                onClick={startCamera}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-medium text-sm transition-colors hover:opacity-80"
                 style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
               >
-                📷 Take a photo
-              </label>
+                📷 Use camera
+              </button>
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -198,7 +244,62 @@ export function PlayerPhotoDialog({
           </div>
         )}
 
-        {/* ── Step 2: Crop ── */}
+        {/* ── Step 2: Camera ── */}
+        {step === "camera" && (
+          <div className="space-y-4">
+            {cameraError ? (
+              <div className="rounded-lg p-4 text-sm text-red-400" style={{ background: "#1a0707", border: "1px solid #3f1515" }}>
+                {cameraError}
+              </div>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "4/3" }}>
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  style={{ transform: "scaleX(-1)" /* mirror effect */ }}
+                />
+                {/* Oval face guide */}
+                <svg
+                  className="pointer-events-none absolute inset-0 w-full h-full"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <ellipse
+                    cx="50" cy="44" rx="22" ry="30"
+                    fill="none"
+                    stroke="rgba(74,222,128,0.6)"
+                    strokeWidth="0.8"
+                    strokeDasharray="4 3"
+                  />
+                </svg>
+              </div>
+            )}
+
+            <p className="text-xs text-center" style={{ color: "#6b7280" }}>
+              Centre your face inside the oval guide, then tap Capture.
+            </p>
+
+            <div className="flex justify-between gap-2">
+              <Button variant="outline" onClick={() => { stopStream(); setStep("select"); }}>
+                ← Back
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                {!cameraError && (
+                  <Button onClick={captureFrame}>
+                    📸 Capture
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Crop ── */}
         {step === "crop" && srcUrl && (
           <div className="space-y-4">
             <p className="text-sm" style={{ color: "#86efac" }}>
@@ -256,11 +357,11 @@ export function PlayerPhotoDialog({
           </div>
         )}
 
-        {/* ── Step 3: Uploading ── */}
+        {/* ── Step 4: Uploading ── */}
         {step === "uploading" && (
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <div
-              className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+              className="w-10 h-10 rounded-full border-4 animate-spin"
               style={{ borderColor: "#4ade80", borderTopColor: "transparent" }}
             />
             <p className="text-sm" style={{ color: "#86efac" }}>Uploading photo…</p>
