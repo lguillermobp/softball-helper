@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
 import { AddSeasonDialog } from "@/components/league/AddSeasonDialog";
 import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
@@ -49,12 +50,12 @@ interface Props {
   fields: Field[];
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles (CSS variables — adapt to dark/light theme) ────────────────────────
 
-const card = { borderColor: "#1e3a1e", background: "#0f2310" };
-const dim = { color: "#6b7280" };
-const muted = { color: "#4ade80" };
-const head = { color: "#f0fdf4" };
+const card  = { borderColor: "var(--sh-border)",    background: "var(--sh-bg-card)" };
+const dim   = { color: "var(--sh-muted)" };
+const muted = { color: "var(--sh-primary)" };
+const head  = { color: "var(--sh-text)" };
 
 function roleLabel(r: string) { return r.replace(/_/g, " "); }
 
@@ -64,7 +65,7 @@ function seasonBadge(s: string) {
   return { bg: "#78350f", color: "#fbbf24", text: "Upcoming" };
 }
 
-const FIELD_TYPE_LABELS: Record<string, string> = { MORNING: "Morning", AFTERNOON: "Afternoon", NIGHT: "Night" };
+// FIELD_TYPE_LABELS filled from translations at render time
 const FIELD_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   MORNING:   { bg: "#78350f", color: "#fbbf24" },
   AFTERNOON: { bg: "#1e3a5f", color: "#93c5fd" },
@@ -73,19 +74,22 @@ const FIELD_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS: { key: Section; label: string; icon: string; adminOnly?: boolean }[] = [
-  { key: "overview",   label: "Overview",   icon: "⚾" },
-  { key: "seasons",    label: "Seasons",    icon: "📅" },
-  { key: "categories", label: "Categories", icon: "🏷️" },
-  { key: "teams",      label: "Teams",      icon: "👥" },
-  { key: "members",    label: "Members",    icon: "🙋", adminOnly: true },
-  { key: "fields",     label: "Fields",     icon: "🏟️" },
+// Nav items — labels filled dynamically from translations in the component
+const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
+  { key: "overview",   icon: "⚾" },
+  { key: "seasons",    icon: "📅" },
+  { key: "categories", icon: "🏷️" },
+  { key: "teams",      icon: "👥" },
+  { key: "members",    icon: "🙋", adminOnly: true },
+  { key: "fields",     icon: "🏟️" },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const tl = t.league;
   const [section, setSection] = useState<Section>("overview");
   const [showInactive, setShowInactive] = useState(false);
   const [teamError, setTeamError] = useState<Record<string, string>>({});
@@ -93,7 +97,10 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
   const activeTeams   = teams.filter((t) => t.isActive);
   const inactiveTeams = teams.filter((t) => !t.isActive);
-  const navItems = NAV_ITEMS.filter((n) => !n.adminOnly || isAdmin);
+  const navItems = NAV_KEYS.filter((n) => !n.adminOnly || isAdmin).map((n) => ({
+    ...n,
+    label: tl.nav[n.key as keyof typeof tl.nav] ?? n.key,
+  }));
 
   async function toggleActive(team: Team) {
     const res = await fetch(`/api/leagues/${slug}/teams/${team.id}`, {
@@ -156,30 +163,30 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
   const Overview = (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold" style={head}>League Overview</h2>
+      <h2 className="text-lg font-bold" style={head}>{tl.overview.title}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="col-span-2 sm:col-span-1 rounded-2xl border p-5" style={card}>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>Info</p>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>{tl.overview.info}</p>
           {(league.city || league.state) && (
             <p className="text-sm mb-1" style={muted}>📍 {[league.city, league.state].filter(Boolean).join(", ")}</p>
           )}
           <p className="text-sm mb-1" style={muted}>
-            📋 Plan: <span className="font-semibold" style={head}>{league.plan.name}</span>
+            📋 {tl.overview.plan}: <span className="font-semibold" style={head}>{league.plan.name}</span>
           </p>
           <p className="text-sm" style={muted}>
-            🔖 Status:{" "}
+            🔖 {tl.overview.status}:{" "}
             <span className="font-semibold capitalize" style={{
-              color: league.status === "ACTIVE" ? "#4ade80" : league.status === "SUSPENDED" ? "#f87171" : "#9ca3af",
+              color: league.status === "ACTIVE" ? "var(--sh-primary)" : league.status === "SUSPENDED" ? "var(--sh-danger)" : "var(--sh-inactive)",
             }}>
-              {league.status.toLowerCase()}
+              {league.status === "ACTIVE" ? tl.overview.active : league.status === "SUSPENDED" ? tl.overview.suspended : tl.overview.archived}
             </span>
           </p>
         </div>
         {[
-          { label: "Seasons",    value: seasons.length },
-          { label: "Active Teams", value: activeTeams.length },
-          { label: "Categories", value: categories.length },
-          { label: "Fields",     value: fields.length },
+          { label: tl.overview.seasons,     value: seasons.length },
+          { label: tl.overview.activeTeams, value: activeTeams.length },
+          { label: tl.overview.categories,  value: categories.length },
+          { label: tl.overview.fields,      value: fields.length },
         ].map((stat) => (
           <div key={stat.label} className="rounded-2xl border p-5 flex flex-col justify-between" style={card}>
             <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>{stat.label}</p>
@@ -193,12 +200,12 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const Seasons = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>Seasons</h2>
+        <h2 className="text-lg font-bold" style={head}>{tl.seasons.title}</h2>
         {isAdmin && <AddSeasonDialog slug={slug} />}
       </div>
       {seasons.length === 0 ? (
-        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "#4ade80" }}>
-          No seasons yet.{isAdmin && " Click «+ Add season» to create one."}
+        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
+          {tl.seasons.none}{isAdmin && ` ${tl.seasons.noneHint}`}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -206,13 +213,13 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
             const badge = seasonBadge(season.status);
             return (
               <Link key={season.id} href={`/league/${slug}/season/${season.id}`} className="group block">
-                <div className="rounded-xl border p-4 flex items-center justify-between transition-colors group-hover:border-[#4ade80]" style={card}>
+                <div className="rounded-xl border p-4 flex items-center justify-between transition-colors" style={card}>
                   <div>
-                    <p className="font-semibold group-hover:text-green-300 transition-colors" style={head}>{season.name}</p>
+                    <p className="font-semibold transition-colors" style={head}>{season.name}</p>
                     <p className="text-xs mt-0.5" style={dim}>
                       {new Date(season.startDate).toLocaleDateString()} – {new Date(season.endDate).toLocaleDateString()}
                     </p>
-                    <p className="text-xs mt-1" style={muted}>View schedule →</p>
+                    <p className="text-xs mt-1" style={muted}>{tl.seasons.view}</p>
                   </div>
                   <span className="text-xs font-semibold rounded-full px-3 py-1 shrink-0" style={{ background: badge.bg, color: badge.color }}>
                     {badge.text}
@@ -229,12 +236,12 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const Categories = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>Categories</h2>
+        <h2 className="text-lg font-bold" style={head}>{tl.categories.title}</h2>
         {isAdmin && <AddCategoryDialog slug={slug} />}
       </div>
       {categories.length === 0 ? (
-        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "#4ade80" }}>
-          No categories yet.{isAdmin && " Click «+ Add category» to create one."}
+        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
+          {tl.categories.none}{isAdmin && ` ${tl.categories.noneHint}`}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -267,13 +274,15 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 <span
                   className="text-xs font-semibold rounded-full px-2 py-0.5"
                   style={approved
-                    ? { background: "#14532d", color: "#4ade80" }
-                    : { background: "#78350f", color: "#fbbf24" }}
+                    ? { background: "var(--sh-approved-bg)", color: "var(--sh-primary)" }
+                    : { background: "var(--sh-warn-bg)",     color: "var(--sh-warn)" }}
                 >
-                  {approved ? "✓ Approved" : "Pending"}
+                  {approved ? tl.teams.approved : tl.teams.pending}
                 </span>
                 {inactive && (
-                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "#1f2937", color: "#9ca3af" }}>Inactive</span>
+                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "var(--sh-inactive-bg)", color: "var(--sh-inactive)" }}>
+                    {tl.teams.inactiveLabel}
+                  </span>
                 )}
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -311,10 +320,10 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     onClick={() => toggleStatus(team)}
                     className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
                     style={approved
-                      ? { borderColor: "#78350f", color: "#fbbf24", background: "transparent" }
-                      : { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }}
+                      ? { borderColor: "var(--sh-warn-bg)",  color: "var(--sh-warn)",    background: "transparent" }
+                      : { borderColor: "var(--sh-border2)",  color: "var(--sh-primary)", background: "transparent" }}
                   >
-                    {approved ? "Unapprove" : "Approve"}
+                    {approved ? tl.teams.unapprove : tl.teams.approve}
                   </button>
                 )}
                 {isAdmin && (
@@ -323,18 +332,18 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                       onClick={() => toggleActive(team)}
                       className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
                       style={inactive
-                        ? { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }
-                        : { borderColor: "#4b5563", color: "#9ca3af", background: "transparent" }}
+                        ? { borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }
+                        : { borderColor: "var(--sh-muted)",   color: "var(--sh-inactive)", background: "transparent" }}
                     >
-                      {inactive ? "Reactivate" : "Deactivate"}
+                      {inactive ? tl.teams.reactivate : tl.teams.deactivate}
                     </button>
                     {inactive && (
                       <button
                         onClick={() => deleteTeam(team)}
                         className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-                        style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                        style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
                       >
-                        Delete
+                        {tl.teams.delete}
                       </button>
                     )}
                   </>
@@ -348,7 +357,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
             <div className="flex flex-wrap gap-x-6 gap-y-0.5 mt-2.5">
               {team.manager && (
                 <p className="text-xs" style={dim}>
-                  <span className="font-semibold" style={{ color: "#4ade80" }}>Manager</span>
+                  <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>{tl.teams.managerLabel}</span>
                   {" · "}
                   <span style={head}>{team.manager.name ?? "—"}</span>
                   <span className="ml-1" style={dim}>{team.manager.email}</span>
@@ -356,7 +365,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
               )}
               {team.assistant && (
                 <p className="text-xs" style={dim}>
-                  <span className="font-semibold" style={{ color: "#86efac" }}>Assistant</span>
+                  <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>{tl.teams.assistantLabel}</span>
                   {" · "}
                   <span style={head}>{team.assistant.name ?? "—"}</span>
                   <span className="ml-1" style={dim}>{team.assistant.email}</span>
@@ -372,15 +381,15 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
         {/* ── Player roster ── */}
         {team.players.length === 0 ? (
-          <p className="px-4 py-3 text-xs" style={dim}>No players yet.</p>
+          <p className="px-4 py-3 text-xs" style={dim}>{tl.teams.noPlayers}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Photo</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>#</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>Name</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Account</th>
+              <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.photo}</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>{tl.teams.jersey}</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{tl.teams.name}</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.account}</th>
               </tr>
             </thead>
             <tbody>
@@ -440,15 +449,15 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const Teams = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>Teams</h2>
+        <h2 className="text-lg font-bold" style={head}>{tl.teams.title}</h2>
         <div className="flex items-center gap-2">
           {inactiveTeams.length > 0 && (
             <button
               onClick={() => setShowInactive((v) => !v)}
               className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-              style={{ borderColor: "#2d5a2d", color: showInactive ? "#f0fdf4" : "#4ade80", background: showInactive ? "#1a3d1a" : "transparent" }}
+              style={{ borderColor: "var(--sh-border2)", color: showInactive ? "var(--sh-text)" : "var(--sh-primary)", background: showInactive ? "var(--sh-bg-card2)" : "transparent" }}
             >
-              {showInactive ? "Hide" : "Show"} inactive ({inactiveTeams.length})
+              {showInactive ? tl.teams.hideInactive : tl.teams.showInactive} ({inactiveTeams.length})
             </button>
           )}
           {isAdmin && <AddTeamDialog slug={slug} seasons={seasons.map((s) => ({ id: s.id, name: s.name }))} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />}
@@ -456,8 +465,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
       </div>
 
       {activeTeams.length === 0 && !showInactive ? (
-        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "#4ade80" }}>
-          No active teams.{isAdmin && " Click «+ Add team» to add one."}
+        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
+          {tl.teams.none}{isAdmin && ` ${tl.teams.noneHint}`}
         </div>
       ) : (
         <div className="space-y-4">
@@ -467,7 +476,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
       {showInactive && inactiveTeams.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>Inactive</p>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>{tl.teams.inactiveLabel}</p>
           <div className="space-y-4">
             {inactiveTeams.map((team) => <TeamCard key={team.id} team={team} inactive />)}
           </div>
@@ -479,15 +488,15 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const Members = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>Members</h2>
+        <h2 className="text-lg font-bold" style={head}>{tl.members.title}</h2>
         <AddMemberDialog slug={slug} />
       </div>
       <div className="rounded-2xl border overflow-hidden" style={card}>
         <table className="w-full text-sm">
           <thead>
-            <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
-              {["Name", "Email", "Phone", "Role", "Verified"].map((h) => (
-                <th key={h} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider${h === "Phone" ? " hidden sm:table-cell" : ""}`} style={dim}>{h}</th>
+            <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
+              {[tl.members.name, tl.members.email, tl.members.phone, tl.members.role, tl.members.verified].map((h, i) => (
+                <th key={h} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider${i === 2 ? " hidden sm:table-cell" : ""}`} style={dim}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -515,15 +524,19 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     </div>
   );
 
+  const FIELD_TYPE_LABELS: Record<string, string> = {
+    MORNING: tl.fields.morning, AFTERNOON: tl.fields.afternoon, NIGHT: tl.fields.night,
+  };
+
   const Fields = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>Fields</h2>
+        <h2 className="text-lg font-bold" style={head}>{tl.fields.title}</h2>
         {isAdmin && <AddFieldDialog slug={slug} />}
       </div>
       {fields.length === 0 ? (
-        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "#4ade80" }}>
-          No fields yet.{isAdmin && " Click «+ Add field» to add one."}
+        <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
+          {tl.fields.none}{isAdmin && ` ${tl.fields.noneHint}`}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -533,12 +546,12 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 <p className="font-semibold" style={head}>{field.name}</p>
                 <div className="flex gap-1.5 mt-1.5 flex-wrap">
                   {field.types.length === 0
-                    ? <span className="text-xs" style={dim}>No time slots set</span>
-                    : field.types.map((t) => {
-                        const c = FIELD_TYPE_COLORS[t] ?? { bg: "#1a3d1a", color: "#4ade80" };
+                    ? <span className="text-xs" style={dim}>{tl.fields.noTimeSlots}</span>
+                    : field.types.map((ft) => {
+                        const c = FIELD_TYPE_COLORS[ft] ?? { bg: "var(--sh-bg-card2)", color: "var(--sh-primary)" };
                         return (
-                          <span key={t} className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: c.bg, color: c.color }}>
-                            {FIELD_TYPE_LABELS[t] ?? t}
+                          <span key={ft} className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: c.bg, color: c.color }}>
+                            {FIELD_TYPE_LABELS[ft] ?? ft}
                           </span>
                         );
                       })}
@@ -550,17 +563,17 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     slug={slug}
                     field={field}
                     trigger={
-                      <button className="text-xs px-2 py-1 rounded-md border hover:opacity-80" style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}>
-                        Edit
+                      <button className="text-xs px-2 py-1 rounded-md border hover:opacity-80" style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
+                        {tl.fields.edit}
                       </button>
                     }
                   />
                   <button
                     onClick={() => deleteField(field.id)}
                     className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
-                    style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                    style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
                   >
-                    Delete
+                    {tl.fields.delete}
                   </button>
                 </div>
               )}

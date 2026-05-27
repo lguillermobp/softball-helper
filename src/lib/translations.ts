@@ -1,142 +1,56 @@
+// ─── Shared accent classes (not translated) ───────────────────────────────────
+const FEATURE_ACCENTS = [
+  { accent: "from-yellow-500/20 to-yellow-600/5", border: "border-yellow-500/20" },
+  { accent: "from-green-500/20 to-green-600/5",  border: "border-green-500/20"  },
+  { accent: "from-blue-500/20 to-blue-600/5",   border: "border-blue-500/20"   },
+];
+
 export const translations = {
+
+  // ── English ────────────────────────────────────────────────────────────────
   en: {
-    nav: {
-      signin: "Sign in",
-      getStarted: "Get started",
-    },
+    nav:      { signin: "Sign in", getStarted: "Get started" },
     hero: {
       badge: "Multi-league softball management",
-      headline1: "Step up to the",
-      headline2: "plate.",
-      tagline:
-        "Manage your softball leagues, schedules, rosters, and standings — all from one dugout.",
-      cta: "🏆 Start your league free",
-      signin: "Sign in",
+      headline1: "Step up to the", headline2: "plate.",
+      tagline: "Manage your softball leagues, schedules, rosters, and standings — all from one dugout.",
+      cta: "🏆 Start your league free", signin: "Sign in",
     },
     stats: [
       { value: "Multi-league", label: "One account" },
-      { value: "RBAC", label: "Roles per league" },
+      { value: "RBAC",         label: "Roles per league" },
       { value: "Mobile-first", label: "Field-ready" },
     ],
     features: {
       title: "Everything your league needs",
       subtitle: "Built for commissioners, managers, umpires, and players.",
       cards: [
-        {
-          icon: "🏆",
-          title: "Multi-league RBAC",
-          description:
-            "One account across all your leagues. Be a commissioner in one, an umpire in another — no duplicate signups.",
-          accent: "from-yellow-500/20 to-yellow-600/5",
-          border: "border-yellow-500/20",
-        },
-        {
-          icon: "📅",
-          title: "Seasons & divisions",
-          description:
-            "Organize by season, then slice into divisions — men's, co-ed, 18U, 14U. Full bracket support coming soon.",
-          accent: "from-green-500/20 to-green-600/5",
-          border: "border-green-500/20",
-        },
-        {
-          icon: "📱",
-          title: "Field-ready mobile",
-          description:
-            "Check lineups, post scores, and track standings right from the dugout. Designed for every screen size.",
-          accent: "from-blue-500/20 to-blue-600/5",
-          border: "border-blue-500/20",
-        },
+        { ...FEATURE_ACCENTS[0], icon: "🏆", title: "Multi-league RBAC",        description: "One account across all your leagues. Be a commissioner in one, an umpire in another — no duplicate signups." },
+        { ...FEATURE_ACCENTS[1], icon: "📅", title: "Seasons & divisions",       description: "Organize by season, then slice into divisions — men's, co-ed, 18U, 14U. Full bracket support coming soon." },
+        { ...FEATURE_ACCENTS[2], icon: "📱", title: "Field-ready mobile",        description: "Check lineups, post scores, and track standings right from the dugout. Designed for every screen size." },
       ],
     },
     steps: {
-      title: "From signup to first pitch",
-      subtitle: "Get your league running in minutes.",
-      items: [
-        { icon: "👤", label: "Create account" },
-        { icon: "🏟️", label: "Set up league" },
-        { icon: "📋", label: "Add teams" },
-        { icon: "⚾", label: "Play ball!" },
-      ],
+      title: "From signup to first pitch", subtitle: "Get your league running in minutes.",
+      items: [{ icon: "👤", label: "Create account" }, { icon: "🏟️", label: "Set up league" }, { icon: "📋", label: "Add teams" }, { icon: "⚾", label: "Play ball!" }],
     },
-    cta: {
-      title: "Ready to play?",
-      subtitle:
-        "Join league commissioners already using Softball Helper to run their seasons.",
-      button: "Create your league — it's free",
-    },
+    cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Softball Helper to run their seasons.", button: "Create your league — it's free" },
     footer: "Built for the love of the game.",
     login: {
-      pageTitle: "Sign in to your account",
-      title: "Welcome back",
-      subtitle: "Enter your credentials to continue",
-      email: "Email address",
-      emailPlaceholder: "jane@example.com",
-      password: "Password",
-      signinBtn: "Sign in",
-      signingIn: "Signing in...",
-      noAccount: "Don't have an account?",
-      createOne: "Create one",
-      successMsg: "Account created! Sign in to get started.",
-      invalidError: "Invalid email or password",
+      pageTitle: "Sign in to your account", title: "Welcome back", subtitle: "Enter your credentials to continue",
+      email: "Email address", emailPlaceholder: "jane@example.com", password: "Password",
+      signinBtn: "Sign in", signingIn: "Signing in...",
+      noAccount: "Don't have an account?", createOne: "Create one",
+      successMsg: "Account created! Sign in to get started.", invalidError: "Invalid email or password",
     },
     register: {
-      pageTitle: "Create your league account",
-      pageSubtitle: "You'll use this to manage all your leagues",
+      pageTitle: "Create your league account", pageSubtitle: "You'll use this to manage all your leagues",
       steps: {
-        account: {
-          title: "Create your account",
-          subtitle: "You'll use this to manage all your leagues",
-          name: "Full name",
-          namePlaceholder: "Jane Smith",
-          email: "Email address",
-          emailPlaceholder: "jane@example.com",
-          password: "Password",
-          passwordPlaceholder: "At least 8 characters",
-          confirmPassword: "Confirm password",
-          continue: "Continue",
-          haveAccount: "Already have an account?",
-          signIn: "Sign in",
-        },
-        league: {
-          title: "Set up your league",
-          subtitle: "Choose a name and plan for your league",
-          name: "League name",
-          namePlaceholder: "Riverside Softball League",
-          city: "City",
-          cityPlaceholder: "Springfield",
-          state: "State",
-          statePlaceholder: "IL",
-          selectPlan: "Select a plan",
-          back: "Back",
-          continue: "Continue",
-        },
-        season: {
-          title: "Create your first season",
-          subtitle: "Seasons organize your games and standings",
-          name: "Season name",
-          namePlaceholder: "Summer 2025",
-          startDate: "Start date",
-          endDate: "End date",
-          back: "Back",
-          continue: "Continue",
-        },
-        categories: {
-          title: "Add categories",
-          subtitle: "Categories group teams by division, gender, or age",
-          placeholder: "Category",
-          addBtn: "+ Add category",
-          back: "Back",
-          continue: "Continue",
-        },
-        teams: {
-          title: "Add your first teams",
-          subtitle: "You can always add more teams later",
-          placeholder: "Team name",
-          addBtn: "+ Add team",
-          back: "Back",
-          finish: "Finish setup",
-          finishing: "Creating league...",
-        },
+        account:    { title: "Create your account",       subtitle: "You'll use this to manage all your leagues", name: "Full name", namePlaceholder: "Jane Smith", email: "Email address", emailPlaceholder: "jane@example.com", password: "Password", passwordPlaceholder: "At least 8 characters", confirmPassword: "Confirm password", continue: "Continue", haveAccount: "Already have an account?", signIn: "Sign in" },
+        league:     { title: "Set up your league",        subtitle: "Choose a name and plan for your league", name: "League name", namePlaceholder: "Riverside Softball League", city: "City", cityPlaceholder: "Springfield", state: "State", statePlaceholder: "IL", selectPlan: "Select a plan", back: "Back", continue: "Continue" },
+        season:     { title: "Create your first season",  subtitle: "Seasons organize your games and standings", name: "Season name", namePlaceholder: "Summer 2025", startDate: "Start date", endDate: "End date", back: "Back", continue: "Continue" },
+        categories: { title: "Add categories",            subtitle: "Categories group teams by division, gender, or age", placeholder: "Category", addBtn: "+ Add category", back: "Back", continue: "Continue" },
+        teams:      { title: "Add your first teams",      subtitle: "You can always add more teams later", placeholder: "Team name", addBtn: "+ Add team", back: "Back", finish: "Finish setup", finishing: "Creating league..." },
       },
       plans: {
         free:    { name: "Free",    description: "Up to 4 teams, 1 season" },
@@ -144,336 +58,232 @@ export const translations = {
         pro:     { name: "Pro",     description: "Unlimited teams and seasons" },
       },
     },
+    dashboard: {
+      title: "My Leagues", newLeague: "New league",
+      noLeagues: "No leagues yet", noLeaguesDesc: "Create your first league and start managing your season.",
+      createLeague: "Create a league", openLeague: "Open league →",
+      seasons: "seasons", season: "season", teams: "teams", team: "team", signOut: "Sign out",
+      systemOverview: "System Overview", systemSubtitle: "leagues registered in the system",
+      totalLeagues: "Total leagues", activeLeagues: "Active leagues", totalTeams: "Total teams", totalPlayers: "Total players",
+      location: "Location", plan: "Plan", status: "Status", open: "Open →",
+      active: "Active", suspended: "Suspended", archived: "Archived",
+    },
+    league: {
+      back: "← Dashboard", signOut: "Sign out",
+      nav: { overview: "Overview", seasons: "Seasons", categories: "Categories", teams: "Teams", members: "Members", fields: "Fields" },
+      overview: {
+        title: "League Overview", info: "Info", plan: "Plan", status: "Status",
+        active: "active", suspended: "suspended", archived: "archived",
+        seasons: "Seasons", activeTeams: "Active Teams", categories: "Categories", fields: "Fields",
+      },
+      seasons:    { title: "Seasons",    none: "No seasons yet.",    noneHint: "Click «+ Add season» to create one.",    view: "View schedule →" },
+      categories: { title: "Categories", none: "No categories yet.", noneHint: "Click «+ Add category» to create one." },
+      teams: {
+        title: "Teams", none: "No active teams.", noneHint: "Click «+ Add team» to add one.",
+        showInactive: "Show inactive", hideInactive: "Hide", inactiveLabel: "Inactive",
+        pending: "Pending", approved: "✓ Approved",
+        managerLabel: "Manager", assistantLabel: "Assistant",
+        noPlayers: "No players yet.",
+        approve: "Approve", unapprove: "Unapprove", reactivate: "Reactivate", deactivate: "Deactivate", delete: "Delete",
+        photo: "Photo", jersey: "#", name: "Name", account: "Account",
+        addPlayer: "+ Add player", csvUpload: "↑ CSV", edit: "Edit",
+      },
+      members: { title: "Members", name: "Name", email: "Email", phone: "Phone", role: "Role", verified: "Verified", resend: "Resend" },
+      fields: {
+        title: "Fields", none: "No fields yet.", noneHint: "Click «+ Add field» to add one.",
+        noTimeSlots: "No time slots set", edit: "Edit", delete: "Delete",
+        morning: "Morning", afternoon: "Afternoon", night: "Night",
+      },
+      common: { addSeason: "+ Add season", addCategory: "+ Add category", addTeam: "+ Add team", addField: "+ Add field" },
+    },
   },
 
+  // ── Español ────────────────────────────────────────────────────────────────
   es: {
-    nav: {
-      signin: "Iniciar sesión",
-      getStarted: "Comenzar",
-    },
+    nav:      { signin: "Iniciar sesión", getStarted: "Comenzar" },
     hero: {
       badge: "Gestión de ligas de sóftbol",
-      headline1: "Sube al",
-      headline2: "plato.",
-      tagline:
-        "Administra tus ligas de sóftbol, calendarios, plantillas y clasificaciones — todo desde un solo dugout.",
-      cta: "🏆 Crea tu liga gratis",
-      signin: "Iniciar sesión",
+      headline1: "Sube al", headline2: "plato.",
+      tagline: "Administra tus ligas de sóftbol, calendarios, plantillas y clasificaciones — todo desde un solo dugout.",
+      cta: "🏆 Crea tu liga gratis", signin: "Iniciar sesión",
     },
     stats: [
-      { value: "Multi-liga", label: "Una cuenta" },
-      { value: "Roles", label: "Por liga" },
+      { value: "Multi-liga",    label: "Una cuenta" },
+      { value: "Roles",         label: "Por liga" },
       { value: "Móvil primero", label: "Listo para el campo" },
     ],
     features: {
       title: "Todo lo que tu liga necesita",
       subtitle: "Hecho para comisionados, managers, árbitros y jugadores.",
       cards: [
-        {
-          icon: "🏆",
-          title: "Roles por liga",
-          description:
-            "Una cuenta para todas tus ligas. Sé comisionado en una y árbitro en otra — sin cuentas duplicadas.",
-          accent: "from-yellow-500/20 to-yellow-600/5",
-          border: "border-yellow-500/20",
-        },
-        {
-          icon: "📅",
-          title: "Temporadas y divisiones",
-          description:
-            "Organiza por temporada y divide en divisiones — varones, mixto, sub-18, sub-14. Soporte para brackets próximamente.",
-          accent: "from-green-500/20 to-green-600/5",
-          border: "border-green-500/20",
-        },
-        {
-          icon: "📱",
-          title: "Móvil listo para el campo",
-          description:
-            "Consulta alineaciones, anota carreras y lleva las clasificaciones desde el dugout. Para cualquier pantalla.",
-          accent: "from-blue-500/20 to-blue-600/5",
-          border: "border-blue-500/20",
-        },
+        { ...FEATURE_ACCENTS[0], icon: "🏆", title: "Roles por liga",              description: "Una cuenta para todas tus ligas. Sé comisionado en una y árbitro en otra — sin cuentas duplicadas." },
+        { ...FEATURE_ACCENTS[1], icon: "📅", title: "Temporadas y divisiones",     description: "Organiza por temporada y divide en divisiones — varones, mixto, sub-18, sub-14. Soporte para brackets próximamente." },
+        { ...FEATURE_ACCENTS[2], icon: "📱", title: "Móvil listo para el campo",   description: "Consulta alineaciones, anota carreras y lleva las clasificaciones desde el dugout. Para cualquier pantalla." },
       ],
     },
     steps: {
-      title: "Del registro al primer pitcheo",
-      subtitle: "Pon tu liga en marcha en minutos.",
-      items: [
-        { icon: "👤", label: "Crear cuenta" },
-        { icon: "🏟️", label: "Configurar liga" },
-        { icon: "📋", label: "Agregar equipos" },
-        { icon: "⚾", label: "¡A jugar!" },
-      ],
+      title: "Del registro al primer pitcheo", subtitle: "Pon tu liga en marcha en minutos.",
+      items: [{ icon: "👤", label: "Crear cuenta" }, { icon: "🏟️", label: "Configurar liga" }, { icon: "📋", label: "Agregar equipos" }, { icon: "⚾", label: "¡A jugar!" }],
     },
-    cta: {
-      title: "¿Listo para jugar?",
-      subtitle:
-        "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.",
-      button: "Crea tu liga — es gratis",
-    },
+    cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.", button: "Crea tu liga — es gratis" },
     footer: "Hecho por amor al juego.",
     login: {
-      pageTitle: "Iniciar sesión en tu cuenta",
-      title: "Bienvenido de vuelta",
-      subtitle: "Ingresa tus credenciales para continuar",
-      email: "Correo electrónico",
-      emailPlaceholder: "juan@ejemplo.com",
-      password: "Contraseña",
-      signinBtn: "Iniciar sesión",
-      signingIn: "Iniciando sesión...",
-      noAccount: "¿No tienes cuenta?",
-      createOne: "Crear una",
-      successMsg: "¡Cuenta creada! Inicia sesión para comenzar.",
-      invalidError: "Correo o contraseña incorrectos",
+      pageTitle: "Iniciar sesión en tu cuenta", title: "Bienvenido de vuelta", subtitle: "Ingresa tus credenciales para continuar",
+      email: "Correo electrónico", emailPlaceholder: "juan@ejemplo.com", password: "Contraseña",
+      signinBtn: "Iniciar sesión", signingIn: "Iniciando sesión...",
+      noAccount: "¿No tienes cuenta?", createOne: "Crear una",
+      successMsg: "¡Cuenta creada! Inicia sesión para comenzar.", invalidError: "Correo o contraseña incorrectos",
     },
     register: {
-      pageTitle: "Crea tu cuenta de liga",
-      pageSubtitle: "La usarás para gestionar todas tus ligas",
+      pageTitle: "Crea tu cuenta de liga", pageSubtitle: "La usarás para gestionar todas tus ligas",
       steps: {
-        account: {
-          title: "Crea tu cuenta",
-          subtitle: "La usarás para gestionar todas tus ligas",
-          name: "Nombre completo",
-          namePlaceholder: "Juan Pérez",
-          email: "Correo electrónico",
-          emailPlaceholder: "juan@ejemplo.com",
-          password: "Contraseña",
-          passwordPlaceholder: "Al menos 8 caracteres",
-          confirmPassword: "Confirmar contraseña",
-          continue: "Continuar",
-          haveAccount: "¿Ya tienes cuenta?",
-          signIn: "Iniciar sesión",
-        },
-        league: {
-          title: "Configura tu liga",
-          subtitle: "Elige un nombre y plan para tu liga",
-          name: "Nombre de la liga",
-          namePlaceholder: "Liga de Sóftbol Riverside",
-          city: "Ciudad",
-          cityPlaceholder: "Caracas",
-          state: "Estado",
-          statePlaceholder: "Miranda",
-          selectPlan: "Selecciona un plan",
-          back: "Atrás",
-          continue: "Continuar",
-        },
-        season: {
-          title: "Crea tu primera temporada",
-          subtitle: "Las temporadas organizan tus juegos y clasificaciones",
-          name: "Nombre de la temporada",
-          namePlaceholder: "Verano 2025",
-          startDate: "Fecha de inicio",
-          endDate: "Fecha de fin",
-          back: "Atrás",
-          continue: "Continuar",
-        },
-        categories: {
-          title: "Agregar categorías",
-          subtitle: "Las categorías agrupan equipos por división, género o edad",
-          placeholder: "Categoría",
-          addBtn: "+ Agregar categoría",
-          back: "Atrás",
-          continue: "Continuar",
-        },
-        teams: {
-          title: "Agrega tus primeros equipos",
-          subtitle: "Siempre puedes agregar más equipos después",
-          placeholder: "Nombre del equipo",
-          addBtn: "+ Agregar equipo",
-          back: "Atrás",
-          finish: "Finalizar configuración",
-          finishing: "Creando liga...",
-        },
+        account:    { title: "Crea tu cuenta",              subtitle: "La usarás para gestionar todas tus ligas", name: "Nombre completo", namePlaceholder: "Juan Pérez", email: "Correo electrónico", emailPlaceholder: "juan@ejemplo.com", password: "Contraseña", passwordPlaceholder: "Al menos 8 caracteres", confirmPassword: "Confirmar contraseña", continue: "Continuar", haveAccount: "¿Ya tienes cuenta?", signIn: "Iniciar sesión" },
+        league:     { title: "Configura tu liga",           subtitle: "Elige un nombre y plan para tu liga", name: "Nombre de la liga", namePlaceholder: "Liga de Sóftbol Riverside", city: "Ciudad", cityPlaceholder: "Caracas", state: "Estado", statePlaceholder: "Miranda", selectPlan: "Selecciona un plan", back: "Atrás", continue: "Continuar" },
+        season:     { title: "Crea tu primera temporada",   subtitle: "Las temporadas organizan tus juegos y clasificaciones", name: "Nombre de la temporada", namePlaceholder: "Verano 2025", startDate: "Fecha de inicio", endDate: "Fecha de fin", back: "Atrás", continue: "Continuar" },
+        categories: { title: "Agregar categorías",          subtitle: "Las categorías agrupan equipos por división, género o edad", placeholder: "Categoría", addBtn: "+ Agregar categoría", back: "Atrás", continue: "Continuar" },
+        teams:      { title: "Agrega tus primeros equipos", subtitle: "Siempre puedes agregar más equipos después", placeholder: "Nombre del equipo", addBtn: "+ Agregar equipo", back: "Atrás", finish: "Finalizar configuración", finishing: "Creando liga..." },
       },
       plans: {
-        free:    { name: "Gratis",    description: "Hasta 4 equipos, 1 temporada" },
-        starter: { name: "Inicial",   description: "Hasta 12 equipos, 3 temporadas" },
-        pro:     { name: "Pro",       description: "Equipos y temporadas ilimitados" },
+        free:    { name: "Gratis",  description: "Hasta 4 equipos, 1 temporada" },
+        starter: { name: "Inicial", description: "Hasta 12 equipos, 3 temporadas" },
+        pro:     { name: "Pro",     description: "Equipos y temporadas ilimitados" },
       },
+    },
+    dashboard: {
+      title: "Mis Ligas", newLeague: "Nueva liga",
+      noLeagues: "Aún no hay ligas", noLeaguesDesc: "Crea tu primera liga y comienza a gestionar tu temporada.",
+      createLeague: "Crear una liga", openLeague: "Abrir liga →",
+      seasons: "temporadas", season: "temporada", teams: "equipos", team: "equipo", signOut: "Cerrar sesión",
+      systemOverview: "Vista del sistema", systemSubtitle: "ligas registradas en el sistema",
+      totalLeagues: "Total de ligas", activeLeagues: "Ligas activas", totalTeams: "Total de equipos", totalPlayers: "Total de jugadores",
+      location: "Ubicación", plan: "Plan", status: "Estado", open: "Abrir →",
+      active: "Activa", suspended: "Suspendida", archived: "Archivada",
+    },
+    league: {
+      back: "← Panel", signOut: "Cerrar sesión",
+      nav: { overview: "Resumen", seasons: "Temporadas", categories: "Categorías", teams: "Equipos", members: "Miembros", fields: "Campos" },
+      overview: {
+        title: "Resumen de la Liga", info: "Info", plan: "Plan", status: "Estado",
+        active: "activa", suspended: "suspendida", archived: "archivada",
+        seasons: "Temporadas", activeTeams: "Equipos Activos", categories: "Categorías", fields: "Campos",
+      },
+      seasons:    { title: "Temporadas",  none: "Aún no hay temporadas.",  noneHint: "Haz clic en «+ Agregar temporada» para crear una.",   view: "Ver calendario →" },
+      categories: { title: "Categorías",  none: "Aún no hay categorías.",  noneHint: "Haz clic en «+ Agregar categoría» para crear una." },
+      teams: {
+        title: "Equipos", none: "No hay equipos activos.", noneHint: "Haz clic en «+ Agregar equipo» para añadir uno.",
+        showInactive: "Mostrar inactivos", hideInactive: "Ocultar", inactiveLabel: "Inactivo",
+        pending: "Pendiente", approved: "✓ Aprobado",
+        managerLabel: "Manager", assistantLabel: "Asistente",
+        noPlayers: "Aún no hay jugadores.",
+        approve: "Aprobar", unapprove: "Desaprobar", reactivate: "Reactivar", deactivate: "Desactivar", delete: "Eliminar",
+        photo: "Foto", jersey: "#", name: "Nombre", account: "Cuenta",
+        addPlayer: "+ Jugador", csvUpload: "↑ CSV", edit: "Editar",
+      },
+      members: { title: "Miembros", name: "Nombre", email: "Correo", phone: "Teléfono", role: "Rol", verified: "Verificado", resend: "Reenviar" },
+      fields: {
+        title: "Campos", none: "Aún no hay campos.", noneHint: "Haz clic en «+ Agregar campo» para añadir uno.",
+        noTimeSlots: "Sin franjas horarias", edit: "Editar", delete: "Eliminar",
+        morning: "Mañana", afternoon: "Tarde", night: "Noche",
+      },
+      common: { addSeason: "+ Agregar temporada", addCategory: "+ Agregar categoría", addTeam: "+ Agregar equipo", addField: "+ Agregar campo" },
     },
   },
 
+  // ── 日本語 ─────────────────────────────────────────────────────────────────
   ja: {
-    nav: {
-      signin: "サインイン",
-      getStarted: "始める",
-    },
+    nav:      { signin: "サインイン", getStarted: "始める" },
     hero: {
       badge: "マルチリーグ ソフトボール管理",
-      headline1: "打席に",
-      headline2: "立とう。",
-      tagline:
-        "ソフトボールリーグのスケジュール、名簿、順位表をひとつのダグアウトから管理。",
-      cta: "🏆 リーグを無料で作成",
-      signin: "サインイン",
+      headline1: "打席に", headline2: "立とう。",
+      tagline: "ソフトボールリーグのスケジュール、名簿、順位表をひとつのダグアウトから管理。",
+      cta: "🏆 リーグを無料で作成", signin: "サインイン",
     },
     stats: [
       { value: "マルチリーグ", label: "1アカウント" },
-      { value: "役割管理", label: "リーグごとの役割" },
+      { value: "役割管理",     label: "リーグごとの役割" },
       { value: "モバイル優先", label: "フィールド対応" },
     ],
     features: {
       title: "リーグに必要なすべて",
       subtitle: "コミッショナー、監督、審判、選手のために。",
       cards: [
-        {
-          icon: "🏆",
-          title: "マルチリーグ権限",
-          description:
-            "すべてのリーグで1つのアカウント。あるリーグではコミッショナー、別では審判 — 重複登録なし。",
-          accent: "from-yellow-500/20 to-yellow-600/5",
-          border: "border-yellow-500/20",
-        },
-        {
-          icon: "📅",
-          title: "シーズンと部門",
-          description:
-            "シーズンで整理し、部門に分割。男子・混合・18U・14U。ブラケット対応も近日公開。",
-          accent: "from-green-500/20 to-green-600/5",
-          border: "border-green-500/20",
-        },
-        {
-          icon: "📱",
-          title: "フィールド対応モバイル",
-          description:
-            "ベンチからラインナップ確認、スコア入力、順位確認。あらゆる画面サイズに対応。",
-          accent: "from-blue-500/20 to-blue-600/5",
-          border: "border-blue-500/20",
-        },
+        { ...FEATURE_ACCENTS[0], icon: "🏆", title: "マルチリーグ権限",         description: "すべてのリーグで1つのアカウント。あるリーグではコミッショナー、別では審判 — 重複登録なし。" },
+        { ...FEATURE_ACCENTS[1], icon: "📅", title: "シーズンと部門",           description: "シーズンで整理し、部門に分割。男子・混合・18U・14U。ブラケット対応も近日公開。" },
+        { ...FEATURE_ACCENTS[2], icon: "📱", title: "フィールド対応モバイル",   description: "ベンチからラインナップ確認、スコア入力、順位確認。あらゆる画面サイズに対応。" },
       ],
     },
     steps: {
-      title: "登録から初球まで",
-      subtitle: "数分でリーグを開始できます。",
-      items: [
-        { icon: "👤", label: "アカウント作成" },
-        { icon: "🏟️", label: "リーグ設定" },
-        { icon: "📋", label: "チーム追加" },
-        { icon: "⚾", label: "プレイボール！" },
-      ],
+      title: "登録から初球まで", subtitle: "数分でリーグを開始できます。",
+      items: [{ icon: "👤", label: "アカウント作成" }, { icon: "🏟️", label: "リーグ設定" }, { icon: "📋", label: "チーム追加" }, { icon: "⚾", label: "プレイボール！" }],
     },
-    cta: {
-      title: "プレイする準備はできた？",
-      subtitle:
-        "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。",
-      button: "リーグを作成 — 無料",
-    },
+    cta:    { title: "プレイする準備はできた？", subtitle: "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成 — 無料" },
     footer: "野球への愛から生まれた。",
     login: {
-      pageTitle: "アカウントにサインイン",
-      title: "おかえりなさい",
-      subtitle: "認証情報を入力して続けてください",
-      email: "メールアドレス",
-      emailPlaceholder: "jane@example.com",
-      password: "パスワード",
-      signinBtn: "サインイン",
-      signingIn: "サインイン中...",
-      noAccount: "アカウントをお持ちでないですか？",
-      createOne: "作成する",
-      successMsg: "アカウントが作成されました！サインインしてください。",
-      invalidError: "メールアドレスまたはパスワードが正しくありません",
+      pageTitle: "アカウントにサインイン", title: "おかえりなさい", subtitle: "認証情報を入力して続けてください",
+      email: "メールアドレス", emailPlaceholder: "jane@example.com", password: "パスワード",
+      signinBtn: "サインイン", signingIn: "サインイン中...",
+      noAccount: "アカウントをお持ちでないですか？", createOne: "作成する",
+      successMsg: "アカウントが作成されました！サインインしてください。", invalidError: "メールアドレスまたはパスワードが正しくありません",
     },
     register: {
-      pageTitle: "リーグアカウントを作成",
-      pageSubtitle: "すべてのリーグを管理するために使用します",
+      pageTitle: "リーグアカウントを作成", pageSubtitle: "すべてのリーグを管理するために使用します",
       steps: {
-        account: {
-          title: "アカウントを作成",
-          subtitle: "すべてのリーグを管理するために使用します",
-          name: "フルネーム",
-          namePlaceholder: "田中 太郎",
-          email: "メールアドレス",
-          emailPlaceholder: "taro@example.com",
-          password: "パスワード",
-          passwordPlaceholder: "8文字以上",
-          confirmPassword: "パスワードを確認",
-          continue: "続ける",
-          haveAccount: "すでにアカウントをお持ちですか？",
-          signIn: "サインイン",
-        },
-        league: {
-          title: "リーグを設定",
-          subtitle: "リーグの名前とプランを選択してください",
-          name: "リーグ名",
-          namePlaceholder: "〇〇ソフトボールリーグ",
-          city: "市区町村",
-          cityPlaceholder: "東京",
-          state: "都道府県",
-          statePlaceholder: "東京都",
-          selectPlan: "プランを選択",
-          back: "戻る",
-          continue: "続ける",
-        },
-        season: {
-          title: "最初のシーズンを作成",
-          subtitle: "シーズンで試合と順位表を整理します",
-          name: "シーズン名",
-          namePlaceholder: "2025年夏季",
-          startDate: "開始日",
-          endDate: "終了日",
-          back: "戻る",
-          continue: "続ける",
-        },
-        categories: {
-          title: "カテゴリを追加",
-          subtitle: "カテゴリで部門・性別・年齢を分類します",
-          placeholder: "カテゴリ",
-          addBtn: "+ カテゴリを追加",
-          back: "戻る",
-          continue: "続ける",
-        },
-        teams: {
-          title: "最初のチームを追加",
-          subtitle: "後でいつでも追加できます",
-          placeholder: "チーム名",
-          addBtn: "+ チームを追加",
-          back: "戻る",
-          finish: "設定を完了",
-          finishing: "リーグを作成中...",
-        },
+        account:    { title: "アカウントを作成",    subtitle: "すべてのリーグを管理するために使用します", name: "フルネーム", namePlaceholder: "田中 太郎", email: "メールアドレス", emailPlaceholder: "taro@example.com", password: "パスワード", passwordPlaceholder: "8文字以上", confirmPassword: "パスワードを確認", continue: "続ける", haveAccount: "すでにアカウントをお持ちですか？", signIn: "サインイン" },
+        league:     { title: "リーグを設定",        subtitle: "リーグの名前とプランを選択してください", name: "リーグ名", namePlaceholder: "〇〇ソフトボールリーグ", city: "市区町村", cityPlaceholder: "東京", state: "都道府県", statePlaceholder: "東京都", selectPlan: "プランを選択", back: "戻る", continue: "続ける" },
+        season:     { title: "最初のシーズンを作成", subtitle: "シーズンで試合と順位表を整理します", name: "シーズン名", namePlaceholder: "2025年夏季", startDate: "開始日", endDate: "終了日", back: "戻る", continue: "続ける" },
+        categories: { title: "カテゴリを追加",       subtitle: "カテゴリで部門・性別・年齢を分類します", placeholder: "カテゴリ", addBtn: "+ カテゴリを追加", back: "戻る", continue: "続ける" },
+        teams:      { title: "最初のチームを追加",   subtitle: "後でいつでも追加できます", placeholder: "チーム名", addBtn: "+ チームを追加", back: "戻る", finish: "設定を完了", finishing: "リーグを作成中..." },
       },
       plans: {
-        free:    { name: "無料", description: "最大4チーム、1シーズン" },
+        free:    { name: "無料",      description: "最大4チーム、1シーズン" },
         starter: { name: "スターター", description: "最大12チーム、3シーズン" },
-        pro:     { name: "プロ", description: "無制限のチームとシーズン" },
+        pro:     { name: "プロ",      description: "無制限のチームとシーズン" },
       },
+    },
+    dashboard: {
+      title: "マイリーグ", newLeague: "新しいリーグ",
+      noLeagues: "リーグがありません", noLeaguesDesc: "最初のリーグを作成してシーズン管理を始めましょう。",
+      createLeague: "リーグを作成", openLeague: "リーグを開く →",
+      seasons: "シーズン", season: "シーズン", teams: "チーム", team: "チーム", signOut: "サインアウト",
+      systemOverview: "システム概要", systemSubtitle: "件のリーグが登録されています",
+      totalLeagues: "総リーグ数", activeLeagues: "アクティブリーグ", totalTeams: "総チーム数", totalPlayers: "総選手数",
+      location: "場所", plan: "プラン", status: "ステータス", open: "開く →",
+      active: "アクティブ", suspended: "停止中", archived: "アーカイブ",
+    },
+    league: {
+      back: "← ダッシュボード", signOut: "サインアウト",
+      nav: { overview: "概要", seasons: "シーズン", categories: "カテゴリ", teams: "チーム", members: "メンバー", fields: "フィールド" },
+      overview: {
+        title: "リーグ概要", info: "情報", plan: "プラン", status: "ステータス",
+        active: "アクティブ", suspended: "停止中", archived: "アーカイブ",
+        seasons: "シーズン", activeTeams: "アクティブチーム", categories: "カテゴリ", fields: "フィールド",
+      },
+      seasons:    { title: "シーズン",    none: "シーズンがありません。",    noneHint: "«+ シーズンを追加» をクリックして作成してください。",    view: "スケジュールを見る →" },
+      categories: { title: "カテゴリ",    none: "カテゴリがありません。",    noneHint: "«+ カテゴリを追加» をクリックして作成してください。" },
+      teams: {
+        title: "チーム", none: "アクティブなチームがありません。", noneHint: "«+ チームを追加» をクリックして追加してください。",
+        showInactive: "非アクティブを表示", hideInactive: "非表示", inactiveLabel: "非アクティブ",
+        pending: "保留中", approved: "✓ 承認済み",
+        managerLabel: "マネージャー", assistantLabel: "アシスタント",
+        noPlayers: "選手がいません。",
+        approve: "承認", unapprove: "承認取消", reactivate: "再アクティブ化", deactivate: "非アクティブ化", delete: "削除",
+        photo: "写真", jersey: "#", name: "名前", account: "アカウント",
+        addPlayer: "+ 選手を追加", csvUpload: "↑ CSV", edit: "編集",
+      },
+      members: { title: "メンバー", name: "名前", email: "メール", phone: "電話", role: "役割", verified: "認証済み", resend: "再送信" },
+      fields: {
+        title: "フィールド", none: "フィールドがありません。", noneHint: "«+ フィールドを追加» をクリックして追加してください。",
+        noTimeSlots: "時間帯未設定", edit: "編集", delete: "削除",
+        morning: "午前", afternoon: "午後", night: "夜間",
+      },
+      common: { addSeason: "+ シーズンを追加", addCategory: "+ カテゴリを追加", addTeam: "+ チームを追加", addField: "+ フィールドを追加" },
     },
   },
 };
 
 export type Locale = keyof typeof translations;
 
-export interface LoginT {
-  pageTitle: string; title: string; subtitle: string;
-  email: string; emailPlaceholder: string;
-  password: string; signinBtn: string; signingIn: string;
-  noAccount: string; createOne: string;
-  successMsg: string; invalidError: string;
-}
-export interface RegisterT {
-  pageTitle: string; pageSubtitle: string;
-  steps: {
-    account:    { title: string; subtitle: string; name: string; namePlaceholder: string; email: string; emailPlaceholder: string; password: string; passwordPlaceholder: string; confirmPassword: string; continue: string; haveAccount: string; signIn: string };
-    league:     { title: string; subtitle: string; name: string; namePlaceholder: string; city: string; cityPlaceholder: string; state: string; statePlaceholder: string; selectPlan: string; back: string; continue: string };
-    season:     { title: string; subtitle: string; name: string; namePlaceholder: string; startDate: string; endDate: string; back: string; continue: string };
-    categories: { title: string; subtitle: string; placeholder: string; addBtn: string; back: string; continue: string };
-    teams:      { title: string; subtitle: string; placeholder: string; addBtn: string; back: string; finish: string; finishing: string };
-  };
-  plans: {
-    free:    { name: string; description: string };
-    starter: { name: string; description: string };
-    pro:     { name: string; description: string };
-  };
-}
-
-export interface T {
-  nav:      { signin: string; getStarted: string };
-  hero:     { badge: string; headline1: string; headline2: string; tagline: string; cta: string; signin: string };
-  stats:    { value: string; label: string }[];
-  features: { title: string; subtitle: string; cards: { icon: string; title: string; description: string; accent: string; border: string }[] };
-  steps:    { title: string; subtitle: string; items: { icon: string; label: string }[] };
-  login:    LoginT;
-  register: RegisterT;
-  cta:      { title: string; subtitle: string; button: string };
-  footer:   string;
-}
+// ── Type helpers ──────────────────────────────────────────────────────────────
+export type T = typeof translations.en;
+export type DashboardT = T["dashboard"];
+export type LeagueT    = T["league"];

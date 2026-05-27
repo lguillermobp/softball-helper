@@ -30,7 +30,8 @@ export function LanguageSelector() {
       {/* Trigger */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+        className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80"
+      style={{ borderColor: "var(--sh-border2)", background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -51,13 +52,14 @@ export function LanguageSelector() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-36 rounded-xl border border-white/10 bg-[#1a2e1a] shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-36 rounded-xl border shadow-xl z-50 overflow-hidden"
+          style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
           {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => { setLocale(lang.code); setOpen(false); }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-white/10
-                ${locale === lang.code ? "text-green-400 font-semibold" : "text-white/70"}`}
+              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:opacity-80"
+              style={{ color: locale === lang.code ? "var(--sh-primary)" : "var(--sh-muted)", fontWeight: locale === lang.code ? 600 : 400 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

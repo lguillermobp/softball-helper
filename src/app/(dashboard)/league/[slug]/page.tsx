@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { LeagueDashboard } from "@/components/league/LeagueDashboard";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSelector } from "@/components/ui/language-selector";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -104,40 +106,42 @@ export default async function LeaguePage({ params }: PageProps) {
   }));
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a1a0a" }}>
+    <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
       <header
         className="border-b sticky top-0 z-10"
-        style={{ borderColor: "#1e3a1e", background: "#0f2310" }}
+        style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-header)" }}
       >
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
               className="text-sm flex items-center gap-1 transition-colors hover:opacity-80"
-              style={{ color: "#4ade80" }}
+              style={{ color: "var(--sh-primary)" }}
             >
               ← Dashboard
             </Link>
-            <span style={{ color: "#2d5a2d" }}>|</span>
-            <span className="font-bold" style={{ color: "#f0fdf4" }}>
+            <span style={{ color: "var(--sh-border2)" }}>|</span>
+            <span className="font-bold" style={{ color: "var(--sh-text)" }}>
               {league.name}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span
               className="text-xs font-medium border rounded-full px-2.5 py-0.5"
-              style={{ background: "#1a3d1a", color: "#4ade80", borderColor: "#2d5a2d" }}
+              style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}
             >
               {role.replace(/_/g, " ")}
             </span>
-            <span className="hidden sm:block text-sm" style={{ color: "#86efac" }}>
+            <span className="hidden sm:block text-sm" style={{ color: "var(--sh-secondary)" }}>
               {sessionUser.name}
             </span>
+            <ThemeToggle />
+            <LanguageSelector />
             <form action="/api/auth/signout" method="POST">
               <button
                 type="submit"
                 className="text-sm px-3 py-1.5 rounded-md border transition-colors"
-                style={{ borderColor: "#2d5a2d", color: "#86efac", background: "transparent" }}
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
               >
                 Sign out
               </button>
@@ -146,7 +150,7 @@ export default async function LeaguePage({ params }: PageProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8" style={{ color: "var(--sh-text)" }}>
         <LeagueDashboard
           slug={slug}
           isAdmin={isAdmin}
