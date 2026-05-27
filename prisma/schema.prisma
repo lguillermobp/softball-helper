@@ -273,6 +273,7 @@ model Player {
   name         String
   email        String
   jerseyNumber String?
+  photoUrl     String?
   teamId       String
   leagueId     String
   userId       String?

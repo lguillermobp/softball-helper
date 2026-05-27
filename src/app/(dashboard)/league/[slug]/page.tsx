@@ -79,6 +79,7 @@ export default async function LeaguePage({ params }: PageProps) {
       id: p.id,
       name: p.name,
       jerseyNumber: p.jerseyNumber,
+      photoUrl: p.photoUrl ?? null,
       userId: p.userId,
     })),
   }));

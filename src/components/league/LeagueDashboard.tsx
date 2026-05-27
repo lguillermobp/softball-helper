@@ -12,6 +12,7 @@ import { AddMemberDialog } from "@/components/league/AddMemberDialog";
 import { ResendVerificationButton } from "@/components/league/ResendVerificationButton";
 import { AddFieldDialog } from "@/components/league/AddFieldDialog";
 import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
+import { PlayerPhotoDialog } from "@/components/league/PlayerPhotoDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; jerseyNumber: string | null; userId: string | null }
+interface Player { id: string; name: string; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; isActive: boolean;
@@ -87,6 +88,7 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
   const [section, setSection] = useState<Section>("overview");
   const [showInactive, setShowInactive] = useState(false);
   const [teamError, setTeamError] = useState<Record<string, string>>({});
+  const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
 
   const activeTeams   = teams.filter((t) => t.isActive);
   const inactiveTeams = teams.filter((t) => !t.isActive);
@@ -335,25 +337,47 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-10" style={dim}>Photo</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>#</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>Name</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>Account</th>
               </tr>
             </thead>
             <tbody>
-              {team.players.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #0f2310" }}>
-                  <td className="px-4 py-2 text-center">
-                    {p.jerseyNumber
-                      ? <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.jerseyNumber}</span>
-                      : <span style={dim}>—</span>}
-                  </td>
-                  <td className="px-4 py-2 font-medium" style={head}>{p.name}</td>
-                  <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
-                    {p.userId ? "✓" : "—"}
-                  </td>
-                </tr>
-              ))}
+              {team.players.map((p) => {
+                const photo = playerPhotos[p.id] ?? p.photoUrl;
+                return (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #0f2310" }}>
+                    <td className="px-4 py-2">
+                      {isAdmin ? (
+                        <PlayerPhotoDialog
+                          slug={slug}
+                          playerId={p.id}
+                          playerName={p.name}
+                          currentPhotoUrl={photo}
+                          onUpdated={(url) => setPlayerPhotos((prev) => ({ ...prev, [p.id]: url }))}
+                        />
+                      ) : photo ? (
+                        <img src={photo} alt={p.name} className="w-7 h-7 rounded-full object-cover" style={{ border: "1px solid #2d5a2d" }} />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{ background: "#1a3d1a", color: "#4ade80" }}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {p.jerseyNumber
+                        ? <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.jerseyNumber}</span>
+                        : <span style={dim}>—</span>}
+                    </td>
+                    <td className="px-4 py-2 font-medium" style={head}>{p.name}</td>
+                    <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
+                      {p.userId ? "✓" : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
