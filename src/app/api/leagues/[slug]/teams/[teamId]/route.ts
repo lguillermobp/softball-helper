@@ -7,14 +7,15 @@ interface Params { params: Promise<{ slug: string; teamId: string }> }
 
 interface StaffInput { name: string; email: string; phone?: string }
 
-async function getAdminLeague(slug: string, userId: string, isMasterAdmin: boolean) {
-  const league = await prisma.league.findUnique({
+async function getLeagueWithRole(slug: string, userId: string) {
+  return prisma.league.findUnique({
     where: { slug },
     include: { userRoles: { where: { userId } } },
   });
-  if (!league) return null;
-  const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
-  return isAdmin ? league : null;
+}
+
+function isLeagueAdmin(league: NonNullable<Awaited<ReturnType<typeof getLeagueWithRole>>>, isMasterAdmin: boolean) {
+  return isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
 }
 
 async function upsertStaff(
@@ -49,22 +50,39 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug, teamId } = await params;
-  const league = await getAdminLeague(slug, session.user.id!, (session.user as any).isMasterAdmin);
-  if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const userId = session.user.id!;
+  const isMasterAdmin = (session.user as any).isMasterAdmin;
+
+  const league = await getLeagueWithRole(slug, userId);
+  if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const admin = isLeagueAdmin(league, isMasterAdmin);
 
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
   const body = await req.json();
 
-  // isActive-only toggle (deactivate / reactivate)
+  // isActive-only toggle — admin only
   if ("isActive" in body && Object.keys(body).length === 1) {
-    const updated = await prisma.team.update({
-      where: { id: teamId },
-      data: { isActive: body.isActive },
-    });
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const updated = await prisma.team.update({ where: { id: teamId }, data: { isActive: body.isActive } });
     return NextResponse.json(updated);
   }
+
+  // status-only toggle (approve / unapprove) — admin only
+  if ("status" in body && Object.keys(body).length === 1) {
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (body.status !== "PENDING" && body.status !== "APPROVED")
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    const updated = await prisma.team.update({ where: { id: teamId }, data: { status: body.status } });
+    return NextResponse.json(updated);
+  }
+
+  // Full edit — admin always; manager/assistant only when team is PENDING
+  const isStaff = team.managerId === userId || team.assistantId === userId;
+  const canEdit = admin || (isStaff && team.status === "PENDING");
+  if (!canEdit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { name, seasonId, categoryId, manager, assistant } = body;
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -131,8 +149,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug, teamId } = await params;
-  const league = await getAdminLeague(slug, session.user.id!, (session.user as any).isMasterAdmin);
-  if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const userId = session.user.id!;
+  const isMasterAdmin = (session.user as any).isMasterAdmin;
+
+  const league = await getLeagueWithRole(slug, userId);
+  if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!isLeagueAdmin(league, isMasterAdmin)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });

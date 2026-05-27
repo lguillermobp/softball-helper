@@ -64,6 +64,7 @@ export default async function LeaguePage({ params }: PageProps) {
   const teams = league.teams.map((t) => ({
     id: t.id,
     name: t.name,
+    status: t.status,
     isActive: t.isActive,
     seasonId: t.seasonId,
     categoryId: t.categoryId,
@@ -149,6 +150,7 @@ export default async function LeaguePage({ params }: PageProps) {
         <LeagueDashboard
           slug={slug}
           isAdmin={isAdmin}
+          currentUserId={sessionUser.id!}
           league={{
             id: league.id,
             name: league.name,

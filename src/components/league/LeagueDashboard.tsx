@@ -23,7 +23,7 @@ interface Category { id: string; name: string; description: string | null }
 interface Player { id: string; name: string; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
-  id: string; name: string; isActive: boolean;
+  id: string; name: string; status: string; isActive: boolean;
   seasonId: string | null; categoryId: string | null;
   season: { id: string; name: string } | null;
   category: { id: string; name: string } | null;
@@ -40,6 +40,7 @@ interface Field { id: string; name: string; types: string[] }
 interface Props {
   slug: string;
   isAdmin: boolean;
+  currentUserId: string;
   league: { id: string; name: string; city: string | null; state: string | null; status: string; plan: { name: string } };
   seasons: Season[];
   categories: Category[];
@@ -83,7 +84,7 @@ const NAV_ITEMS: { key: Section; label: string; icon: string; adminOnly?: boolea
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, teams, members, fields }: Props) {
+export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields }: Props) {
   const router = useRouter();
   const [section, setSection] = useState<Section>("overview");
   const [showInactive, setShowInactive] = useState(false);
@@ -112,6 +113,16 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
       const data = await res.json();
       setTeamError((prev) => ({ ...prev, [team.id]: data.error ?? "Cannot delete" }));
     }
+  }
+
+  async function toggleStatus(team: Team) {
+    const next = team.status === "APPROVED" ? "PENDING" : "APPROVED";
+    const res = await fetch(`/api/leagues/${slug}/teams/${team.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    if (res.ok) router.refresh();
   }
 
   async function deleteField(fieldId: string) {
@@ -238,6 +249,10 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
   );
 
   function TeamCard({ team, inactive }: { team: Team; inactive?: boolean }) {
+    const isStaff = team.manager?.id === currentUserId || team.assistant?.id === currentUserId;
+    const canEdit = isAdmin || (isStaff && team.status === "PENDING");
+    const approved = team.status === "APPROVED";
+
     return (
       <div className="rounded-xl border overflow-hidden" style={{ ...card, opacity: inactive ? 0.7 : 1 }}>
 
@@ -248,8 +263,17 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <span className="font-bold text-base" style={head}>{team.name}</span>
+                {/* Status badge */}
+                <span
+                  className="text-xs font-semibold rounded-full px-2 py-0.5"
+                  style={approved
+                    ? { background: "#14532d", color: "#4ade80" }
+                    : { background: "#78350f", color: "#fbbf24" }}
+                >
+                  {approved ? "✓ Approved" : "Pending"}
+                </span>
                 {inactive && (
-                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "#78350f", color: "#fbbf24" }}>Inactive</span>
+                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "#1f2937", color: "#9ca3af" }}>Inactive</span>
                 )}
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -267,9 +291,9 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
             </div>
 
             {/* Right: action buttons */}
-            {isAdmin && (
+            {(isAdmin || isStaff) && (
               <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
-                {!inactive && (
+                {!inactive && canEdit && (
                   <>
                     <EditTeamDialog
                       slug={slug}
@@ -281,23 +305,39 @@ export function LeagueDashboard({ slug, isAdmin, league, seasons, categories, te
                     <UploadPlayersDialog slug={slug} teamId={team.id} teamName={team.name} />
                   </>
                 )}
-                <button
-                  onClick={() => toggleActive(team)}
-                  className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-                  style={inactive
-                    ? { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }
-                    : { borderColor: "#78350f", color: "#fbbf24", background: "transparent" }}
-                >
-                  {inactive ? "Reactivate" : "Deactivate"}
-                </button>
-                {inactive && (
+                {/* Approve / Unapprove — admin only */}
+                {isAdmin && !inactive && (
                   <button
-                    onClick={() => deleteTeam(team)}
+                    onClick={() => toggleStatus(team)}
                     className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-                    style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                    style={approved
+                      ? { borderColor: "#78350f", color: "#fbbf24", background: "transparent" }
+                      : { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }}
                   >
-                    Delete
+                    {approved ? "Unapprove" : "Approve"}
                   </button>
+                )}
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => toggleActive(team)}
+                      className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
+                      style={inactive
+                        ? { borderColor: "#16a34a", color: "#4ade80", background: "transparent" }
+                        : { borderColor: "#4b5563", color: "#9ca3af", background: "transparent" }}
+                    >
+                      {inactive ? "Reactivate" : "Deactivate"}
+                    </button>
+                    {inactive && (
+                      <button
+                        onClick={() => deleteTeam(team)}
+                        className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
+                        style={{ borderColor: "#3f1515", color: "#f87171", background: "transparent" }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}

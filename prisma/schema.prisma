@@ -187,16 +187,17 @@ model Category {
 // ─── Teams ───────────────────────────────────────────────────────────────────
 
 model Team {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   leagueId    String
   seasonId    String?
   categoryId  String?
   managerId   String?
   assistantId String?
   name        String
-  isActive    Boolean  @default(true)
+  status      TeamStatus @default(PENDING)
+  isActive    Boolean    @default(true)
   logoUrl     String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 
   league    League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   season    Season?   @relation(fields: [seasonId], references: [id])
@@ -223,6 +224,11 @@ model Field {
   games  Game[]
 
   @@map("fields")
+}
+
+enum TeamStatus {
+  PENDING
+  APPROVED
 }
 
 enum FieldType {
