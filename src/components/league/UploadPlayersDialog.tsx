@@ -66,7 +66,6 @@ function parseCSV(text: string): ParsedRow[] {
 const SAMPLE = "name,email,jersey_number\nJane Smith,jane@example.com,7\nBob Jones,bob@example.com,\n";
 const SAMPLE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE)}`;
 
-// ── Shared table styles ────────────────────────────────────────────────────────
 const th = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider";
 const tdBase = "px-3 py-2 text-sm";
 
@@ -138,7 +137,7 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
       <DialogTrigger asChild>
         <button
           className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-          style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
+          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
         >
           ↑ CSV
         </button>
@@ -153,10 +152,10 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
         <div className="flex items-center gap-2 text-xs mb-2">
           {(["select", "preview", "results"] as const).map((s, i) => (
             <span key={s} className="flex items-center gap-2">
-              {i > 0 && <span style={{ color: "#374151" }}>›</span>}
+              {i > 0 && <span style={{ color: "var(--sh-muted)" }}>›</span>}
               <span
                 className="font-semibold capitalize"
-                style={{ color: step === s ? "#4ade80" : "#6b7280" }}
+                style={{ color: step === s ? "var(--sh-primary)" : "var(--sh-muted)" }}
               >
                 {s === "select" ? "1. Select" : s === "preview" ? "2. Preview" : "3. Results"}
               </span>
@@ -167,16 +166,18 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
         {/* ── Step 1: Select ── */}
         {step === "select" && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Upload a <code className="bg-gray-100 px-1 rounded">.csv</code> file with columns:{" "}
-              <code className="bg-gray-100 px-1 rounded">name</code>,{" "}
-              <code className="bg-gray-100 px-1 rounded">email</code>,{" "}
-              <code className="bg-gray-100 px-1 rounded">jersey_number</code> (optional).
-              The first row should be the header.
+            <p className="text-sm" style={{ color: "var(--sh-muted)" }}>
+              Upload a{" "}
+              <code className="px-1 rounded text-xs font-mono" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>.csv</code>
+              {" "}file with columns:{" "}
+              <code className="px-1 rounded text-xs font-mono" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>name</code>,{" "}
+              <code className="px-1 rounded text-xs font-mono" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>email</code>,{" "}
+              <code className="px-1 rounded text-xs font-mono" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>jersey_number</code>{" "}
+              (optional). The first row should be the header.
             </p>
             <a href={SAMPLE_HREF} download="players_template.csv"
               className="inline-flex items-center gap-1 text-xs underline font-medium"
-              style={{ color: "#16a34a" }}>
+              style={{ color: "var(--sh-primary)" }}>
               ↓ Download sample template
             </a>
             <div className="space-y-1">
@@ -187,13 +188,10 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
                 type="file"
                 accept=".csv,text/csv"
                 onChange={onFileChange}
-                className="block w-full text-sm text-gray-700
-                  file:mr-3 file:py-1.5 file:px-3 file:rounded file:border
-                  file:border-gray-300 file:text-xs file:bg-white file:text-gray-700
-                  hover:file:bg-gray-50"
+                className="block w-full text-sm"
               />
             </div>
-            {fileErr && <p className="text-sm text-red-600">{fileErr}</p>}
+            {fileErr && <p className="text-sm" style={{ color: "var(--sh-danger)" }}>{fileErr}</p>}
             <div className="flex justify-end">
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
             </div>
@@ -204,41 +202,41 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
         {step === "preview" && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-sm">
-              <span className="font-semibold" style={{ color: "#4ade80" }}>{validCount} valid</span>
+              <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>{validCount} valid</span>
               {invalidCount > 0 && (
-                <span className="font-semibold text-red-500">{invalidCount} with errors — will be skipped</span>
+                <span className="font-semibold" style={{ color: "var(--sh-danger)" }}>{invalidCount} with errors — will be skipped</span>
               )}
             </div>
 
-            <div className="rounded-lg border overflow-auto max-h-80" style={{ borderColor: "#1e3a1e" }}>
+            <div className="rounded-lg border overflow-auto max-h-80" style={{ borderColor: "var(--sh-border)" }}>
               <table className="w-full text-sm">
-                <thead className="sticky top-0" style={{ background: "#0f2310" }}>
-                  <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
-                    <th className={th} style={{ color: "#6b7280" }}>Name</th>
-                    <th className={th} style={{ color: "#6b7280" }}>Email</th>
-                    <th className={`${th} text-center w-14`} style={{ color: "#6b7280" }}>#</th>
-                    <th className={`${th} text-center w-24`} style={{ color: "#6b7280" }}>Status</th>
+                <thead className="sticky top-0" style={{ background: "var(--sh-bg-card2)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                    <th className={th} style={{ color: "var(--sh-muted)" }}>Name</th>
+                    <th className={th} style={{ color: "var(--sh-muted)" }}>Email</th>
+                    <th className={`${th} text-center w-14`} style={{ color: "var(--sh-muted)" }}>#</th>
+                    <th className={`${th} text-center w-24`} style={{ color: "var(--sh-muted)" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row, i) => (
                     <tr key={i} style={{
-                      borderBottom: "1px solid #0f2310",
-                      background: row.error ? "#1a0707" : "#0f2310",
+                      borderBottom: "1px solid var(--sh-border)",
+                      background: row.error ? "var(--sh-danger-bg)" : "transparent",
                     }}>
-                      <td className={tdBase} style={{ color: row.error ? "#f87171" : "#f0fdf4" }}>
+                      <td className={tdBase} style={{ color: row.error ? "var(--sh-danger)" : "var(--sh-text)" }}>
                         {row.name || "—"}
                       </td>
-                      <td className={`${tdBase} text-xs`} style={{ color: row.error ? "#f87171" : "#6b7280" }}>
+                      <td className={`${tdBase} text-xs`} style={{ color: row.error ? "var(--sh-danger)" : "var(--sh-muted)" }}>
                         {row.email || "—"}
                       </td>
-                      <td className={`${tdBase} text-center text-xs`} style={{ color: "#4ade80" }}>
+                      <td className={`${tdBase} text-center text-xs`} style={{ color: "var(--sh-primary)" }}>
                         {row.jerseyNumber || "—"}
                       </td>
                       <td className={`${tdBase} text-center text-xs font-semibold`}>
                         {row.error
-                          ? <span className="text-red-400">✗ {row.error}</span>
-                          : <span style={{ color: "#4ade80" }}>✓ OK</span>}
+                          ? <span style={{ color: "var(--sh-danger)" }}>✗ {row.error}</span>
+                          : <span style={{ color: "var(--sh-primary)" }}>✓ OK</span>}
                       </td>
                     </tr>
                   ))}
@@ -246,7 +244,7 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
               </table>
             </div>
 
-            {fileErr && <p className="text-sm text-red-600">{fileErr}</p>}
+            {fileErr && <p className="text-sm" style={{ color: "var(--sh-danger)" }}>{fileErr}</p>}
 
             <div className="flex justify-between gap-2">
               <Button variant="outline" onClick={() => { reset(); }}>← Back</Button>
@@ -264,30 +262,30 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
         {step === "results" && (
           <div className="space-y-4">
             <div className="flex items-center gap-4 text-sm">
-              {addedCount  > 0 && <span className="font-semibold" style={{ color: "#4ade80" }}>✓ {addedCount} added</span>}
-              {linkedCount > 0 && <span className="font-semibold" style={{ color: "#86efac" }}>✓ {linkedCount} linked</span>}
-              {errorCount  > 0 && <span className="font-semibold text-red-500">✗ {errorCount} errors</span>}
+              {addedCount  > 0 && <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>✓ {addedCount} added</span>}
+              {linkedCount > 0 && <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>✓ {linkedCount} linked</span>}
+              {errorCount  > 0 && <span className="font-semibold" style={{ color: "var(--sh-danger)" }}>✗ {errorCount} errors</span>}
             </div>
 
-            <div className="rounded-lg border overflow-auto max-h-80" style={{ borderColor: "#1e3a1e" }}>
+            <div className="rounded-lg border overflow-auto max-h-80" style={{ borderColor: "var(--sh-border)" }}>
               <table className="w-full text-sm">
-                <thead className="sticky top-0" style={{ background: "#0f2310" }}>
-                  <tr style={{ borderBottom: "1px solid #1e3a1e" }}>
-                    <th className={th} style={{ color: "#6b7280" }}>Name</th>
-                    <th className={th} style={{ color: "#6b7280" }}>Email</th>
-                    <th className={`${th} text-center w-28`} style={{ color: "#6b7280" }}>Result</th>
+                <thead className="sticky top-0" style={{ background: "var(--sh-bg-card2)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                    <th className={th} style={{ color: "var(--sh-muted)" }}>Name</th>
+                    <th className={th} style={{ color: "var(--sh-muted)" }}>Email</th>
+                    <th className={`${th} text-center w-28`} style={{ color: "var(--sh-muted)" }}>Result</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((r, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #0f2310" }}>
-                      <td className={`${tdBase} font-medium`} style={{ color: "#f0fdf4" }}>{r.name}</td>
-                      <td className={`${tdBase} text-xs`} style={{ color: "#6b7280" }}>{r.email}</td>
+                    <tr key={i} style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                      <td className={`${tdBase} font-medium`} style={{ color: "var(--sh-text)" }}>{r.name}</td>
+                      <td className={`${tdBase} text-xs`} style={{ color: "var(--sh-muted)" }}>{r.email}</td>
                       <td className={`${tdBase} text-center text-xs font-semibold`}>
-                        {r.status === "added"  && <span style={{ color: "#4ade80" }}>✓ Added</span>}
-                        {r.status === "linked" && <span style={{ color: "#86efac" }}>✓ Linked</span>}
+                        {r.status === "added"  && <span style={{ color: "var(--sh-primary)" }}>✓ Added</span>}
+                        {r.status === "linked" && <span style={{ color: "var(--sh-secondary)" }}>✓ Linked</span>}
                         {r.status === "error"  && (
-                          <span className="text-red-400" title={r.message}>✗ {r.message}</span>
+                          <span style={{ color: "var(--sh-danger)" }} title={r.message}>✗ {r.message}</span>
                         )}
                       </td>
                     </tr>

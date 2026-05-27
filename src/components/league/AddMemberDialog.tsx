@@ -58,14 +58,14 @@ export function AddMemberDialog({ slug }: { slug: string }) {
           <div className="space-y-1">
             <Label htmlFor="name">Full name *</Label>
             <Input id="name" name="name" placeholder="Jane Smith" required />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
               Required if this person doesn&apos;t have an account yet.
             </p>
           </div>
           <div className="space-y-1">
             <Label htmlFor="email">Email address *</Label>
             <Input id="email" name="email" type="email" placeholder="user@example.com" required />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
               If they already have a Softball Helper account they will be linked automatically and notified. Otherwise an invitation to set up their profile will be sent.
             </p>
           </div>
@@ -75,7 +75,7 @@ export function AddMemberDialog({ slug }: { slug: string }) {
               id="role"
               name="role"
               defaultValue="LEAGUE_ADMIN"
-              className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>

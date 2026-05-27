@@ -20,7 +20,7 @@ interface Props {
 }
 
 const selectClass =
-  "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
+  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
 export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Props) {
   const router = useRouter();
@@ -94,7 +94,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
               onChange={(e) => setHomeAwayTbd(e.target.checked)}
               className="accent-green-500 w-4 h-4"
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm" style={{ color: "var(--sh-text)" }}>
               Home / Away to be determined at game time
             </span>
           </label>

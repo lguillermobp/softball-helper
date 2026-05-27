@@ -68,7 +68,7 @@ export function AddSeasonDialog({ slug }: { slug: string }) {
               id="status"
               name="status"
               defaultValue="UPCOMING"
-              className="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="UPCOMING">Upcoming</option>
               <option value="ACTIVE">Active</option>

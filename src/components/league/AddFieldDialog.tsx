@@ -76,7 +76,7 @@ export function AddFieldDialog({ slug, field, trigger, onClose }: Props) {
                 <label
                   key={t.value}
                   className="flex items-center gap-1.5 cursor-pointer select-none text-sm"
-                  style={{ color: selected.includes(t.value) ? "#4ade80" : "#6b7280" }}
+                  style={{ color: selected.includes(t.value) ? "var(--sh-primary)" : "var(--sh-muted)" }}
                 >
                   <input
                     type="checkbox"

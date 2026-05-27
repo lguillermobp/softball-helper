@@ -30,7 +30,7 @@ interface Props {
 }
 
 const selectClass =
-  "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
+  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
 function toDatetimeLocal(iso: string) {
   const d = new Date(iso);
@@ -79,7 +79,7 @@ export function EditGameDialog({ slug, game, teams, categories, fields }: Props)
       <DialogTrigger asChild>
         <button
           className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
-          style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
+          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
         >
           Edit
         </button>
@@ -113,7 +113,7 @@ export function EditGameDialog({ slug, game, teams, categories, fields }: Props)
               onChange={(e) => setHomeAwayTbd(e.target.checked)}
               className="accent-green-500 w-4 h-4"
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm" style={{ color: "var(--sh-text)" }}>
               Home / Away to be determined at game time
             </span>
           </label>

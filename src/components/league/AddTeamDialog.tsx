@@ -11,12 +11,12 @@ interface Season { id: string; name: string }
 interface Category { id: string; name: string }
 
 const selectClass =
-  "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
+  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
 function StaffFields({ prefix, label, required }: { prefix: string; label: string; required?: boolean }) {
   return (
-    <div className="space-y-3 rounded-xl p-3" style={{ background: "#0a1a0a", border: "1px solid #1e3a1e" }}>
-      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>
+    <div className="space-y-3 rounded-xl p-3" style={{ background: "var(--sh-bg-card2)", border: "1px solid var(--sh-border)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
         {label}{required && " *"}
       </p>
       <div className="space-y-1">
@@ -131,7 +131,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
               <button
                 type="button"
                 className="text-xs underline"
-                style={{ color: "#f87171" }}
+                style={{ color: "var(--sh-danger)" }}
                 onClick={() => setHasAssistant(false)}
               >
                 Remove assistant
@@ -141,7 +141,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
             <button
               type="button"
               className="text-sm underline"
-              style={{ color: "#4ade80" }}
+              style={{ color: "var(--sh-primary)" }}
               onClick={() => setHasAssistant(true)}
             >
               + Add assistant (optional)

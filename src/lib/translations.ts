@@ -96,6 +96,26 @@ export const translations = {
       },
       common: { addSeason: "+ Add season", addCategory: "+ Add category", addTeam: "+ Add team", addField: "+ Add field" },
     },
+    season: {
+      back: "← League",
+      addGame: "+ Add game",
+      status: { active: "Active", completed: "Completed", upcoming: "Upcoming" },
+      tabs: { schedule: "Schedule", standings: "Standings", hitting: "Hitting", pitching: "Pitching" },
+      schedule: {
+        none: "No games scheduled yet.",
+        noneAdmin: " Click «+ Add game» to schedule the first one.",
+        home: "Home", away: "Away", tbd: "TBD",
+        delete: "Delete", score: "Score", scoringSoon: "Scoring coming soon",
+      },
+      standings: {
+        none: "Standings will appear once games are completed.",
+        rank: "#", team: "Team", gp: "GP", w: "W", l: "L", t: "T", pts: "Pts", rf: "RF", ra: "RA", pct: "Pct",
+      },
+      stats: {
+        hittingTitle: "Hitting Stats", hittingDesc: "Available once game scoring is enabled.",
+        pitchingTitle: "Pitching Stats", pitchingDesc: "Available once game scoring is enabled.",
+      },
+    },
   },
 
   // ── Español ────────────────────────────────────────────────────────────────
@@ -187,6 +207,26 @@ export const translations = {
       },
       common: { addSeason: "+ Agregar temporada", addCategory: "+ Agregar categoría", addTeam: "+ Agregar equipo", addField: "+ Agregar campo" },
     },
+    season: {
+      back: "← Liga",
+      addGame: "+ Agregar juego",
+      status: { active: "Activa", completed: "Completada", upcoming: "Próxima" },
+      tabs: { schedule: "Calendario", standings: "Clasificación", hitting: "Bateo", pitching: "Pitcheo" },
+      schedule: {
+        none: "Aún no hay juegos programados.",
+        noneAdmin: " Haz clic en «+ Agregar juego» para programar el primero.",
+        home: "Local", away: "Visitante", tbd: "TBD",
+        delete: "Eliminar", score: "Puntuar", scoringSoon: "Puntuación próximamente",
+      },
+      standings: {
+        none: "Las clasificaciones aparecerán cuando se completen los juegos.",
+        rank: "#", team: "Equipo", gp: "JJ", w: "G", l: "P", t: "E", pts: "Pts", rf: "RF", ra: "RC", pct: "Pct",
+      },
+      stats: {
+        hittingTitle: "Estadísticas de bateo", hittingDesc: "Disponible cuando se active la puntuación de juegos.",
+        pitchingTitle: "Estadísticas de pitcheo", pitchingDesc: "Disponible cuando se active la puntuación de juegos.",
+      },
+    },
   },
 
   // ── 日本語 ─────────────────────────────────────────────────────────────────
@@ -277,6 +317,26 @@ export const translations = {
         morning: "午前", afternoon: "午後", night: "夜間",
       },
       common: { addSeason: "+ シーズンを追加", addCategory: "+ カテゴリを追加", addTeam: "+ チームを追加", addField: "+ フィールドを追加" },
+    },
+    season: {
+      back: "← リーグ",
+      addGame: "+ 試合追加",
+      status: { active: "アクティブ", completed: "終了", upcoming: "予定" },
+      tabs: { schedule: "スケジュール", standings: "順位表", hitting: "打撃", pitching: "投球" },
+      schedule: {
+        none: "試合がまだスケジュールされていません。",
+        noneAdmin: "«+ 試合追加» をクリックして最初の試合を追加してください。",
+        home: "ホーム", away: "アウェー", tbd: "未定",
+        delete: "削除", score: "スコア", scoringSoon: "スコア入力は近日公開",
+      },
+      standings: {
+        none: "試合が完了すると順位表が表示されます。",
+        rank: "#", team: "チーム", gp: "試合", w: "勝", l: "敗", t: "分", pts: "点", rf: "得点", ra: "失点", pct: "勝率",
+      },
+      stats: {
+        hittingTitle: "打撃成績", hittingDesc: "試合スコア入力が有効になると利用できます。",
+        pitchingTitle: "投球成績", pitchingDesc: "試合スコア入力が有効になると利用できます。",
+      },
     },
   },
 };

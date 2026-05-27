@@ -71,3 +71,35 @@ body {
   background: var(--sh-bg-page);
   color: var(--sh-text);
 }
+
+/* ── Form elements — auto-theme ──────────────────────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"]),
+textarea {
+  background: var(--sh-bg-card2) !important;
+  color: var(--sh-text) !important;
+  border-color: var(--sh-border) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"])::placeholder,
+textarea::placeholder {
+  color: var(--sh-muted) !important;
+  opacity: 1;
+}
+select {
+  background: var(--sh-bg-card2) !important;
+  color: var(--sh-text) !important;
+  border-color: var(--sh-border) !important;
+}
+select option {
+  background: var(--sh-bg-card);
+  color: var(--sh-text);
+}
+
+/* ── Dialogs — auto-theme ────────────────────────────────────────────────── */
+[role="dialog"] {
+  background: var(--sh-bg-card) !important;
+  color: var(--sh-text) !important;
+  border-color: var(--sh-border) !important;
+}
+[role="dialog"] label {
+  color: var(--sh-text) !important;
+}

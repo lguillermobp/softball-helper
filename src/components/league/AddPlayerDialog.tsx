@@ -61,7 +61,7 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
           <div className="space-y-1">
             <Label htmlFor="email">Email address *</Label>
             <Input id="email" name="email" type="email" placeholder="player@example.com" required />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
               If they already have an account they will be linked and notified. Otherwise an invitation to set up their profile will be sent.
             </p>
           </div>

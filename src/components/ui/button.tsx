@@ -12,10 +12,10 @@ const buttonVariants = cva(
       variant: {
         default: "bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-600",
         destructive: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
-        secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-        ghost: "hover:bg-gray-100 text-gray-700",
-        link: "text-green-700 underline-offset-4 hover:underline",
+        outline: "border hover:opacity-80",
+        secondary: "hover:opacity-80",
+        ghost: "hover:opacity-80",
+        link: "underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -38,11 +38,22 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, style, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+    const variantStyle: React.CSSProperties =
+      variant === "outline"
+        ? { background: "var(--sh-bg-card2)", color: "var(--sh-text)", borderColor: "var(--sh-border2)" }
+        : variant === "secondary"
+        ? { background: "var(--sh-bg-card2)", color: "var(--sh-text)" }
+        : variant === "ghost"
+        ? { color: "var(--sh-text)" }
+        : variant === "link"
+        ? { color: "var(--sh-primary)" }
+        : {};
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
+        style={{ ...variantStyle, ...style }}
         ref={ref}
         {...props}
       />

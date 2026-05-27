@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { AddGameDialog } from "@/components/league/AddGameDialog";
 import { SeasonDashboard } from "@/components/league/SeasonDashboard";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSelector } from "@/components/ui/language-selector";
 
 interface PageProps {
   params: Promise<{ slug: string; id: string }>;
@@ -90,15 +91,6 @@ export default async function SeasonPage({ params }: PageProps) {
       pct: s.gp === 0 ? ".000" : (s.w / s.gp).toFixed(3).replace(/^0/, ""),
     }));
 
-  function seasonBadge(status: string) {
-    if (status === "ACTIVE")    return { color: "#4ade80", text: "Active" };
-    if (status === "COMPLETED") return { color: "#9ca3af", text: "Completed" };
-    return { color: "#fbbf24", text: "Upcoming" };
-  }
-
-  const sb = seasonBadge(season.status);
-
-  // Serialize dates for client component
   const serializedGames = games.map((g) => ({
     ...g,
     scheduledAt: g.scheduledAt.toISOString(),
@@ -107,51 +99,47 @@ export default async function SeasonPage({ params }: PageProps) {
   const serializedFields = league.fields.map((f) => ({ id: f.id, name: f.name }));
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a1a0a" }}>
+    <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
       {/* Header */}
       <header
         className="border-b sticky top-0 z-10"
-        style={{ borderColor: "#1e3a1e", background: "#0f2310" }}
+        style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-header)" }}
       >
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
-          <Link href="/dashboard" className="text-sm hover:opacity-80" style={{ color: "#4ade80" }}>
-            ← Dashboard
-          </Link>
-          <span style={{ color: "#2d5a2d" }}>|</span>
-          <Link href={`/league/${slug}`} className="text-sm hover:opacity-80" style={{ color: "#4ade80" }}>
-            {league.name}
-          </Link>
-          <span style={{ color: "#2d5a2d" }}>|</span>
-          <span className="font-bold" style={{ color: "#f0fdf4" }}>{season.name}</span>
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="text-sm hover:opacity-80"
+              style={{ color: "var(--sh-primary)" }}
+            >
+              ← Dashboard
+            </Link>
+            <span style={{ color: "var(--sh-border2)" }}>|</span>
+            <Link
+              href={`/league/${slug}`}
+              className="text-sm hover:opacity-80"
+              style={{ color: "var(--sh-primary)" }}
+            >
+              {league.name}
+            </Link>
+            <span style={{ color: "var(--sh-border2)" }}>|</span>
+            <span className="font-bold" style={{ color: "var(--sh-text)" }}>{season.name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSelector />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        {/* Season info row */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: "#f0fdf4" }}>{season.name}</h1>
-            <p className="text-sm mt-1" style={{ color: "#4ade80" }}>
-              {new Date(season.startDate).toLocaleDateString()} – {new Date(season.endDate).toLocaleDateString()}
-              {" · "}
-              <span style={{ color: sb.color }}>{sb.text}</span>
-            </p>
-          </div>
-          {isAdmin && (
-            <AddGameDialog
-              slug={slug}
-              seasonId={id}
-              teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
-              categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
-              fields={serializedFields}
-            />
-          )}
-        </div>
-
-        {/* Tabbed dashboard */}
+      <main className="mx-auto max-w-6xl px-4 py-8 space-y-6" style={{ color: "var(--sh-text)" }}>
         <SeasonDashboard
           slug={slug}
           seasonId={id}
+          seasonName={season.name}
+          startDate={season.startDate.toISOString()}
+          endDate={season.endDate.toISOString()}
+          seasonStatus={season.status}
           isAdmin={isAdmin}
           games={serializedGames}
           teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
