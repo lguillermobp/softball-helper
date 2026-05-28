@@ -81,6 +81,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   const isAwayManager = game.awayTeam.managerId === userId || game.awayTeam.assistantId === userId;
   const canEditOfficials = isAdmin || isUmpire;
   const canStartGame     = isAdmin || isUmpire;
+  const canSwapTeams     = isAdmin || isUmpire || isScorer;
   const canEditHomeLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager)) ||
     (game.status === "IN_PROGRESS" && (isAdmin || isScorer));
@@ -164,6 +165,7 @@ export default async function GameScoringPage({ params }: PageProps) {
             canStartGame,
             canEditHomeLineup,
             canEditAwayLineup,
+            canSwapTeams,
           }}
         />
       </main>

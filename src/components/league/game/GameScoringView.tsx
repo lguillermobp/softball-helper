@@ -37,6 +37,7 @@ interface Permissions {
   canStartGame: boolean;
   canEditHomeLineup: boolean;
   canEditAwayLineup: boolean;
+  canSwapTeams: boolean;
 }
 
 interface Props {
@@ -199,6 +200,11 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
         <OfficialsSetup
           slug={slug}
           gameId={game.id}
+          homeTeam={game.homeTeam}
+          awayTeam={game.awayTeam}
+          homeAwayTbd={game.homeAwayTbd}
+          canSwapTeams={permissions.canSwapTeams}
+          gameStatus={game.status}
           fields={fields}
           umpireOptions={umpireOptions}
           scorerOptions={scorerOptions}
