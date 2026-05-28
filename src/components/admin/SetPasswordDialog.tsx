@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -49,8 +48,9 @@ export function SetPasswordDialog({ userId, userName }: Props) {
         Set password
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="w-full max-w-sm rounded-2xl border p-6 space-y-4" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
             <h2 className="text-base font-bold" style={{ color: "var(--sh-text)" }}>
               Set password{userName ? ` — ${userName}` : ""}
@@ -96,7 +96,7 @@ export function SetPasswordDialog({ userId, userName }: Props) {
             )}
           </div>
         </div>
-      </Dialog>
+      )}
     </>
   );
 }
