@@ -1,11 +1,27 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { AdminUsersView } from "@/components/admin/AdminUsersView";
 
 export default async function AdminUsersPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
+
+  const users = await prisma.user.findMany({
+    select: {
+      id: true, name: true, email: true, phone: true,
+      emailVerified: true, isMasterAdmin: true, isActive: true, createdAt: true,
+      _count: { select: { leagueRoles: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const serialized = users.map((u) => ({
+    ...u,
+    emailVerified: u.emailVerified?.toISOString() ?? null,
+    createdAt: u.createdAt.toISOString(),
+  }));
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
@@ -39,10 +55,10 @@ export default async function AdminUsersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>System Users</h1>
           <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>
-            Manage all registered users — edit details, reset passwords, and deactivate accounts.
+            {serialized.length} registered users — edit details, reset passwords, and deactivate accounts.
           </p>
         </div>
-        <AdminUsersView />
+        <AdminUsersView initialUsers={serialized} />
       </main>
     </div>
   );

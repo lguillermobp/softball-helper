@@ -1,39 +1,35 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { EditUserDialog } from "./EditUserDialog";
 import { SetPasswordDialog } from "./SetPasswordDialog";
 
-interface AdminUser {
+export interface AdminUser {
   id: string; name: string | null; email: string; phone: string | null;
   emailVerified: string | null; isMasterAdmin: boolean; isActive: boolean;
   createdAt: string; _count: { leagueRoles: number };
 }
 
+interface Props { initialUsers: AdminUser[] }
+
 const dim  = { color: "var(--sh-muted)" };
 const head = { color: "var(--sh-text)" };
 const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 
-export function AdminUsersView() {
-  const [users,   setUsers]   = useState<AdminUser[]>([]);
-  const [query,   setQuery]   = useState("");
-  const [loading, setLoading] = useState(true);
+export function AdminUsersView({ initialUsers }: Props) {
+  const [users,    setUsers]    = useState<AdminUser[]>(initialUsers);
+  const [query,    setQuery]    = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
 
-  const load = useCallback(async (q: string) => {
-    setLoading(true);
-    const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    setUsers(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(""); }, [load]);
-
-  useEffect(() => {
-    const id = setTimeout(() => load(query), 300);
-    return () => clearTimeout(id);
-  }, [query, load]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+    );
+  }, [users, query]);
 
   async function toggleActive(user: AdminUser) {
     setToggling(user.id);
@@ -59,14 +55,14 @@ export function AdminUsersView() {
           className="flex-1 rounded-xl border px-4 py-2 text-sm outline-none"
           style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
         />
-        <span className="text-xs shrink-0" style={dim}>{users.length} users</span>
+        <span className="text-xs shrink-0" style={dim}>{filtered.length} / {users.length} users</span>
       </div>
 
       <div className="rounded-2xl border overflow-hidden" style={card}>
-        {loading ? (
-          <p className="px-6 py-8 text-sm text-center" style={dim}>Loading…</p>
-        ) : users.length === 0 ? (
-          <p className="px-6 py-8 text-sm text-center" style={dim}>No users found.</p>
+        {filtered.length === 0 ? (
+          <p className="px-6 py-8 text-sm text-center" style={dim}>
+            {query ? "No users match your search." : "No users found."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -78,7 +74,7 @@ export function AdminUsersView() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filtered.map((user) => (
                   <tr key={user.id} className="transition-colors" style={{ borderBottom: "1px solid var(--sh-border)", opacity: user.isActive ? 1 : 0.6 }}>
                     {/* User */}
                     <td className="px-4 py-3">
