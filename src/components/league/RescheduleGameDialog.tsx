@@ -230,7 +230,9 @@ export function RescheduleGameDialog({ slug, game, teams, categories, fields }: 
               disabled={loading}
               style={{ background: willBePlayed ? "var(--sh-purple)" : "var(--sh-danger)", color: "#fff" }}
             >
-              {loading ? tr.submitting : tr.submit}
+              {loading
+                ? (willBePlayed ? tr.submitting : tr.cancelling)
+                : (willBePlayed ? tr.submit    : tr.cancel)}
             </Button>
           </div>
         </form>
