@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { AdminUsersView } from "@/components/admin/AdminUsersView";
+import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
 
@@ -10,44 +10,42 @@ export default async function AdminUsersPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
 
-  type RawUser = {
-    id: string; name: string | null; email: string; phone: string | null;
-    emailVerified: Date | null; isMasterAdmin: boolean;
-    isActive: boolean | null; createdAt: Date;
-  };
-  type RawCount = { userId: string; cnt: bigint };
+  const dbUrl =
+    process.env.DATABASE_URL ||
+    process.env.DATABASE_PRIVATE_URL ||
+    process.env.DATABASE_PUBLIC_URL ||
+    process.env.POSTGRES_URL ||
+    "";
 
   let serialized: any[] = [];
   let errorMsg: string | null = null;
   let dbInfo = "";
 
   try {
-    const [dbResult] = await prisma.$queryRaw<[{ db: string; host: string; total: bigint }]>`
-      SELECT current_database() AS db,
-             inet_server_addr()::text AS host,
-             (SELECT COUNT(*) FROM users) AS total
-    `;
-    dbInfo = `DB: ${dbResult.db} | Host: ${dbResult.host} | Total rows in users table: ${Number(dbResult.total)}`;
-  } catch { dbInfo = "Could not read DB info"; }
+    const pool = new Pool({ connectionString: dbUrl, ssl: false });
 
-  try {
-    const [rows, counts] = await Promise.all([
-      prisma.$queryRaw<RawUser[]>`
+    const [usersRes, countRes, rolesRes] = await Promise.all([
+      pool.query(`
         SELECT id, name, email, phone,
-               "emailVerified", "isMasterAdmin", "isActive", "createdAt"
+               "emailVerified", "isMasterAdmin",
+               COALESCE("isActive", true) AS "isActive",
+               "createdAt"
         FROM users
         ORDER BY "createdAt" DESC
-      `,
-      prisma.$queryRaw<RawCount[]>`
-        SELECT "userId", COUNT(*) AS cnt
-        FROM user_league_roles
-        GROUP BY "userId"
-      `,
+      `),
+      pool.query(`SELECT COUNT(*) AS total FROM users`),
+      pool.query(`SELECT "userId", COUNT(*) AS cnt FROM user_league_roles GROUP BY "userId"`),
     ]);
 
-    const countMap = new Map(counts.map((c) => [c.userId, Number(c.cnt)]));
+    await pool.end();
 
-    serialized = rows.map((u) => ({
+    dbInfo = `Connected to: ${dbUrl.replace(/:\/\/[^@]+@/, "://*****@")} | Rows in DB: ${countRes.rows[0].total}`;
+
+    const countMap = new Map<string, number>(
+      rolesRes.rows.map((r: any) => [r.userId, Number(r.cnt)])
+    );
+
+    serialized = usersRes.rows.map((u: any) => ({
       id:            u.id,
       name:          u.name,
       email:         u.email,
@@ -59,8 +57,8 @@ export default async function AdminUsersPage() {
       _count:        { leagueRoles: countMap.get(u.id) ?? 0 },
     }));
   } catch (err: any) {
-    console.error("[ADMIN/USERS] query failed:", err);
-    errorMsg = err?.message ?? "Database error";
+    console.error("[ADMIN/USERS]", err);
+    errorMsg = `${err?.message ?? "Unknown error"} | URL used: ${dbUrl.replace(/:\/\/[^@]+@/, "://*****@")}`;
   }
 
   return (
@@ -95,19 +93,22 @@ export default async function AdminUsersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>System Users</h1>
           <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>
-            {errorMsg ? "Could not load users" : `${serialized.length} registered user${serialized.length !== 1 ? "s" : ""} — edit details, reset passwords, and deactivate accounts.`}
-          {dbInfo && <span className="block text-xs mt-1 font-mono opacity-60">{dbInfo}</span>}
+            {errorMsg
+              ? "Could not load users"
+              : `${serialized.length} registered user${serialized.length !== 1 ? "s" : ""}`}
           </p>
+          {dbInfo && (
+            <p className="text-xs mt-1 font-mono px-3 py-1.5 rounded-lg inline-block"
+              style={{ background: "#1a3d1a", color: "#4ade80" }}>
+              {dbInfo}
+            </p>
+          )}
         </div>
 
         {errorMsg ? (
-          <div className="rounded-2xl border p-6" style={{ borderColor: "var(--sh-danger-border)", background: "var(--sh-bg-card)" }}>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#f87171" }}>Database error</p>
-            <p className="text-xs font-mono" style={{ color: "var(--sh-muted)" }}>{errorMsg}</p>
-            <p className="text-xs mt-3" style={{ color: "var(--sh-secondary)" }}>
-              This usually means the database migration has not been applied on production.
-              Run <code className="px-1 rounded" style={{ background: "var(--sh-bg-card2)" }}>railway run npx prisma migrate deploy</code> from your terminal.
-            </p>
+          <div className="rounded-2xl border p-6" style={{ borderColor: "#7f1d1d", background: "#1a0a0a" }}>
+            <p className="text-sm font-semibold mb-2" style={{ color: "#f87171" }}>Error</p>
+            <p className="text-xs font-mono break-all" style={{ color: "#fca5a5" }}>{errorMsg}</p>
           </div>
         ) : (
           <AdminUsersView initialUsers={serialized} />
