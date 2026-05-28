@@ -140,7 +140,7 @@ model UserLeagueRole {
 enum LeagueRole {
   LEAGUE_ADMIN
   UMPIRE
-  SCORER
+  SCOREKEEPER
   TEAM_MANAGER
   TEAM_ASSISTANT
   PLAYER

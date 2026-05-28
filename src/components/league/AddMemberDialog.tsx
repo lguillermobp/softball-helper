@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 const ROLES = [
   { value: "LEAGUE_ADMIN", label: "League Admin" },
   { value: "UMPIRE",       label: "Umpire" },
-  { value: "SCORER",       label: "Scorer" },
+  { value: "SCOREKEEPER",  label: "Scorekeeper" },
 ];
 
 export function AddMemberDialog({ slug }: { slug: string }) {

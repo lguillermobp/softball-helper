@@ -34,7 +34,7 @@ export default async function GameScoringPage({ params }: PageProps) {
 
   const isAdmin    = isMasterAdmin || userRole?.role === "LEAGUE_ADMIN";
   const isUmpire   = userRole?.role === "UMPIRE";
-  const isScorer   = userRole?.role === "SCORER";
+  const isScorer   = userRole?.role === "SCOREKEEPER";
 
   // Load game
   const game = await prisma.game.findFirst({
@@ -71,7 +71,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   const eligibleOfficials = await prisma.userLeagueRole.findMany({
     where: {
       leagueId: league.id,
-      role: { in: ["UMPIRE", "SCORER"] },
+      role: { in: ["UMPIRE", "SCOREKEEPER"] },
     },
     include: { user: { select: { id: true, name: true, email: true } } },
     orderBy: { user: { name: "asc" } },
@@ -127,7 +127,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   const umpireOptions = eligibleOfficials.filter(o => o.role === "UMPIRE").map(o => ({
     id: o.user.id, name: o.user.name ?? o.user.email, email: o.user.email,
   }));
-  const scorerOptions = eligibleOfficials.filter(o => o.role === "SCORER").map(o => ({
+  const scorerOptions = eligibleOfficials.filter(o => o.role === "SCOREKEEPER").map(o => ({
     id: o.user.id, name: o.user.name ?? o.user.email, email: o.user.email,
   }));
 

@@ -1,0 +1,2 @@
+-- Rename enum value SCORER → SCOREKEEPER in LeagueRole
+ALTER TYPE "LeagueRole" RENAME VALUE 'SCORER' TO 'SCOREKEEPER';

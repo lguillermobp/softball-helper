@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isUmpire = league.userRoles.some(r => r.role === "UMPIRE");
-  const isScorer = league.userRoles.some(r => r.role === "SCORER");
+  const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
   const isHomeManager = game.homeTeam.managerId === userId || game.homeTeam.assistantId === userId;
   const isAwayManager = game.awayTeam.managerId === userId || game.awayTeam.assistantId === userId;
 
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (game.status === "SCHEDULED" && !canEditPreGame)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status === "IN_PROGRESS" && !canEditInGame)
-    return NextResponse.json({ error: "Forbidden — only admin or scorer can edit in-game lineups" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden — only admin or scorekeeper can edit in-game lineups" }, { status: 403 });
 
   // Validate lineup
   const validationError = validateLineup(entries);
