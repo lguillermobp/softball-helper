@@ -26,6 +26,7 @@ model User {
   players       Player[]
   managedTeams  Team[] @relation("TeamManager")
   assistedTeams Team[] @relation("TeamAssistant")
+  officialRoles GameOfficial[]
 
   @@map("users")
 }
@@ -261,6 +262,8 @@ model Game {
   field    Field?    @relation(fields: [fieldId], references: [id])
   homeTeam Team      @relation("HomeGames", fields: [homeTeamId], references: [id])
   awayTeam Team      @relation("AwayGames", fields: [awayTeamId], references: [id])
+  officials GameOfficial[]
+  lineups   GameLineup[]
 
   @@map("games")
 }
@@ -270,6 +273,11 @@ enum GameStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum OfficialRole {
+  UMPIRE
+  SCOREKEEPER
 }
 
 // ─── Players ─────────────────────────────────────────────────────────────────
@@ -288,7 +296,36 @@ model Player {
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [userId], references: [id])
+  gameLineups GameLineup[]
 
   @@unique([email, teamId])
   @@map("players")
+}
+
+model GameOfficial {
+  id        String       @id @default(cuid())
+  gameId    String
+  game      Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  role      OfficialRole
+  createdAt DateTime     @default(now())
+
+  @@unique([gameId, userId])
+  @@map("game_officials")
+}
+
+model GameLineup {
+  id           String   @id @default(cuid())
+  gameId       String
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  isHome       Boolean
+  position     String
+  battingOrder Int?
+  createdAt    DateTime @default(now())
+
+  @@unique([gameId, playerId])
+  @@map("game_lineups")
 }

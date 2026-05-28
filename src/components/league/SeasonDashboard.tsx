@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { EditGameDialog } from "@/components/league/EditGameDialog";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
@@ -238,15 +239,14 @@ export function SeasonDashboard({
                               </button>
                             </>
                           )}
-                          {isAdmin && (game.status === "SCHEDULED" || game.status === "IN_PROGRESS") && (
-                            <button
-                              disabled
-                              className="text-xs font-semibold px-3 py-1 rounded-lg opacity-60 cursor-not-allowed"
+                          {(isAdmin || true) && (game.status === "SCHEDULED" || game.status === "IN_PROGRESS") && (
+                            <Link
+                              href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
+                              className="text-xs font-semibold px-3 py-1 rounded-lg transition-all hover:opacity-80"
                               style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}
-                              title={ts.schedule.scoringSoon}
                             >
-                              {ts.schedule.score}
-                            </button>
+                              {ts.schedule.scoring}
+                            </Link>
                           )}
                         </div>
                         <p className="text-xs" style={dim}>
