@@ -14,6 +14,7 @@ export default async function AdminUsersPage() {
   let errorMsg: string | null = null;
 
   try {
+    // Try full query (requires isActive column from migration)
     users = await prisma.user.findMany({
       select: {
         id: true, name: true, email: true, phone: true,
@@ -22,9 +23,22 @@ export default async function AdminUsersPage() {
       },
       orderBy: { createdAt: "desc" },
     });
-  } catch (err: any) {
-    console.error("[ADMIN/USERS] query failed:", err);
-    errorMsg = err?.message ?? "Database error";
+  } catch {
+    try {
+      // Fallback: migration not applied yet — query without isActive
+      const rows = await prisma.user.findMany({
+        select: {
+          id: true, name: true, email: true, phone: true,
+          emailVerified: true, isMasterAdmin: true, createdAt: true,
+          _count: { select: { leagueRoles: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      users = rows.map((u) => ({ ...u, isActive: true }));
+    } catch (err2: any) {
+      console.error("[ADMIN/USERS] query failed:", err2);
+      errorMsg = err2?.message ?? "Database error";
+    }
   }
 
   const serialized = users.map((u) => ({
