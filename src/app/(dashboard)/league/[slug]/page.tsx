@@ -82,6 +82,7 @@ export default async function LeaguePage({ params }: PageProps) {
     players: t.players.map((p) => ({
       id: p.id,
       name: p.name,
+      email: p.email,
       jerseyNumber: p.jerseyNumber,
       photoUrl: p.photoUrl ?? null,
       userId: p.userId,

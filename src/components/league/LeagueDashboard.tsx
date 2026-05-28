@@ -15,6 +15,7 @@ import { AddFieldDialog } from "@/components/league/AddFieldDialog";
 import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
 import { PlayerPhotoDialog } from "@/components/league/PlayerPhotoDialog";
 import { ConditionsSection } from "@/components/league/ConditionsSection";
+import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
+interface Player { id: string; name: string; email: string; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; status: string; isActive: boolean;
@@ -440,6 +441,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>{tl.teams.jersey}</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{tl.teams.name}</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.account}</th>
+                {canEdit && <th className="px-4 py-2 w-16" />}
               </tr>
             </thead>
             <tbody>
@@ -465,8 +467,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                             {p.name.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        {/* Edit button — admin only */}
-                        {isAdmin && (
+                        {canEdit && (
                           <PlayerPhotoDialog
                             slug={slug}
                             playerId={p.id}
@@ -486,6 +487,11 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
                       {p.userId ? "✓" : "—"}
                     </td>
+                    {canEdit && (
+                      <td className="px-4 py-2">
+                        <EditPlayerDialog slug={slug} player={p} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
