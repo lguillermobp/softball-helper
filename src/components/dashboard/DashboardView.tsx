@@ -66,12 +66,6 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2">
-              {isMasterAdmin && (
-                <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
-                  style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
-                  ★ Master Admin
-                </span>
-              )}
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
                 {userName?.charAt(0).toUpperCase() ?? "?"}
