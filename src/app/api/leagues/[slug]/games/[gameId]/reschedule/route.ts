@@ -26,22 +26,29 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (original.status !== "SCHEDULED")
     return NextResponse.json({ error: "Only scheduled games can be rescheduled" }, { status: 409 });
 
-  const {
-    willBePlayed,
-    homeTeamId, awayTeamId,
-    scheduledAt,
-    fieldId,
-    categoryId,
-    homeAwayTbd,
-  } = await req.json() as {
+  const body = await req.json() as {
     willBePlayed: boolean;
-    homeTeamId: string;
-    awayTeamId: string;
-    scheduledAt: string;
-    fieldId: string | null;
-    categoryId: string | null;
-    homeAwayTbd: boolean;
+    homeTeamId?: string;
+    awayTeamId?: string;
+    scheduledAt?: string;
+    fieldId?: string | null;
+    categoryId?: string | null;
+    homeAwayTbd?: boolean;
   };
+
+  const { willBePlayed } = body;
+
+  // When the game will not be played, only cancel the original — no new game needed
+  if (!willBePlayed) {
+    const cancelled = await prisma.game.update({
+      where: { id: gameId },
+      data: { status: "CANCELLED" },
+    });
+    return NextResponse.json({ original: cancelled, newGame: null }, { status: 200 });
+  }
+
+  // Game will be played — validate new scheduling details
+  const { homeTeamId, awayTeamId, scheduledAt, fieldId, categoryId, homeAwayTbd } = body;
 
   if (!homeTeamId || !awayTeamId || !scheduledAt)
     return NextResponse.json({ error: "homeTeamId, awayTeamId, and scheduledAt are required" }, { status: 400 });
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const [updatedOriginal, newGame] = await prisma.$transaction([
     prisma.game.update({
       where: { id: gameId },
-      data: { status: willBePlayed ? "RESCHEDULED" : "CANCELLED" },
+      data: { status: "RESCHEDULED" },
     }),
     prisma.game.create({
       data: {

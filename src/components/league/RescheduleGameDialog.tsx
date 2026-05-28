@@ -66,18 +66,20 @@ export function RescheduleGameDialog({ slug, game, teams, categories, fields }: 
     setLoading(true);
     const fd = new FormData(e.currentTarget);
 
+    const payload: Record<string, unknown> = { willBePlayed };
+    if (willBePlayed) {
+      payload.homeTeamId  = fd.get("homeTeamId");
+      payload.awayTeamId  = fd.get("awayTeamId");
+      payload.scheduledAt = fd.get("scheduledAt");
+      payload.fieldId     = fd.get("fieldId") || null;
+      payload.categoryId  = fd.get("categoryId") || null;
+      payload.homeAwayTbd = homeAwayTbd;
+    }
+
     const res = await fetch(`/api/leagues/${slug}/games/${game.id}/reschedule`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        willBePlayed,
-        homeTeamId:  fd.get("homeTeamId"),
-        awayTeamId:  fd.get("awayTeamId"),
-        scheduledAt: fd.get("scheduledAt"),
-        fieldId:     fd.get("fieldId") || null,
-        categoryId:  fd.get("categoryId") || null,
-        homeAwayTbd,
-      }),
+      body: JSON.stringify(payload),
     });
     setLoading(false);
     if (!res.ok) {
@@ -155,8 +157,8 @@ export function RescheduleGameDialog({ slug, game, teams, categories, fields }: 
             </div>
           </div>
 
-          {/* ── New game details ───────────────────────────────────────── */}
-          <div className="space-y-4">
+          {/* ── New game details — only shown when game will be played ── */}
+          {willBePlayed && <div className="space-y-4">
             <p className="text-sm font-semibold border-t pt-4" style={{ color: "var(--sh-text)", borderColor: "var(--sh-border)" }}>
               {tr.newDetails}
             </p>
@@ -217,7 +219,7 @@ export function RescheduleGameDialog({ slug, game, teams, categories, fields }: 
                 </select>
               </div>
             )}
-          </div>
+          </div>}
 
           {error && <p className="text-sm" style={{ color: "var(--sh-danger)" }}>{error}</p>}
 
