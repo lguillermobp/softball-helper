@@ -10,42 +10,45 @@ export default async function AdminUsersPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
 
-  let users: any[] = [];
+  type RawUser = {
+    id: string; name: string | null; email: string; phone: string | null;
+    email_verified: Date | null; is_master_admin: boolean;
+    is_active: boolean | null; created_at: Date; league_roles: bigint;
+  };
+
+  let serialized: any[] = [];
   let errorMsg: string | null = null;
 
   try {
-    // Try full query (requires isActive column from migration)
-    users = await prisma.user.findMany({
-      select: {
-        id: true, name: true, email: true, phone: true,
-        emailVerified: true, isMasterAdmin: true, isActive: true, createdAt: true,
-        _count: { select: { leagueRoles: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  } catch {
-    try {
-      // Fallback: migration not applied yet — query without isActive
-      const rows = await prisma.user.findMany({
-        select: {
-          id: true, name: true, email: true, phone: true,
-          emailVerified: true, isMasterAdmin: true, createdAt: true,
-          _count: { select: { leagueRoles: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      users = rows.map((u) => ({ ...u, isActive: true }));
-    } catch (err2: any) {
-      console.error("[ADMIN/USERS] query failed:", err2);
-      errorMsg = err2?.message ?? "Database error";
-    }
-  }
+    const rows = await prisma.$queryRaw<RawUser[]>`
+      SELECT
+        u.id, u.name, u.email, u.phone,
+        u.email_verified,
+        u.is_master_admin,
+        COALESCE(u.is_active, true) AS is_active,
+        u.created_at,
+        COUNT(r.id) AS league_roles
+      FROM users u
+      LEFT JOIN user_league_roles r ON r.user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+    `;
 
-  const serialized = users.map((u) => ({
-    ...u,
-    emailVerified: u.emailVerified?.toISOString() ?? null,
-    createdAt: u.createdAt.toISOString(),
-  }));
+    serialized = rows.map((u) => ({
+      id:           u.id,
+      name:         u.name,
+      email:        u.email,
+      phone:        u.phone,
+      emailVerified: u.email_verified?.toISOString() ?? null,
+      isMasterAdmin: u.is_master_admin,
+      isActive:     u.is_active ?? true,
+      createdAt:    u.created_at.toISOString(),
+      _count:       { leagueRoles: Number(u.league_roles) },
+    }));
+  } catch (err: any) {
+    console.error("[ADMIN/USERS] query failed:", err);
+    errorMsg = err?.message ?? "Database error";
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
