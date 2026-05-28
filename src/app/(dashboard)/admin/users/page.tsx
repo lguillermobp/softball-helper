@@ -30,7 +30,7 @@ export default async function AdminUsersPage() {
                COALESCE("isActive", true) AS "isActive",
                "createdAt"
         FROM users
-        ORDER BY "createdAt" DESC
+        ORDER BY "isMasterAdmin" DESC, "createdAt" DESC
       `),
       pool.query(`SELECT COUNT(*) AS total FROM users`),
       pool.query(`SELECT "userId", COUNT(*) AS cnt FROM user_league_roles GROUP BY "userId"`),
