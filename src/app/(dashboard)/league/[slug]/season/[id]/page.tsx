@@ -49,11 +49,11 @@ export default async function SeasonPage({ params }: PageProps) {
   });
 
   // ── Compute standings from completed games ──────────────────────────────────
-  type SlimTeam = { id: string; name: string };
+  type SlimTeam = { id: string; name: string; group: string | null };
   const zero = (team: SlimTeam) => ({ team, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
 
   const statsMap = new Map<string, ReturnType<typeof zero>>(
-    league.teams.map((t) => [t.id, zero({ id: t.id, name: t.name })])
+    league.teams.map((t) => [t.id, zero({ id: t.id, name: t.name, group: t.group ?? null })])
   );
 
   for (const game of games) {
@@ -62,9 +62,9 @@ export default async function SeasonPage({ params }: PageProps) {
     const as_ = game.awayScore ?? 0;
 
     if (!statsMap.has(game.homeTeamId))
-      statsMap.set(game.homeTeamId, zero(game.homeTeam));
+      statsMap.set(game.homeTeamId, zero({ ...game.homeTeam, group: null }));
     if (!statsMap.has(game.awayTeamId))
-      statsMap.set(game.awayTeamId, zero(game.awayTeam));
+      statsMap.set(game.awayTeamId, zero({ ...game.awayTeam, group: null }));
 
     const home = statsMap.get(game.homeTeamId)!;
     const away = statsMap.get(game.awayTeamId)!;
@@ -164,7 +164,7 @@ export default async function SeasonPage({ params }: PageProps) {
           seasonStatus={season.status}
           isAdmin={isAdmin}
           games={serializedGames}
-          teams={league.teams.map((t) => ({ id: t.id, name: t.name }))}
+          teams={league.teams.map((t) => ({ id: t.id, name: t.name, group: t.group ?? null }))}
           categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
           fields={serializedFields}
           standings={standings}

@@ -70,6 +70,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(updated);
   }
 
+  // group-only update — admin only
+  if ("group" in body && Object.keys(body).length === 1) {
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const updated = await prisma.team.update({
+      where: { id: teamId },
+      data: { group: body.group || null },
+    });
+    return NextResponse.json(updated);
+  }
+
   // status-only toggle (approve / unapprove) — admin only
   if ("status" in body && Object.keys(body).length === 1) {
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

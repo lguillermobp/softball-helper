@@ -198,6 +198,7 @@ model Team {
   managerId   String?
   assistantId String?
   name        String
+  group       String?
   status      TeamStatus @default(PENDING)
   isActive    Boolean    @default(true)
   logoUrl     String?
