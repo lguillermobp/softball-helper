@@ -12,38 +12,41 @@ export default async function AdminUsersPage() {
 
   type RawUser = {
     id: string; name: string | null; email: string; phone: string | null;
-    email_verified: Date | null; is_master_admin: boolean;
-    is_active: boolean | null; created_at: Date; league_roles: bigint;
+    emailVerified: Date | null; isMasterAdmin: boolean;
+    isActive: boolean | null; createdAt: Date;
   };
+  type RawCount = { userId: string; cnt: bigint };
 
   let serialized: any[] = [];
   let errorMsg: string | null = null;
 
   try {
-    const rows = await prisma.$queryRaw<RawUser[]>`
-      SELECT
-        u.id, u.name, u.email, u.phone,
-        u."emailVerified"   AS email_verified,
-        u."isMasterAdmin"   AS is_master_admin,
-        COALESCE(u."isActive", true) AS is_active,
-        u."createdAt"       AS created_at,
-        COUNT(r.id)         AS league_roles
-      FROM users u
-      LEFT JOIN user_league_roles r ON r."userId" = u.id
-      GROUP BY u.id
-      ORDER BY u."createdAt" DESC
-    `;
+    const [rows, counts] = await Promise.all([
+      prisma.$queryRaw<RawUser[]>`
+        SELECT id, name, email, phone,
+               "emailVerified", "isMasterAdmin", "isActive", "createdAt"
+        FROM users
+        ORDER BY "createdAt" DESC
+      `,
+      prisma.$queryRaw<RawCount[]>`
+        SELECT "userId", COUNT(*) AS cnt
+        FROM user_league_roles
+        GROUP BY "userId"
+      `,
+    ]);
+
+    const countMap = new Map(counts.map((c) => [c.userId, Number(c.cnt)]));
 
     serialized = rows.map((u) => ({
-      id:           u.id,
-      name:         u.name,
-      email:        u.email,
-      phone:        u.phone,
-      emailVerified: u.email_verified?.toISOString() ?? null,
-      isMasterAdmin: u.is_master_admin,
-      isActive:     u.is_active ?? true,
-      createdAt:    u.created_at.toISOString(),
-      _count:       { leagueRoles: Number(u.league_roles) },
+      id:            u.id,
+      name:          u.name,
+      email:         u.email,
+      phone:         u.phone,
+      emailVerified: u.emailVerified ? new Date(u.emailVerified).toISOString() : null,
+      isMasterAdmin: u.isMasterAdmin,
+      isActive:      u.isActive ?? true,
+      createdAt:     new Date(u.createdAt).toISOString(),
+      _count:        { leagueRoles: countMap.get(u.id) ?? 0 },
     }));
   } catch (err: any) {
     console.error("[ADMIN/USERS] query failed:", err);
