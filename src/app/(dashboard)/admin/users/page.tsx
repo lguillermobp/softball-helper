@@ -78,11 +78,20 @@ export default async function AdminUsersPage() {
               ★ Master Admin
             </span>
           </div>
-          <Link href="/dashboard"
-            className="text-sm px-3 py-1.5 rounded-md border transition-colors"
-            style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-            ← Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
+                {session?.user?.name?.charAt(0).toUpperCase() ?? "?"}
+              </div>
+              <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
+            </div>
+            <Link href="/dashboard"
+              className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+              ← Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
