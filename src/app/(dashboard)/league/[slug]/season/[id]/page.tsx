@@ -6,6 +6,7 @@ import { SeasonDashboard } from "@/components/league/SeasonDashboard";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { SignOutButton } from "@/components/ui/sign-out-button";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 
 interface PageProps {
   params: Promise<{ slug: string; id: string }>;
@@ -142,6 +143,7 @@ export default async function SeasonPage({ params }: PageProps) {
             </span>
             <ThemeToggle />
             <LanguageSelector />
+            <ChangePasswordButton />
             <SignOutButton />
           </div>
         </div>

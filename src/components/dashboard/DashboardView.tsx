@@ -5,6 +5,7 @@ import { useLanguage } from "@/context/language-context";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SignOutButton } from "@/components/ui/sign-out-button";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 
 interface LeagueSummary {
   id: string; name: string; slug: string;
@@ -74,6 +75,7 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
             </div>
             <ThemeToggle />
             <LanguageSelector />
+            <ChangePasswordButton />
             <SignOutButton label={d.signOut} />
           </div>
         </div>

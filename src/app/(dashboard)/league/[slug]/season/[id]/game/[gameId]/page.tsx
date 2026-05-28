@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { SignOutButton } from "@/components/ui/sign-out-button";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 import { GameScoringView } from "@/components/league/game/GameScoringView";
 
 interface PageProps {
@@ -158,6 +159,7 @@ export default async function GameScoringPage({ params }: PageProps) {
             </span>
             <ThemeToggle />
             <LanguageSelector />
+            <ChangePasswordButton />
             <SignOutButton />
           </div>
         </div>

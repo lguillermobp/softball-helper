@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminUsersView } from "@/components/admin/AdminUsersView";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
@@ -86,6 +87,7 @@ export default async function AdminUsersPage() {
               </div>
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
             </div>
+            <ChangePasswordButton />
             <Link href="/dashboard"
               className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
