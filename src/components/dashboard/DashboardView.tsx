@@ -63,12 +63,6 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
               <path d="M20 18 C18 16, 18 14, 16 13" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
             </svg>
             <span className="text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Softball Helper</span>
-            {isMasterAdmin && (
-              <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
-                style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
-                ★ Master Admin
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2">
