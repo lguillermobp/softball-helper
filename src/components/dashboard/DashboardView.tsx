@@ -101,12 +101,19 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
                   {allLeagues.length} {d.systemSubtitle}
                 </p>
               </div>
-              <Link href="/register">
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
-                  style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
-                  <span>+</span> {d.newLeague}
-                </button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/admin/users"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
+                  style={{ borderColor: "var(--sh-purple-border)", color: "var(--sh-purple)", background: "var(--sh-purple-bg)" }}>
+                  👥 Users
+                </Link>
+                <Link href="/register">
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
+                    style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
+                    <span>+</span> {d.newLeague}
+                  </button>
+                </Link>
+              </div>
             </div>
 
             {/* Summary stats */}

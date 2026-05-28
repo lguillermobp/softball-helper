@@ -88,7 +88,7 @@ export const translations = {
         photo: "Photo", jersey: "#", name: "Name", account: "Account",
         addPlayer: "+ Add player", csvUpload: "↑ CSV", edit: "Edit",
       },
-      members: { title: "Members", name: "Name", email: "Email", phone: "Phone", role: "Role", verified: "Verified", resend: "Resend" },
+      members: { title: "Members", name: "Name", email: "Email", phone: "Phone", role: "Role", verified: "Verified", resend: "Resend", resetPassword: "Reset password", resetSending: "Sending…", resetSent: "✓ Sent" },
       fields: {
         title: "Fields", none: "No fields yet.", noneHint: "Click «+ Add field» to add one.",
         noTimeSlots: "No time slots set", edit: "Edit", delete: "Delete",
@@ -308,7 +308,7 @@ export const translations = {
         photo: "Foto", jersey: "#", name: "Nombre", account: "Cuenta",
         addPlayer: "+ Jugador", csvUpload: "↑ CSV", edit: "Editar",
       },
-      members: { title: "Miembros", name: "Nombre", email: "Correo", phone: "Teléfono", role: "Rol", verified: "Verificado", resend: "Reenviar" },
+      members: { title: "Miembros", name: "Nombre", email: "Correo", phone: "Teléfono", role: "Rol", verified: "Verificado", resend: "Reenviar", resetPassword: "Restablecer contraseña", resetSending: "Enviando…", resetSent: "✓ Enviado" },
       fields: {
         title: "Campos", none: "Aún no hay campos.", noneHint: "Haz clic en «+ Agregar campo» para añadir uno.",
         noTimeSlots: "Sin franjas horarias", edit: "Editar", delete: "Eliminar",
@@ -528,7 +528,7 @@ export const translations = {
         photo: "写真", jersey: "#", name: "名前", account: "アカウント",
         addPlayer: "+ 選手を追加", csvUpload: "↑ CSV", edit: "編集",
       },
-      members: { title: "メンバー", name: "名前", email: "メール", phone: "電話", role: "役割", verified: "認証済み", resend: "再送信" },
+      members: { title: "メンバー", name: "名前", email: "メール", phone: "電話", role: "役割", verified: "認証済み", resend: "再送信", resetPassword: "パスワードをリセット", resetSending: "送信中…", resetSent: "✓ 送信済み" },
       fields: {
         title: "フィールド", none: "フィールドがありません。", noneHint: "«+ フィールドを追加» をクリックして追加してください。",
         noTimeSlots: "時間帯未設定", edit: "編集", delete: "削除",

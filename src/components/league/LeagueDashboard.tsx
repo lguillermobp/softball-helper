@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
@@ -36,6 +36,28 @@ interface Team {
 interface Member {
   id: string; role: string;
   user: { id: string; name: string | null; email: string; phone: string | null; emailVerified: string | null };
+}
+
+function ResetPasswordButton({ slug, userId, tl }: { slug: string; userId: string; tl: { resetPassword: string; resetSending: string; resetSent: string } }) {
+  const [status, setStatus] = React.useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  async function handle() {
+    setStatus("sending");
+    const res = await fetch(`/api/leagues/${slug}/members/${userId}/reset-password`, { method: "POST" });
+    setStatus(res.ok ? "sent" : "error");
+    if (res.ok) setTimeout(() => setStatus("idle"), 3000);
+  }
+
+  return (
+    <button
+      onClick={handle}
+      disabled={status === "sending" || status === "sent"}
+      className="text-xs px-2 py-1 rounded-md border hover:opacity-80 disabled:opacity-60"
+      style={{ borderColor: "var(--sh-border2)", color: "#fbbf24", background: "transparent" }}
+    >
+      {status === "sending" ? tl.resetSending : status === "sent" ? tl.resetSent : status === "error" ? "Failed" : tl.resetPassword}
+    </button>
+  );
 }
 interface Field { id: string; name: string; types: string[] }
 interface Condition {
@@ -504,8 +526,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {[tl.members.name, tl.members.email, tl.members.phone, tl.members.role, tl.members.verified].map((h, i) => (
-                <th key={h} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider${i === 2 ? " hidden sm:table-cell" : ""}`} style={dim}>{h}</th>
+              {[tl.members.name, tl.members.email, tl.members.phone, tl.members.role, tl.members.verified, ""].map((h, i) => (
+                <th key={i} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider${i === 2 ? " hidden sm:table-cell" : ""}`} style={dim}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -524,6 +546,9 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                   {ur.user.emailVerified
                     ? <span className="text-xs font-semibold" style={muted}>✓ Verified</span>
                     : <ResendVerificationButton email={ur.user.email} />}
+                </td>
+                <td className="px-4 py-3">
+                  <ResetPasswordButton slug={slug} userId={ur.user.id} tl={tl.members} />
                 </td>
               </tr>
             ))}
