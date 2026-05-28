@@ -4,18 +4,28 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AdminUsersView } from "@/components/admin/AdminUsersView";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminUsersPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
 
-  const users = await prisma.user.findMany({
-    select: {
-      id: true, name: true, email: true, phone: true,
-      emailVerified: true, isMasterAdmin: true, isActive: true, createdAt: true,
-      _count: { select: { leagueRoles: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  let users: any[] = [];
+  let errorMsg: string | null = null;
+
+  try {
+    users = await prisma.user.findMany({
+      select: {
+        id: true, name: true, email: true, phone: true,
+        emailVerified: true, isMasterAdmin: true, isActive: true, createdAt: true,
+        _count: { select: { leagueRoles: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (err: any) {
+    console.error("[ADMIN/USERS] query failed:", err);
+    errorMsg = err?.message ?? "Database error";
+  }
 
   const serialized = users.map((u) => ({
     ...u,
@@ -55,10 +65,22 @@ export default async function AdminUsersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>System Users</h1>
           <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>
-            {serialized.length} registered users — edit details, reset passwords, and deactivate accounts.
+            {errorMsg ? "Could not load users" : `${serialized.length} registered user${serialized.length !== 1 ? "s" : ""} — edit details, reset passwords, and deactivate accounts.`}
           </p>
         </div>
-        <AdminUsersView initialUsers={serialized} />
+
+        {errorMsg ? (
+          <div className="rounded-2xl border p-6" style={{ borderColor: "var(--sh-danger-border)", background: "var(--sh-bg-card)" }}>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#f87171" }}>Database error</p>
+            <p className="text-xs font-mono" style={{ color: "var(--sh-muted)" }}>{errorMsg}</p>
+            <p className="text-xs mt-3" style={{ color: "var(--sh-secondary)" }}>
+              This usually means the database migration has not been applied on production.
+              Run <code className="px-1 rounded" style={{ background: "var(--sh-bg-card2)" }}>railway run npx prisma migrate deploy</code> from your terminal.
+            </p>
+          </div>
+        ) : (
+          <AdminUsersView initialUsers={serialized} />
+        )}
       </main>
     </div>
   );
