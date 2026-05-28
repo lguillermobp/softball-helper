@@ -19,6 +19,16 @@ export default async function AdminUsersPage() {
 
   let serialized: any[] = [];
   let errorMsg: string | null = null;
+  let dbInfo = "";
+
+  try {
+    const [dbResult] = await prisma.$queryRaw<[{ db: string; host: string; total: bigint }]>`
+      SELECT current_database() AS db,
+             inet_server_addr()::text AS host,
+             (SELECT COUNT(*) FROM users) AS total
+    `;
+    dbInfo = `DB: ${dbResult.db} | Host: ${dbResult.host} | Total rows in users table: ${Number(dbResult.total)}`;
+  } catch { dbInfo = "Could not read DB info"; }
 
   try {
     const [rows, counts] = await Promise.all([
@@ -86,6 +96,7 @@ export default async function AdminUsersPage() {
           <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>System Users</h1>
           <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>
             {errorMsg ? "Could not load users" : `${serialized.length} registered user${serialized.length !== 1 ? "s" : ""} — edit details, reset passwords, and deactivate accounts.`}
+          {dbInfo && <span className="block text-xs mt-1 font-mono opacity-60">{dbInfo}</span>}
           </p>
         </div>
 
