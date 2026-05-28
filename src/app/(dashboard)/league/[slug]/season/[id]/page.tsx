@@ -39,10 +39,11 @@ export default async function SeasonPage({ params }: PageProps) {
   const games = await prisma.game.findMany({
     where: { seasonId: id },
     include: {
-      homeTeam: { select: { id: true, name: true } },
-      awayTeam: { select: { id: true, name: true } },
-      category: { select: { id: true, name: true } },
-      field:    { select: { id: true, name: true } },
+      homeTeam:        { select: { id: true, name: true } },
+      awayTeam:        { select: { id: true, name: true } },
+      category:        { select: { id: true, name: true } },
+      field:           { select: { id: true, name: true } },
+      rescheduledFrom: { select: { id: true, scheduledAt: true } },
     },
     orderBy: { scheduledAt: "asc" },
   });
@@ -94,6 +95,9 @@ export default async function SeasonPage({ params }: PageProps) {
   const serializedGames = games.map((g) => ({
     ...g,
     scheduledAt: g.scheduledAt.toISOString(),
+    rescheduledFrom: g.rescheduledFrom
+      ? { id: g.rescheduledFrom.id, scheduledAt: g.rescheduledFrom.scheduledAt.toISOString() }
+      : null,
   }));
 
   const serializedFields = league.fields.map((f) => ({ id: f.id, name: f.name }));

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { EditGameDialog } from "@/components/league/EditGameDialog";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
+import { RescheduleGameDialog } from "@/components/league/RescheduleGameDialog";
 
 interface Team { id: string; name: string }
 interface Category { id: string; name: string }
@@ -25,6 +26,8 @@ interface Game {
   awayTeam: { id: string; name: string };
   category: { id: string; name: string } | null;
   field: Field | null;
+  rescheduledFromId: string | null;
+  rescheduledFrom: { id: string; scheduledAt: string } | null;
 }
 
 interface Standing {
@@ -79,9 +82,10 @@ export function SeasonDashboard({
 
   // Properly mapped status badge text using translations
   function getStatusText(status: string) {
-    if (status === "COMPLETED")   return "Final";
-    if (status === "IN_PROGRESS") return "Live";
-    if (status === "CANCELLED")   return "Cancelled";
+    if (status === "COMPLETED")    return "Final";
+    if (status === "IN_PROGRESS")  return "Live";
+    if (status === "CANCELLED")    return "Cancelled";
+    if (status === "RESCHEDULED")  return ts.schedule.rescheduledBadge;
     return ts.tabs.schedule;
   }
 
@@ -170,13 +174,15 @@ export function SeasonDashboard({
             <div className="space-y-3">
               {games.map((game) => {
                 const badge = {
-                  bg:    game.status === "COMPLETED"   ? "var(--sh-approved-bg)"
-                       : game.status === "IN_PROGRESS" ? "var(--sh-warn-bg)"
-                       : game.status === "CANCELLED"   ? "var(--sh-danger-bg)"
+                  bg:    game.status === "COMPLETED"    ? "var(--sh-approved-bg)"
+                       : game.status === "IN_PROGRESS"  ? "var(--sh-warn-bg)"
+                       : game.status === "CANCELLED"    ? "var(--sh-danger-bg)"
+                       : game.status === "RESCHEDULED"  ? "var(--sh-purple-bg)"
                        : "var(--sh-info-bg)",
-                  color: game.status === "COMPLETED"   ? "var(--sh-primary)"
-                       : game.status === "IN_PROGRESS" ? "var(--sh-warn)"
-                       : game.status === "CANCELLED"   ? "var(--sh-danger)"
+                  color: game.status === "COMPLETED"    ? "var(--sh-primary)"
+                       : game.status === "IN_PROGRESS"  ? "var(--sh-warn)"
+                       : game.status === "CANCELLED"    ? "var(--sh-danger)"
+                       : game.status === "RESCHEDULED"  ? "var(--sh-purple)"
                        : "var(--sh-info)",
                   text:  getStatusText(game.status),
                 };
@@ -230,6 +236,13 @@ export function SeasonDashboard({
                                 categories={categories}
                                 fields={fields}
                               />
+                              <RescheduleGameDialog
+                                slug={slug}
+                                game={game}
+                                teams={teams}
+                                categories={categories}
+                                fields={fields}
+                              />
                               <button
                                 onClick={() => deleteGame(game.id)}
                                 className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
@@ -254,6 +267,12 @@ export function SeasonDashboard({
                         </p>
                         {game.field && <p className="text-xs" style={{ color: "var(--sh-primary)" }}>🏟️ {game.field.name}</p>}
                         {game.category && <p className="text-xs" style={{ color: "var(--sh-info)" }}>{game.category.name}</p>}
+                        {game.rescheduledFrom && (
+                          <p className="text-xs" style={{ color: "var(--sh-purple)" }}>
+                            ↺ {ts.schedule.replacesGame}{" "}
+                            {new Date(game.rescheduledFrom.scheduledAt).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

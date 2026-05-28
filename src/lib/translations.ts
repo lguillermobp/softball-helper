@@ -106,6 +106,7 @@ export const translations = {
         noneAdmin: " Click «+ Add game» to schedule the first one.",
         home: "Home", away: "Away", tbd: "TBD",
         delete: "Delete", score: "Score", scoring: "Scoring", scoringSoon: "Scoring coming soon",
+        reschedule: "Reschedule", rescheduledBadge: "Rescheduled", replacesGame: "Replaces game from",
       },
       standings: {
         none: "Standings will appear once games are completed.",
@@ -114,6 +115,18 @@ export const translations = {
       stats: {
         hittingTitle: "Hitting Stats", hittingDesc: "Available once game scoring is enabled.",
         pitchingTitle: "Pitching Stats", pitchingDesc: "Available once game scoring is enabled.",
+      },
+      reschedule: {
+        title: "Reschedule Game",
+        willBePlayed: "Will the original game be played?",
+        yes: "Yes — game will still be played",
+        yesHint: "Original game marked as Rescheduled",
+        no: "No — cancel the original game",
+        noHint: "Original game marked as Cancelled",
+        newDetails: "New Game Details",
+        submit: "Reschedule",
+        submitting: "Rescheduling…",
+        error: "Failed to reschedule",
       },
     },
     scoring: {
@@ -267,6 +280,7 @@ export const translations = {
         noneAdmin: " Haz clic en «+ Agregar juego» para programar el primero.",
         home: "Local", away: "Visitante", tbd: "TBD",
         delete: "Eliminar", score: "Puntuar", scoring: "Puntuación", scoringSoon: "Puntuación próximamente",
+        reschedule: "Reprogramar", rescheduledBadge: "Reprogramado", replacesGame: "Reemplaza juego del",
       },
       standings: {
         none: "Las clasificaciones aparecerán cuando se completen los juegos.",
@@ -275,6 +289,18 @@ export const translations = {
       stats: {
         hittingTitle: "Estadísticas de bateo", hittingDesc: "Disponible cuando se active la puntuación de juegos.",
         pitchingTitle: "Estadísticas de pitcheo", pitchingDesc: "Disponible cuando se active la puntuación de juegos.",
+      },
+      reschedule: {
+        title: "Reprogramar Juego",
+        willBePlayed: "¿El juego original se jugará?",
+        yes: "Sí — el juego se jugará",
+        yesHint: "Juego original marcado como Reprogramado",
+        no: "No — cancelar el juego original",
+        noHint: "Juego original marcado como Cancelado",
+        newDetails: "Detalles del Nuevo Juego",
+        submit: "Reprogramar",
+        submitting: "Reprogramando…",
+        error: "Error al reprogramar",
       },
     },
     scoring: {
@@ -428,6 +454,7 @@ export const translations = {
         noneAdmin: "«+ 試合追加» をクリックして最初の試合を追加してください。",
         home: "ホーム", away: "アウェー", tbd: "未定",
         delete: "削除", score: "スコア", scoring: "スコア入力", scoringSoon: "スコア入力は近日公開",
+        reschedule: "再スケジュール", rescheduledBadge: "再スケジュール済", replacesGame: "変更前の試合日時：",
       },
       standings: {
         none: "試合が完了すると順位表が表示されます。",
@@ -436,6 +463,18 @@ export const translations = {
       stats: {
         hittingTitle: "打撃成績", hittingDesc: "試合スコア入力が有効になると利用できます。",
         pitchingTitle: "投球成績", pitchingDesc: "試合スコア入力が有効になると利用できます。",
+      },
+      reschedule: {
+        title: "試合を再スケジュール",
+        willBePlayed: "元の試合は行われますか？",
+        yes: "はい — 試合は行われます",
+        yesHint: "元の試合を「再スケジュール済」にします",
+        no: "いいえ — 元の試合をキャンセル",
+        noHint: "元の試合を「キャンセル済」にします",
+        newDetails: "新しい試合の詳細",
+        submit: "再スケジュール",
+        submitting: "処理中…",
+        error: "再スケジュールに失敗しました",
       },
     },
     scoring: {
