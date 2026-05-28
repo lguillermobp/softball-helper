@@ -66,15 +66,10 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2">
-              {isMasterAdmin ? (
+              {isMasterAdmin && (
                 <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
                   style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
                   ★ Master Admin
-                </span>
-              ) : leagueRoles.length > 0 && (
-                <span className="text-xs font-medium border rounded-full px-2.5 py-0.5"
-                  style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}>
-                  {leagueRoles[0].role.replace(/_/g, " ")}
                 </span>
               )}
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
