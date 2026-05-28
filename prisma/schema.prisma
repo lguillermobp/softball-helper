@@ -24,9 +24,10 @@ model User {
   sessions      Session[]
   leagueRoles   UserLeagueRole[]
   players       Player[]
-  managedTeams  Team[] @relation("TeamManager")
-  assistedTeams Team[] @relation("TeamAssistant")
+  managedTeams  Team[]        @relation("TeamManager")
+  assistedTeams Team[]        @relation("TeamAssistant")
   officialRoles GameOfficial[]
+  conditions    Condition[]   @relation("ConditionAuthor")
 
   @@map("users")
 }
@@ -104,16 +105,18 @@ model League {
   updatedAt DateTime     @updatedAt
 
   plan       Plan             @relation(fields: [planId], references: [id])
-  userRoles  UserLeagueRole[]
-  seasons    Season[]
-  categories Category[]
-  teams      Team[]
-  games      Game[]
-  players    Player[]
-  fields     Field[]
+  userRoles   UserLeagueRole[]
+  seasons     Season[]
+  categories  Category[]
+  teams       Team[]
+  games       Game[]
+  players     Player[]
+  fields      Field[]
+  conditions  Condition[]
 
   @@map("leagues")
 }
+
 
 enum LeagueStatus {
   ACTIVE
@@ -332,4 +335,25 @@ model GameLineup {
 
   @@unique([gameId, playerId])
   @@map("game_lineups")
+}
+
+// ─── Season Conditions ────────────────────────────────────────────────────────
+
+model Condition {
+  id          String   @id @default(cuid())
+  leagueId    String
+  title       String
+  content     String?  @db.Text
+  fileUrl     String?
+  fileName    String?
+  fileType    String?
+  order       Int      @default(0)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league    League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("ConditionAuthor", fields: [createdById], references: [id])
+
+  @@map("conditions")
 }

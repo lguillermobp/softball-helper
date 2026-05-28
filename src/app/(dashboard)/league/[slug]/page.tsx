@@ -105,6 +105,24 @@ export default async function LeaguePage({ params }: PageProps) {
     types: f.types as string[],
   }));
 
+  const rawConditions = await prisma.condition.findMany({
+    where: { leagueId: league.id },
+    include: { createdBy: { select: { id: true, name: true, email: true } } },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+  });
+
+  const conditions = rawConditions.map((c) => ({
+    id:        c.id,
+    title:     c.title,
+    content:   c.content,
+    fileUrl:   c.fileUrl,
+    fileName:  c.fileName,
+    fileType:  c.fileType,
+    order:     c.order,
+    createdAt: c.createdAt.toISOString(),
+    createdBy: c.createdBy,
+  }));
+
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
       <header
@@ -168,6 +186,7 @@ export default async function LeaguePage({ params }: PageProps) {
           teams={teams}
           members={members}
           fields={fields}
+          conditions={conditions}
         />
       </main>
     </div>

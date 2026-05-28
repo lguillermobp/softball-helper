@@ -14,10 +14,11 @@ import { ResendVerificationButton } from "@/components/league/ResendVerification
 import { AddFieldDialog } from "@/components/league/AddFieldDialog";
 import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
 import { PlayerPhotoDialog } from "@/components/league/PlayerPhotoDialog";
+import { ConditionsSection } from "@/components/league/ConditionsSection";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields";
+type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions";
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
@@ -37,6 +38,12 @@ interface Member {
   user: { id: string; name: string | null; email: string; phone: string | null; emailVerified: string | null };
 }
 interface Field { id: string; name: string; types: string[] }
+interface Condition {
+  id: string; title: string; content: string | null;
+  fileUrl: string | null; fileName: string | null; fileType: string | null;
+  order: number; createdAt: string;
+  createdBy: { id: string; name: string | null; email: string };
+}
 
 interface Props {
   slug: string;
@@ -48,6 +55,7 @@ interface Props {
   teams: Team[];
   members: Member[];
   fields: Field[];
+  conditions: Condition[];
 }
 
 // ── Styles (CSS variables — adapt to dark/light theme) ────────────────────────
@@ -82,11 +90,12 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
   { key: "teams",      icon: "👥" },
   { key: "members",    icon: "🙋", adminOnly: true },
   { key: "fields",     icon: "🏟️" },
+  { key: "conditions", icon: "📋" },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields }: Props) {
+export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields, conditions }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const tl = t.league;
@@ -585,12 +594,19 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   );
 
   const CONTENT: Record<Section, React.ReactNode> = {
-    overview: Overview,
-    seasons: Seasons,
+    overview:   Overview,
+    seasons:    Seasons,
     categories: Categories,
-    teams: Teams,
-    members: Members,
-    fields: Fields,
+    teams:      Teams,
+    members:    Members,
+    fields:     Fields,
+    conditions: (
+      <ConditionsSection
+        slug={slug}
+        isAdmin={isAdmin}
+        conditions={conditions}
+      />
+    ),
   };
 
   return (
