@@ -23,15 +23,15 @@ export default async function AdminUsersPage() {
     const rows = await prisma.$queryRaw<RawUser[]>`
       SELECT
         u.id, u.name, u.email, u.phone,
-        u.email_verified,
-        u.is_master_admin,
-        COALESCE(u.is_active, true) AS is_active,
-        u.created_at,
-        COUNT(r.id) AS league_roles
+        u."emailVerified"   AS email_verified,
+        u."isMasterAdmin"   AS is_master_admin,
+        COALESCE(u."isActive", true) AS is_active,
+        u."createdAt"       AS created_at,
+        COUNT(r.id)         AS league_roles
       FROM users u
-      LEFT JOIN user_league_roles r ON r.user_id = u.id
+      LEFT JOIN user_league_roles r ON r."userId" = u.id
       GROUP BY u.id
-      ORDER BY u.created_at DESC
+      ORDER BY u."createdAt" DESC
     `;
 
     serialized = rows.map((u) => ({
