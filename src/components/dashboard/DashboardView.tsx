@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { SignOutButton } from "@/components/ui/sign-out-button";
 
 interface LeagueSummary {
   id: string; name: string; slug: string;
@@ -90,12 +91,7 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
             </div>
             <ThemeToggle />
             <LanguageSelector />
-            <form action="/api/auth/signout" method="POST">
-              <button type="submit" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
-                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-                {d.signOut}
-              </button>
-            </form>
+            <SignOutButton label={d.signOut} />
           </div>
         </div>
       </header>

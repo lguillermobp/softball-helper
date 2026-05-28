@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LeagueDashboard } from "@/components/league/LeagueDashboard";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSelector } from "@/components/ui/language-selector";
+import { SignOutButton } from "@/components/ui/sign-out-button";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -155,15 +156,7 @@ export default async function LeaguePage({ params }: PageProps) {
             </span>
             <ThemeToggle />
             <LanguageSelector />
-            <form action="/api/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="text-sm px-3 py-1.5 rounded-md border transition-colors"
-                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
-              >
-                Sign out
-              </button>
-            </form>
+            <SignOutButton />
           </div>
         </div>
       </header>
