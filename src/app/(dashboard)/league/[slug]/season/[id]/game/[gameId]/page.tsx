@@ -146,8 +146,26 @@ export default async function GameScoringPage({ params }: PageProps) {
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <span
+              className="text-xs font-medium border rounded-full px-2.5 py-0.5"
+              style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}
+            >
+              {(userRole?.role ?? "MASTER_ADMIN").replace(/_/g, " ")}
+            </span>
+            <span className="hidden sm:block text-sm" style={{ color: "var(--sh-secondary)" }}>
+              {sessionUser.name}
+            </span>
             <ThemeToggle />
             <LanguageSelector />
+            <form action="/api/auth/signout" method="POST">
+              <button
+                type="submit"
+                className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+              >
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
       </header>
