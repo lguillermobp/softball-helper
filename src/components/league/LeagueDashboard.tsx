@@ -290,6 +290,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const isStaff = team.manager?.id === currentUserId || team.assistant?.id === currentUserId;
     const canEdit = isAdmin || (isStaff && team.status === "PENDING");
     const approved = team.status === "APPROVED";
+    const [showPlayers, setShowPlayers] = useState(false);
 
     return (
       <div className="rounded-xl border overflow-hidden" style={{ ...card, opacity: inactive ? 0.7 : 1 }}>
@@ -410,8 +411,26 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
           )}
         </div>
 
+        {/* ── Player roster toggle ── */}
+        <button
+          onClick={() => setShowPlayers((v) => !v)}
+          className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-medium transition-colors hover:opacity-80"
+          style={{ borderTop: "1px solid var(--sh-border)", color: "var(--sh-primary)", background: "transparent" }}
+        >
+          <span>
+            {showPlayers ? tl.teams.hidePlayers : tl.teams.showPlayers}
+            {team.players.length > 0 && (
+              <span className="ml-1.5 rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-secondary)" }}>
+                {team.players.length}
+              </span>
+            )}
+          </span>
+          <span style={{ fontSize: "10px" }}>{showPlayers ? "▲" : "▼"}</span>
+        </button>
+
         {/* ── Player roster ── */}
-        {team.players.length === 0 ? (
+        {showPlayers && (team.players.length === 0 ? (
           <p className="px-4 py-3 text-xs" style={dim}>{tl.teams.noPlayers}</p>
         ) : (
           <table className="w-full text-sm">
@@ -472,7 +491,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
               })}
             </tbody>
           </table>
-        )}
+        ))}
       </div>
     );
   }
