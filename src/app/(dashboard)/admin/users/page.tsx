@@ -19,7 +19,6 @@ export default async function AdminUsersPage() {
 
   let serialized: any[] = [];
   let errorMsg: string | null = null;
-  let dbInfo = "";
 
   try {
     const pool = new Pool({ connectionString: dbUrl, ssl: false });
@@ -38,8 +37,6 @@ export default async function AdminUsersPage() {
     ]);
 
     await pool.end();
-
-    dbInfo = `Connected to: ${dbUrl.replace(/:\/\/[^@]+@/, "://*****@")} | Rows in DB: ${countRes.rows[0].total}`;
 
     const countMap = new Map<string, number>(
       rolesRes.rows.map((r: any) => [r.userId, Number(r.cnt)])
@@ -97,12 +94,6 @@ export default async function AdminUsersPage() {
               ? "Could not load users"
               : `${serialized.length} registered user${serialized.length !== 1 ? "s" : ""}`}
           </p>
-          {dbInfo && (
-            <p className="text-xs mt-2 font-mono px-4 py-2 rounded-lg"
-              style={{ background: "#ffffff", color: "#000000", border: "2px solid #16a34a" }}>
-              🔍 {dbInfo}
-            </p>
-          )}
         </div>
 
         {errorMsg ? (
