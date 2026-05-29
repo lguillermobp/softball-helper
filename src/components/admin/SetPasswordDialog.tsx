@@ -69,13 +69,13 @@ export function SetPasswordDialog({ userId, userName }: Props) {
                   <div>
                     <Label style={{ color: "var(--sh-secondary)" }}>New password</Label>
                     <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                      placeholder="At least 8 characters"
+                      placeholder="At least 8 characters" autoComplete="new-password"
                       style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }} />
                   </div>
                   <div>
                     <Label style={{ color: "var(--sh-secondary)" }}>Confirm password</Label>
                     <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
-                      placeholder="Repeat password"
+                      placeholder="Repeat password" autoComplete="new-password"
                       style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }} />
                   </div>
                 </div>

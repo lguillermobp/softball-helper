@@ -52,6 +52,7 @@ export function AdminUsersView({ initialUsers }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or email…"
+          autoComplete="off"
           className="flex-1 rounded-xl border px-4 py-2 text-sm outline-none"
           style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
         />
