@@ -41,49 +41,66 @@ export async function POST(req: NextRequest, { params }: Params) {
   );
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, email, jerseyNumber, teamId } = await req.json();
-  if (!name || !email || !teamId)
-    return NextResponse.json({ error: "name, email and teamId are required" }, { status: 400 });
+  const body = await req.json();
+  const { name, jerseyNumber, teamId } = body;
+  const email: string | null = (body.email as string | undefined)?.trim() || null;
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email))
-    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  if (!name || !teamId)
+    return NextResponse.json({ error: "name and teamId are required" }, { status: 400 });
+
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email))
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
 
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  // Look up or create a user account for this player
-  let user = await prisma.user.findUnique({ where: { email } });
-  const isNew = !user;
-  const wasVerified = !isNew && !!user!.emailVerified;
+  let player;
 
-  if (!user) {
-    user = await prisma.user.create({ data: { name, email } });
+  if (email) {
+    let user = await prisma.user.findUnique({ where: { email } });
+    const isNew = !user;
+    const wasVerified = !isNew && !!user!.emailVerified;
+
+    if (!user) {
+      user = await prisma.user.create({ data: { name, email } });
+    }
+
+    player = await prisma.player.upsert({
+      where: { email_teamId: { email, teamId } },
+      update: { name, jerseyNumber: jerseyNumber || null, userId: user.id },
+      create: {
+        name,
+        email,
+        jerseyNumber: jerseyNumber || null,
+        teamId,
+        leagueId: league.id,
+        userId: user.id,
+      },
+    });
+
+    if (isNew) {
+      sendPlayerInviteEmail(email, name, team.name, league.name).catch(
+        (e) => console.error("[PLAYERS] invite failed:", e)
+      );
+    } else if (wasVerified) {
+      sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
+        (e) => console.error("[PLAYERS] notification failed:", e)
+      );
+    }
+  } else {
+    player = await prisma.player.create({
+      data: {
+        name,
+        email: null,
+        jerseyNumber: jerseyNumber || null,
+        teamId,
+        leagueId: league.id,
+      },
+    });
   }
-
-  const player = await prisma.player.upsert({
-    where: { email_teamId: { email, teamId } },
-    update: { name, jerseyNumber: jerseyNumber || null, userId: user.id },
-    create: {
-      name,
-      email,
-      jerseyNumber: jerseyNumber || null,
-      teamId,
-      leagueId: league.id,
-      userId: user.id,
-    },
-  });
-
-  if (isNew) {
-    sendPlayerInviteEmail(email, name, team.name, league.name).catch(
-      (e) => console.error("[PLAYERS] invite failed:", e)
-    );
-  } else if (wasVerified) {
-    sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
-      (e) => console.error("[PLAYERS] notification failed:", e)
-    );
-  }
-  // existing unverified user: they already have a pending invite, don't spam
 
   return NextResponse.json(player, { status: 201 });
 }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "players" ALTER COLUMN "email" DROP NOT NULL;

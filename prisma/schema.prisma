@@ -294,7 +294,7 @@ enum OfficialRole {
 model Player {
   id           String   @id @default(cuid())
   name         String
-  email        String
+  email        String?
   jerseyNumber String?
   photoUrl     String?
   teamId       String

@@ -59,10 +59,10 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
             <Input id="name" name="name" placeholder="Jane Smith" required />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="email">Email address *</Label>
-            <Input id="email" name="email" type="email" placeholder="player@example.com" required />
+            <Label htmlFor="email">Email address</Label>
+            <Input id="email" name="email" type="email" placeholder="player@example.com (optional)" />
             <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
-              If they already have an account they will be linked and notified. Otherwise an invitation to set up their profile will be sent.
+              Optional. If provided, the player will be linked to their account or receive an invitation. Can be added later.
             </p>
           </div>
           <div className="space-y-1">

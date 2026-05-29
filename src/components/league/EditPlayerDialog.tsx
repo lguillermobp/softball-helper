@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 interface Player {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   jerseyNumber: string | null;
 }
 
@@ -69,8 +69,8 @@ export function EditPlayerDialog({ slug, player }: Props) {
             <Input id="ep-name" name="name" defaultValue={player.name} required />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="ep-email">Email address *</Label>
-            <Input id="ep-email" name="email" type="email" defaultValue={player.email} required />
+            <Label htmlFor="ep-email">Email address</Label>
+            <Input id="ep-email" name="email" type="email" defaultValue={player.email ?? ""} placeholder="player@example.com (optional)" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="ep-jersey">Jersey number</Label>

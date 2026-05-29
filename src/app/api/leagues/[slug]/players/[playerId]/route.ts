@@ -33,7 +33,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, email, jerseyNumber } = await req.json();
+  const body = await req.json();
+  const { name, jerseyNumber } = body;
+  const email: string | null = (body.email as string | undefined)?.trim() || null;
 
   if (email && email !== player.email) {
     const conflict = await prisma.player.findUnique({
@@ -47,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     where: { id: playerId },
     data: {
       ...(name         !== undefined && { name }),
-      ...(email        !== undefined && { email }),
+      ...(body.email   !== undefined && { email }),
       ...(jerseyNumber !== undefined && { jerseyNumber: jerseyNumber || null }),
     },
   });

@@ -73,6 +73,19 @@ export async function POST(req: NextRequest, { params }: Params) {
       },
     });
 
+    // Automatically add the manager as a player on their team
+    await tx.player.upsert({
+      where: { email_teamId: { email: manager.email, teamId: team.id } },
+      update: { name: manager.name, userId: managerResult.user.id },
+      create: {
+        name: manager.name,
+        email: manager.email,
+        teamId: team.id,
+        leagueId: league.id,
+        userId: managerResult.user.id,
+      },
+    });
+
     return { team, managerResult, assistantResult };
   });
 

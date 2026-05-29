@@ -23,7 +23,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; email: string; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
+interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; status: string; isActive: boolean;
