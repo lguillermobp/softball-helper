@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { Pool } from "pg";
 import { sendVerificationEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ userId: string }> }
@@ -14,38 +14,72 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json();
   const { name, phone, email, isActive } = body;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const dbUrl = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL ||
+    process.env.DATABASE_PUBLIC_URL || process.env.POSTGRES_URL || "";
+  const pool = new Pool({ connectionString: dbUrl, ssl: false });
 
-  const emailChanged = email && email !== user.email;
-
-  if (emailChanged) {
-    const conflict = await prisma.user.findUnique({ where: { email } });
-    if (conflict && conflict.id !== userId)
-      return NextResponse.json({ error: "Email already in use" }, { status: 409 });
-  }
-
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      ...(name  !== undefined && { name }),
-      ...(phone !== undefined && { phone }),
-      ...(email !== undefined && { email }),
-      ...(emailChanged        && { emailVerified: null }),
-      ...(isActive !== undefined && { isActive }),
-    },
-    select: {
-      id: true, name: true, email: true, phone: true,
-      emailVerified: true, isMasterAdmin: true, isActive: true, createdAt: true,
-      _count: { select: { leagueRoles: true } },
-    },
-  });
-
-  if (emailChanged) {
-    sendVerificationEmail(updated.email, updated.name).catch(
-      (e) => console.error("[ADMIN] re-verification email failed:", e)
+  try {
+    const { rows: existing } = await pool.query(
+      `SELECT id, email FROM users WHERE id = $1`, [userId]
     );
-  }
+    if (existing.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(updated);
+    const currentEmail = existing[0].email;
+    const emailChanged = email && email !== currentEmail;
+
+    if (emailChanged) {
+      const { rows: conflict } = await pool.query(
+        `SELECT id FROM users WHERE email = $1 AND id != $2`, [email, userId]
+      );
+      if (conflict.length > 0)
+        return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+    }
+
+    // Build dynamic SET clause
+    const sets: string[] = [];
+    const vals: any[]    = [];
+    let idx = 1;
+    if (name     !== undefined) { sets.push(`name = $${idx++}`);            vals.push(name); }
+    if (phone    !== undefined) { sets.push(`phone = $${idx++}`);           vals.push(phone); }
+    if (email    !== undefined) { sets.push(`email = $${idx++}`);           vals.push(email); }
+    if (emailChanged)           { sets.push(`"emailVerified" = NULL`); }
+    if (isActive !== undefined) { sets.push(`"isActive" = $${idx++}`);      vals.push(isActive); }
+
+    if (sets.length > 0) {
+      vals.push(userId);
+      await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
+    }
+
+    const { rows } = await pool.query(
+      `SELECT u.id, u.name, u.email, u.phone,
+              u."emailVerified", u."isMasterAdmin",
+              COALESCE(u."isActive", true) AS "isActive",
+              u."createdAt",
+              COUNT(r.id)::int AS "leagueRoles"
+       FROM users u
+       LEFT JOIN user_league_roles r ON r."userId" = u.id
+       WHERE u.id = $1
+       GROUP BY u.id`, [userId]
+    );
+
+    const u = rows[0];
+    const updated = {
+      id: u.id, name: u.name, email: u.email, phone: u.phone,
+      emailVerified: u.emailVerified ? new Date(u.emailVerified).toISOString() : null,
+      isMasterAdmin: u.isMasterAdmin,
+      isActive: u.isActive ?? true,
+      createdAt: new Date(u.createdAt).toISOString(),
+      _count: { leagueRoles: u.leagueRoles },
+    };
+
+    if (emailChanged) {
+      sendVerificationEmail(updated.email, updated.name).catch(
+        (e) => console.error("[ADMIN] re-verification email failed:", e)
+      );
+    }
+
+    return NextResponse.json(updated);
+  } finally {
+    await pool.end();
+  }
 }
