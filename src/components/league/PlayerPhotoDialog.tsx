@@ -223,15 +223,15 @@ export function PlayerPhotoDialog({
             <div className="flex flex-col gap-2">
               <label
                 htmlFor={`photoFile-${playerId}`}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer font-medium text-sm transition-colors hover:opacity-80"
-                style={{ borderColor: "#2d5a2d", color: "#f0fdf4", background: "#1a3d1a" }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer font-medium text-sm transition-opacity hover:opacity-80"
+                style={{ borderColor: "#16a34a", border: "1px solid #16a34a", color: "#ffffff", background: "#16a34a" }}
               >
                 ↑ Upload from device
               </label>
               <button
                 onClick={startCamera}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-medium text-sm transition-colors hover:opacity-80"
-                style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
+                style={{ borderColor: "#16a34a", color: "#16a34a", background: "transparent" }}
               >
                 📷 Use camera
               </button>
