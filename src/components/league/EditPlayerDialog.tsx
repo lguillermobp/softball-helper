@@ -6,12 +6,14 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { COUNTRIES, flagEmoji } from "@/lib/countries";
 
 interface Player {
   id: string;
   name: string;
   email: string | null;
   jerseyNumber: string | null;
+  nationality: string | null;
 }
 
 interface Props {
@@ -37,6 +39,7 @@ export function EditPlayerDialog({ slug, player }: Props) {
         name:         fd.get("name"),
         email:        fd.get("email"),
         jerseyNumber: fd.get("jerseyNumber") || null,
+        nationality:  fd.get("nationality") || null,
       }),
     });
     setLoading(false);
@@ -75,6 +78,17 @@ export function EditPlayerDialog({ slug, player }: Props) {
           <div className="space-y-1">
             <Label htmlFor="ep-jersey">Jersey number</Label>
             <Input id="ep-jersey" name="jerseyNumber" defaultValue={player.jerseyNumber ?? ""} placeholder="e.g. 7" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ep-nationality">Nationality</Label>
+            <select id="ep-nationality" name="nationality" defaultValue={player.nationality ?? ""}
+              className="w-full rounded-md border px-3 py-2 text-sm outline-none"
+              style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}>
+              <option value="">— None —</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>{flagEmoji(c.code)} {c.name}</option>
+              ))}
+            </select>
           </div>
           {error && <p className="text-sm" style={{ color: "#f87171" }}>{error}</p>}
           <div className="flex justify-end gap-2 pt-2">

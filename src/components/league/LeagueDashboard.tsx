@@ -20,6 +20,7 @@ import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
 import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
+import { flagEmoji } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
+interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; logoUrl: string | null; status: string; isActive: boolean;
@@ -542,7 +543,9 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                         ? <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.jerseyNumber}</span>
                         : <span style={dim}>—</span>}
                     </td>
-                    <td className="px-4 py-2 font-medium" style={head}>{p.name}</td>
+                    <td className="px-4 py-2 font-medium" style={head}>
+                      {p.nationality && <span className="mr-1.5">{flagEmoji(p.nationality)}</span>}{p.name}
+                    </td>
                     <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
                       {p.userId ? "✓" : "—"}
                     </td>

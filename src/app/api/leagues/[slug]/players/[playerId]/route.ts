@@ -37,6 +37,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json();
   const { name, jerseyNumber } = body;
   const email: string | null = (body.email as string | undefined)?.trim() || null;
+  const nationality: string | null | undefined = "nationality" in body ? (body.nationality || null) : undefined;
 
   if (email && email !== player.email) {
     const conflict = await prisma.player.findUnique({
@@ -49,9 +50,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const updated = await prisma.player.update({
     where: { id: playerId },
     data: {
-      ...(name         !== undefined && { name }),
-      ...(body.email   !== undefined && { email }),
-      ...(jerseyNumber !== undefined && { jerseyNumber: jerseyNumber || null }),
+      ...(name              !== undefined && { name }),
+      ...(body.email        !== undefined && { email }),
+      ...(jerseyNumber      !== undefined && { jerseyNumber: jerseyNumber || null }),
+      ...(nationality       !== undefined && { nationality }),
     },
   });
 

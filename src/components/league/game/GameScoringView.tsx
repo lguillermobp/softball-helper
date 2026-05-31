@@ -10,6 +10,7 @@ import { TeamAvatar } from "@/components/ui/TeamAvatar";
 interface Player {
   id: string; name: string;
   jerseyNumber: string | null;
+  nationality: string | null;
   photoUrl: string | null;
 }
 interface Official {

@@ -60,7 +60,7 @@ export default async function GameScoringPage({ params }: PageProps) {
         include: { user: { select: { id: true, name: true, email: true } } },
       },
       lineups: {
-        include: { player: { select: { id: true, name: true, jerseyNumber: true, photoUrl: true } } },
+        include: { player: { select: { id: true, name: true, jerseyNumber: true, nationality: true, photoUrl: true } } },
       },
     },
   });
@@ -107,7 +107,7 @@ export default async function GameScoringPage({ params }: PageProps) {
       name: game.homeTeam.name,
       logoUrl: game.homeTeam.logoUrl ?? null,
       players: game.homeTeam.players.map(p => ({
-        id: p.id, name: p.name, jerseyNumber: p.jerseyNumber, photoUrl: p.photoUrl ?? null,
+        id: p.id, name: p.name, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null,
       })),
     },
     awayTeam: {
@@ -115,7 +115,7 @@ export default async function GameScoringPage({ params }: PageProps) {
       name: game.awayTeam.name,
       logoUrl: game.awayTeam.logoUrl ?? null,
       players: game.awayTeam.players.map(p => ({
-        id: p.id, name: p.name, jerseyNumber: p.jerseyNumber, photoUrl: p.photoUrl ?? null,
+        id: p.id, name: p.name, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null,
       })),
     },
     officials: game.officials.map(o => ({

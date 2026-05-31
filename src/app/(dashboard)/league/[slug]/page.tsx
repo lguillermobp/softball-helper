@@ -104,7 +104,7 @@ export default async function LeaguePage({ params }: PageProps) {
           include: {
             manager:   { select: { name: true, email: true, phone: true } },
             assistant: { select: { name: true, email: true, phone: true } },
-            players:   { orderBy: { name: "asc" }, select: { id: true, name: true, jerseyNumber: true, photoUrl: true } },
+            players:   { orderBy: { name: "asc" }, select: { id: true, name: true, jerseyNumber: true, nationality: true, photoUrl: true } },
           },
         },
       },
@@ -238,7 +238,7 @@ export default async function LeaguePage({ params }: PageProps) {
     manager:   t.manager   ? { id: t.manager.id,   name: t.manager.name,   email: t.manager.email,   phone: t.manager.phone }   : null,
     assistant: t.assistant ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email, phone: t.assistant.phone } : null,
     players: t.players.map((p) => ({
-      id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, photoUrl: p.photoUrl ?? null, userId: p.userId,
+      id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null, userId: p.userId,
       invitePending: !!(p.email && (!p.user?.password || !p.user?.emailVerified)),
     })),
   }));

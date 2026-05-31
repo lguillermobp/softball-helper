@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { COUNTRIES, flagEmoji } from "@/lib/countries";
 
 interface Props {
   slug: string;
@@ -31,6 +32,7 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
         name: fd.get("name"),
         email: fd.get("email"),
         jerseyNumber: fd.get("jerseyNumber") || null,
+        nationality: fd.get("nationality") || null,
         teamId,
       }),
     });
@@ -68,6 +70,17 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
           <div className="space-y-1">
             <Label htmlFor="jerseyNumber">Jersey number</Label>
             <Input id="jerseyNumber" name="jerseyNumber" placeholder="e.g. 7" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="nationality">Nationality</Label>
+            <select id="nationality" name="nationality"
+              className="w-full rounded-md border px-3 py-2 text-sm outline-none"
+              style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}>
+              <option value="">— None —</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>{flagEmoji(c.code)} {c.name}</option>
+              ))}
+            </select>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">

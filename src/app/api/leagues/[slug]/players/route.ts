@@ -45,6 +45,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const body = await req.json();
   const { name, jerseyNumber, teamId } = body;
   const email: string | null = (body.email as string | undefined)?.trim() || null;
+  const nationality: string | null = (body.nationality as string | undefined) || null;
 
   if (!name || !teamId)
     return NextResponse.json({ error: "name and teamId are required" }, { status: 400 });
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!email) {
     const player = await prisma.player.create({
-      data: { name, email: null, jerseyNumber: jerseyNumber || null, teamId, leagueId: league.id },
+      data: { name, email: null, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id },
     });
     await logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, teamId } });
     return NextResponse.json(player, { status: 201 });
@@ -78,8 +79,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const [player] = await prisma.$transaction([
     prisma.player.upsert({
       where: { email_teamId: { email, teamId } },
-      update: { name, jerseyNumber: jerseyNumber || null, userId: user.id },
-      create: { name, email, jerseyNumber: jerseyNumber || null, teamId, leagueId: league.id, userId: user.id },
+      update: { name, jerseyNumber: jerseyNumber || null, nationality, userId: user.id },
+      create: { name, email, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id, userId: user.id },
     }),
     // Grant PLAYER league role so the league appears in their dashboard
     prisma.userLeagueRole.upsert({
