@@ -359,3 +359,25 @@ model Condition {
 
   @@map("conditions")
 }
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userName   String?
+  userEmail  String?
+  action     String
+  entityType String?
+  entityId   String?
+  leagueId   String?
+  leagueName String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([leagueId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

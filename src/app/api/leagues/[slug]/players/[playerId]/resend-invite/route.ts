@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPlayerInviteEmail } from "@/lib/email";
+import { logAudit } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; playerId: string }> }
 
@@ -55,6 +56,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   await sendPlayerInviteEmail(player.email, player.name, player.team.name, league.name);
-
+  logAudit({ actor: session.user as any, action: "player.invite.resend", entityType: "Player", entityId: playerId, leagueId: league.id, leagueName: league.name, metadata: { playerName: player.name, email: player.email } });
   return NextResponse.json({ ok: true });
 }

@@ -84,6 +84,11 @@ export default async function AdminUsersPage() {
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
             </div>
             <ChangePasswordButton />
+            <Link href="/admin/audit"
+              className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-purple)", background: "transparent" }}>
+              Audit log
+            </Link>
             <Link href="/dashboard"
               className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>

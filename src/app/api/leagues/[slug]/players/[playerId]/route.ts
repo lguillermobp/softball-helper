@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; playerId: string }> }
 
@@ -54,5 +55,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
+  logAudit({ actor: session.user as any, action: "player.update", entityType: "Player", entityId: playerId, leagueId: league.id, leagueName: league.name, metadata: { name, email } });
   return NextResponse.json(updated);
 }
