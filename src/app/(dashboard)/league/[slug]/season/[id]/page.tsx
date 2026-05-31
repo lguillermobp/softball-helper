@@ -132,14 +132,18 @@ export default async function SeasonPage({ params }: PageProps) {
             <span className="font-bold" style={{ color: "var(--sh-text)" }}>{season.name}</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
+                {sessionUser.name?.charAt(0).toUpperCase() ?? "?"}
+              </div>
+              <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{sessionUser.name}</span>
+            </div>
             <span
               className="text-xs font-medium border rounded-full px-2.5 py-0.5"
               style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}
             >
               {(userRole?.role ?? "MASTER_ADMIN").replace(/_/g, " ")}
-            </span>
-            <span className="hidden sm:block text-sm" style={{ color: "var(--sh-secondary)" }}>
-              {sessionUser.name}
             </span>
             <ThemeToggle />
             <LanguageSelector />

@@ -46,14 +46,19 @@ export default async function DashboardPage() {
     },
   });
 
-  const leagueRoles = (userWithLeagues?.leagueRoles ?? []).map((ur) => ({
-    role: ur.role,
-    league: {
-      id: ur.league.id, name: ur.league.name, slug: ur.league.slug,
-      city: ur.league.city, state: ur.league.state,
-      _count: ur.league._count,
-    },
-  }));
+  const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_ASSISTANT", "PLAYER"];
+  const leagueMap = new Map<string, { role: string; league: { id: string; name: string; slug: string; city: string | null; state: string | null; _count: { seasons: number; teams: number } } }>();
+  for (const ur of (userWithLeagues?.leagueRoles ?? [])) {
+    const entry = {
+      role: ur.role,
+      league: { id: ur.league.id, name: ur.league.name, slug: ur.league.slug, city: ur.league.city, state: ur.league.state, _count: ur.league._count },
+    };
+    const existing = leagueMap.get(ur.league.id);
+    if (!existing || ROLE_PRIORITY.indexOf(ur.role) < ROLE_PRIORITY.indexOf(existing.role)) {
+      leagueMap.set(ur.league.id, entry);
+    }
+  }
+  const leagueRoles = Array.from(leagueMap.values());
 
   return (
     <DashboardView
