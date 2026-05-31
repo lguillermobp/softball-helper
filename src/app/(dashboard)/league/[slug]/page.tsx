@@ -72,10 +72,12 @@ export default async function LeaguePage({ params }: PageProps) {
             </div>
             <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{sessionUser.name}</span>
           </div>
-          <span className="text-xs font-medium border rounded-full px-2.5 py-0.5"
-            style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}>
-            {role.replace(/_/g, " ")}
-          </span>
+          {role.replace(/_/g, " ").toLowerCase() !== (sessionUser.name ?? "").toLowerCase() && (
+            <span className="text-xs font-medium border rounded-full px-2.5 py-0.5"
+              style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", borderColor: "var(--sh-border2)" }}>
+              {role.replace(/_/g, " ")}
+            </span>
+          )}
           <ThemeToggle />
           <LanguageSelector />
           <ChangePasswordButton />
