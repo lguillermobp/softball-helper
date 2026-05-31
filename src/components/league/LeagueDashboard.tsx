@@ -19,6 +19,7 @@ import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
 import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
 import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
+import { EditMemberDialog } from "@/components/league/EditMemberDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 import { flagEmoji } from "@/lib/countries";
 
@@ -130,6 +131,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const [section, setSection] = useState<Section>("overview");
   const [showInactive, setShowInactive] = useState(false);
   const [teamError, setTeamError] = useState<Record<string, string>>({});
+  const [memberDeleteConfirm, setMemberDeleteConfirm] = useState<string | null>(null);
+  const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
   const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
 
@@ -173,6 +176,18 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   async function deleteField(fieldId: string) {
     const res = await fetch(`/api/leagues/${slug}/fields/${fieldId}`, { method: "DELETE" });
     if (res.ok) router.refresh();
+  }
+
+  async function deleteMember(memberId: string) {
+    setMemberError({});
+    const res = await fetch(`/api/leagues/${slug}/members/${memberId}`, { method: "DELETE" });
+    setMemberDeleteConfirm(null);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setMemberError((prev) => ({ ...prev, [memberId]: data.error ?? "Cannot remove" }));
+    }
   }
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
@@ -650,7 +665,44 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     : <ResendVerificationButton email={ur.user.email} />}
                 </td>
                 <td className="px-4 py-3">
-                  <ResetPasswordButton slug={slug} userId={ur.user.id} tl={tl.members} />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <ResetPasswordButton slug={slug} userId={ur.user.id} tl={tl.members} />
+                    <EditMemberDialog
+                      slug={slug}
+                      memberId={ur.id}
+                      memberName={ur.user.name}
+                      currentRole={ur.role}
+                    />
+                    {memberDeleteConfirm === ur.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => deleteMember(ur.id)}
+                          className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
+                          style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setMemberDeleteConfirm(null)}
+                          className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
+                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setMemberError({}); setMemberDeleteConfirm(ur.id); }}
+                        className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
+                        style={{ borderColor: "var(--sh-border2)", color: "#f87171", background: "transparent" }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                    {memberError[ur.id] && (
+                      <p className="text-xs w-full mt-0.5" style={{ color: "#f87171" }}>{memberError[ur.id]}</p>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
