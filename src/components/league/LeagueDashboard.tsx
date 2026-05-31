@@ -293,11 +293,16 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const approved = team.status === "APPROVED";
     const [showPlayers, setShowPlayers] = useState(false);
     const [resending, setResending] = useState<string | null>(null);
+    const [sentId,    setSentId]    = useState<string | null>(null);
 
     async function resendInvite(playerId: string) {
       setResending(playerId);
-      await fetch(`/api/leagues/${slug}/players/${playerId}/resend-invite`, { method: "POST" });
+      const res = await fetch(`/api/leagues/${slug}/players/${playerId}/resend-invite`, { method: "POST" });
       setResending(null);
+      if (res.ok) {
+        setSentId(playerId);
+        setTimeout(() => setSentId((prev) => prev === playerId ? null : prev), 3000);
+      }
     }
 
     return (
@@ -501,12 +506,14 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                           {p.invitePending && (
                             <button
                               onClick={() => resendInvite(p.id)}
-                              disabled={resending === p.id}
+                              disabled={resending === p.id || sentId === p.id}
                               title="Resend invitation email"
                               className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
-                              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                              style={sentId === p.id
+                                ? { borderColor: "var(--sh-primary)", color: "var(--sh-primary)", background: "transparent" }
+                                : { borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
                             >
-                              {resending === p.id ? "Sending…" : "Resend invite"}
+                              {resending === p.id ? "Sending…" : sentId === p.id ? "✓ Sent" : "Resend invite"}
                             </button>
                           )}
                         </div>
