@@ -74,10 +74,6 @@ export default async function AdminUsersPage() {
               <path d="M20 18 C18 16, 18 14, 16 13" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
             </svg>
             <span className="text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Softball Helper</span>
-            <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
-              style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
-              ★ Master Admin
-            </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2">
@@ -86,6 +82,10 @@ export default async function AdminUsersPage() {
                 {session?.user?.name?.charAt(0).toUpperCase() ?? "?"}
               </div>
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
+              <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
+                style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
+                ★ Master Admin
+              </span>
             </div>
             <ChangePasswordButton />
             <Link href="/dashboard"
