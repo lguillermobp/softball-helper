@@ -24,6 +24,8 @@ const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
   "team.update":          { bg: "#1e3a5f", color: "#93c5fd" },
   "team.delete":          { bg: "#450a0a", color: "#f87171" },
   "member.add":           { bg: "#14532d", color: "#4ade80" },
+  "team.logo.upload":     { bg: "#1e3a5f", color: "#93c5fd" },
+  "league.logo.upload":   { bg: "#1e3a5f", color: "#93c5fd" },
   "user.password.change": { bg: "#451a03", color: "#fbbf24" },
   "broadcast.send":       { bg: "#1a1a3d", color: "#a78bfa" },
 };

@@ -18,6 +18,7 @@ import { ConditionsSection } from "@/components/league/ConditionsSection";
 import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
 import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
+import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ interface Props {
   slug: string;
   isAdmin: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; plan: { name: string } };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; plan: { name: string } };
   seasons: Season[];
   categories: Category[];
   teams: Team[];
@@ -129,6 +130,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const [showInactive, setShowInactive] = useState(false);
   const [teamError, setTeamError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
+  const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
 
   const activeTeams   = teams.filter((t) => t.isActive);
   const inactiveTeams = teams.filter((t) => !t.isActive);
@@ -222,7 +224,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
           <p className="text-sm mb-1" style={muted}>
             📋 {tl.overview.plan}: <span className="font-semibold" style={head}>{league.plan.name}</span>
           </p>
-          <p className="text-sm" style={muted}>
+          <p className="text-sm mb-3" style={muted}>
             🔖 {tl.overview.status}:{" "}
             <span className="font-semibold capitalize" style={{
               color: league.status === "ACTIVE" ? "var(--sh-primary)" : league.status === "SUSPENDED" ? "var(--sh-danger)" : "var(--sh-inactive)",
@@ -230,6 +232,17 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
               {league.status === "ACTIVE" ? tl.overview.active : league.status === "SUSPENDED" ? tl.overview.suspended : tl.overview.archived}
             </span>
           </p>
+          {isAdmin && (
+            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>League Logo</p>
+              <LeagueLogoUpload
+                slug={slug}
+                leagueName={league.name}
+                currentLogoUrl={leagueLogoUrl}
+                onUpdated={(url) => setLeagueLogoUrl(url)}
+              />
+            </div>
+          )}
         </div>
         {[
           { label: tl.overview.seasons,     value: seasons.length },
