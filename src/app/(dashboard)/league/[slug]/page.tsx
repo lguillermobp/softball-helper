@@ -62,7 +62,15 @@ export default async function LeaguePage({ params }: PageProps) {
             ← Dashboard
           </Link>
           <span style={{ color: "var(--sh-border2)" }}>|</span>
-          <span className="font-bold" style={{ color: "var(--sh-text)" }}>{league.name}</span>
+          <div className="flex items-center gap-2">
+            {league.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={league.logoUrl} alt={league.name}
+                className="w-7 h-7 rounded-md object-cover shrink-0"
+                style={{ border: "1px solid var(--sh-border2)" }} />
+            )}
+            <span className="font-bold" style={{ color: "var(--sh-text)" }}>{league.name}</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5">
