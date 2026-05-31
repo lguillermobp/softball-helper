@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
 import { OfficialsSetup } from "./OfficialsSetup";
 import { LineupEditor } from "./LineupEditor";
+import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Player {
   id: string; name: string;
@@ -25,8 +26,8 @@ interface Game {
   fieldId: string | null;
   field: { id: string; name: string } | null;
   category: { id: string; name: string } | null;
-  homeTeam: { id: string; name: string; players: Player[] };
-  awayTeam: { id: string; name: string; players: Player[] };
+  homeTeam: { id: string; name: string; logoUrl?: string | null; players: Player[] };
+  awayTeam: { id: string; name: string; logoUrl?: string | null; players: Player[] };
   officials: Official[];
   lineups: LineupEntry[];
 }
@@ -114,11 +115,13 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
+              <TeamAvatar name={game.homeTeam.name} logoUrl={game.homeTeam.logoUrl} size={10} />
               <h1 className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>
                 {game.homeTeam.name}
                 <span className="mx-2 font-normal text-sm" style={{ color: "var(--sh-muted)" }}>vs</span>
                 {game.awayTeam.name}
               </h1>
+              <TeamAvatar name={game.awayTeam.name} logoUrl={game.awayTeam.logoUrl} size={10} />
               <span className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: "var(--sh-bg-card2)", color: statusColor }}>
                 {statusText}
               </span>
@@ -222,6 +225,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           gameId={game.id}
           isHome={true}
           teamName={game.homeTeam.name}
+          teamLogoUrl={game.homeTeam.logoUrl}
           players={game.homeTeam.players}
           initialEntries={game.lineups.filter(l => l.isHome).map(l => ({
             playerId: l.player.id,
@@ -239,6 +243,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           gameId={game.id}
           isHome={false}
           teamName={game.awayTeam.name}
+          teamLogoUrl={game.awayTeam.logoUrl}
           players={game.awayTeam.players}
           initialEntries={game.lineups.filter(l => !l.isHome).map(l => ({
             playerId: l.player.id,

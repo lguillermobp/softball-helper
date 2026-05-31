@@ -17,6 +17,8 @@ import { PlayerPhotoDialog } from "@/components/league/PlayerPhotoDialog";
 import { ConditionsSection } from "@/components/league/ConditionsSection";
 import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
 import { BroadcastDialog } from "@/components/league/BroadcastDialog";
+import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
+import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +29,7 @@ interface Category { id: string; name: string; description: string | null }
 interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
-  id: string; name: string; status: string; isActive: boolean;
+  id: string; name: string; logoUrl: string | null; status: string; isActive: boolean;
   seasonId: string | null; categoryId: string | null;
   season: { id: string; name: string } | null;
   category: { id: string; name: string } | null;
@@ -309,6 +311,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const [showPlayers, setShowPlayers] = useState(false);
     const [resending, setResending] = useState<string | null>(null);
     const [sentId,    setSentId]    = useState<string | null>(null);
+    const [logoUrl,   setLogoUrl]   = useState<string | null>(team.logoUrl);
 
     async function resendInvite(playerId: string) {
       setResending(playerId);
@@ -326,8 +329,10 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         {/* ── Header ── */}
         <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid #1e3a1e" }}>
           <div className="flex items-start justify-between gap-3">
-            {/* Left: name + badges */}
-            <div className="min-w-0">
+            {/* Left: logo + name + badges */}
+            <div className="flex items-start gap-3 min-w-0">
+              <TeamAvatar name={team.name} logoUrl={logoUrl} size={12} />
+              <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <span className="font-bold text-base" style={head}>{team.name}</span>
                 {/* Status badge */}
@@ -358,6 +363,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 )}
               </div>
             </div>
+            </div>  {/* end logo+name flex */}
 
             {/* Right: action buttons */}
             {(isAdmin || isStaff) && (
@@ -431,6 +437,19 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                   <span className="ml-1" style={dim}>{team.assistant.email}</span>
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Logo upload — visible to managers and admins */}
+          {canEdit && (
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <TeamLogoUpload
+                slug={slug}
+                teamId={team.id}
+                teamName={team.name}
+                currentLogoUrl={logoUrl}
+                onUpdated={(url) => setLogoUrl(url)}
+              />
             </div>
           )}
 

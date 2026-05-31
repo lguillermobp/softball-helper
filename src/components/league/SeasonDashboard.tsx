@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/language-context";
 import { EditGameDialog } from "@/components/league/EditGameDialog";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
 import { RescheduleGameDialog } from "@/components/league/RescheduleGameDialog";
+import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Team { id: string; name: string; group: string | null }
 interface Category { id: string; name: string }
@@ -22,8 +23,8 @@ interface Game {
   status: string;
   homeScore: number | null;
   awayScore: number | null;
-  homeTeam: { id: string; name: string };
-  awayTeam: { id: string; name: string };
+  homeTeam: { id: string; name: string; logoUrl?: string | null };
+  awayTeam: { id: string; name: string; logoUrl?: string | null };
   category: { id: string; name: string } | null;
   field: Field | null;
   rescheduledFromId: string | null;
@@ -164,7 +165,12 @@ export function SeasonDashboard({
             {rows.map((s, i) => (
               <tr key={s.team.id} style={{ borderBottom: "1px solid var(--sh-border)" }}>
                 <td className="px-3 py-3 text-center font-bold" style={{ color: i === 0 ? "var(--sh-warn)" : "var(--sh-muted)" }}>{i + 1}</td>
-                <td className="px-3 py-3 font-semibold" style={{ color: "var(--sh-text)" }}>{s.team.name}</td>
+                <td className="px-3 py-3 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <TeamAvatar name={s.team.name} logoUrl={(s.team as any).logoUrl} size={6} />
+                    <span style={{ color: "var(--sh-text)" }}>{s.team.name}</span>
+                  </div>
+                </td>
                 <td className="px-3 py-3 text-center" style={dim}>{s.gp}</td>
                 <td className="px-3 py-3 text-center font-bold" style={{ color: "var(--sh-primary)" }}>{s.w}</td>
                 <td className="px-3 py-3 text-center" style={{ color: "var(--sh-danger)" }}>{s.l}</td>
@@ -251,11 +257,14 @@ export function SeasonDashboard({
                     <div className="flex items-center justify-between gap-4">
                       {/* Teams & score */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="text-right flex-1">
-                          <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.homeTeam.name}</p>
-                          <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
-                            {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.home}
-                          </p>
+                        <div className="text-right flex-1 flex items-center justify-end gap-2">
+                          <div>
+                            <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.homeTeam.name}</p>
+                            <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
+                              {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.home}
+                            </p>
+                          </div>
+                          <TeamAvatar name={game.homeTeam.name} logoUrl={game.homeTeam.logoUrl} size={8} />
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {game.status === "COMPLETED" ? (
@@ -266,11 +275,14 @@ export function SeasonDashboard({
                             <span className="text-sm font-semibold" style={dim}>vs</span>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.awayTeam.name}</p>
-                          <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
-                            {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.away}
-                          </p>
+                        <div className="flex-1 flex items-center gap-2">
+                          <TeamAvatar name={game.awayTeam.name} logoUrl={game.awayTeam.logoUrl} size={8} />
+                          <div>
+                            <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.awayTeam.name}</p>
+                            <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
+                              {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.away}
+                            </p>
+                          </div>
                         </div>
                       </div>
 

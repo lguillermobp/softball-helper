@@ -41,8 +41,8 @@ export default async function SeasonPage({ params }: PageProps) {
   const games = await prisma.game.findMany({
     where: { seasonId: id },
     include: {
-      homeTeam:        { select: { id: true, name: true } },
-      awayTeam:        { select: { id: true, name: true } },
+      homeTeam:        { select: { id: true, name: true, logoUrl: true } },
+      awayTeam:        { select: { id: true, name: true, logoUrl: true } },
       category:        { select: { id: true, name: true } },
       field:           { select: { id: true, name: true } },
       rescheduledFrom: { select: { id: true, scheduledAt: true } },

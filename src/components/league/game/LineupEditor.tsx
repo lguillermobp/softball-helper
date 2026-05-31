@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
+import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 const UNIQUE_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "SF", "LF", "CF", "RF", "DH"];
 const ALL_POSITIONS = [...UNIQUE_POSITIONS, "EH", "B"];
@@ -24,6 +25,7 @@ interface Props {
   gameId: string;
   isHome: boolean;
   teamName: string;
+  teamLogoUrl?: string | null;
   players: Player[];
   initialEntries: { playerId: string; position: string; battingOrder: number | null }[];
   canEdit: boolean;
@@ -36,7 +38,7 @@ function initRows(players: Player[], entries: Props["initialEntries"]): LineupRo
   });
 }
 
-export function LineupEditor({ slug, gameId, isHome, teamName, players, initialEntries, canEdit }: Props) {
+export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, players, initialEntries, canEdit }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const ts = t.scoring;
@@ -136,7 +138,8 @@ export function LineupEditor({ slug, gameId, isHome, teamName, players, initialE
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>
+          <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--sh-text)" }}>
+            <TeamAvatar name={teamName} logoUrl={teamLogoUrl} size={8} />
             {isHome ? "🏠" : "✈️"} {teamName}
           </h2>
           <p className="text-xs mt-0.5" style={{ color: isComplete ? "var(--sh-primary)" : "var(--sh-muted)" }}>

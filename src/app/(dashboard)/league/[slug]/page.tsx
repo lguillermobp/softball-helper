@@ -110,8 +110,8 @@ export default async function LeaguePage({ params }: PageProps) {
               select: {
                 id: true, scheduledAt: true, status: true,
                 homeScore: true, awayScore: true,
-                homeTeam: { select: { id: true, name: true } },
-                awayTeam: { select: { id: true, name: true } },
+                homeTeam: { select: { id: true, name: true, logoUrl: true } },
+                awayTeam: { select: { id: true, name: true, logoUrl: true } },
                 season:   { select: { id: true, name: true } },
               },
             },
@@ -172,6 +172,7 @@ export default async function LeaguePage({ params }: PageProps) {
     const myTeams = myPlayers.map(({ id: playerId, team }) => ({
       id:         team.id,
       name:       team.name,
+      logoUrl:    team.logoUrl ?? null,
       manager:    team.manager,
       assistant:  team.assistant,
       teammates:  team.players,
@@ -221,7 +222,7 @@ export default async function LeaguePage({ params }: PageProps) {
   const categories = fullLeague.categories.map((c) => ({ id: c.id, name: c.name, description: c.description }));
 
   const teams = fullLeague.teams.map((t) => ({
-    id: t.id, name: t.name, status: t.status, isActive: t.isActive,
+    id: t.id, name: t.name, logoUrl: t.logoUrl ?? null, status: t.status, isActive: t.isActive,
     seasonId: t.seasonId, categoryId: t.categoryId,
     season: t.season, category: t.category,
     manager:   t.manager   ? { id: t.manager.id,   name: t.manager.name,   email: t.manager.email,   phone: t.manager.phone }   : null,

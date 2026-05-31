@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Teammate {
   id: string;
@@ -35,6 +36,7 @@ interface PlayerStats {
 interface MyTeam {
   id: string;
   name: string;
+  logoUrl: string | null;
   manager: { name: string | null; email: string; phone: string | null } | null;
   assistant: { name: string | null; email: string; phone: string | null } | null;
   teammates: Teammate[];
@@ -101,7 +103,10 @@ export function PlayerDashboard({ slug, myTeams, seasons }: Props) {
           <div key={team.id} className="rounded-2xl border overflow-hidden" style={card}>
             {/* Team header */}
             <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              <p className="font-bold text-base" style={head}>{team.name}</p>
+              <div className="flex items-center gap-3 mb-2">
+                <TeamAvatar name={team.name} logoUrl={team.logoUrl} size={12} />
+                <p className="font-bold text-base" style={head}>{team.name}</p>
+              </div>
               {team.manager && (
                 <p className="text-xs mt-1.5" style={dim}>
                   <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>Manager</span>
