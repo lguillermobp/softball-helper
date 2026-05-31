@@ -196,8 +196,7 @@ export const COUNTRIES = [
 
 export type CountryCode = typeof COUNTRIES[number]["code"];
 
-export function flagEmoji(code: string): string {
-  return [...code.toUpperCase()].map((c) =>
-    String.fromCodePoint(c.codePointAt(0)! - 65 + 0x1f1e6)
-  ).join("");
+/** Returns a URL to a 20 × 15 px flag image from flagcdn.com */
+export function flagUrl(code: string): string {
+  return `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
 }

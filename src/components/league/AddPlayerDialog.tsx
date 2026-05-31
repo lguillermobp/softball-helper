@@ -6,7 +6,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { COUNTRIES, flagEmoji } from "@/lib/countries";
+import { COUNTRIES } from "@/lib/countries";
 
 interface Props {
   slug: string;
@@ -78,7 +78,7 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
               style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}>
               <option value="">— None —</option>
               {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{flagEmoji(c.code)} {c.name}</option>
+                <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
           </div>

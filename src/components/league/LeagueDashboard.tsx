@@ -21,7 +21,7 @@ import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
 import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
 import { EditMemberDialog } from "@/components/league/EditMemberDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
-import { flagEmoji } from "@/lib/countries";
+import { flagUrl } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -338,9 +338,10 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const canEdit = isAdmin || (isStaff && team.status === "PENDING");
     const approved = team.status === "APPROVED";
     const [showPlayers, setShowPlayers] = useState(false);
-    const [resending, setResending] = useState<string | null>(null);
-    const [sentId,    setSentId]    = useState<string | null>(null);
-    const [logoUrl,   setLogoUrl]   = useState<string | null>(team.logoUrl);
+    const [resending,     setResending]     = useState<string | null>(null);
+    const [sentId,        setSentId]        = useState<string | null>(null);
+    const [logoUrl,       setLogoUrl]       = useState<string | null>(team.logoUrl);
+    const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
 
     async function resendInvite(playerId: string) {
       setResending(playerId);
@@ -528,11 +529,13 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                       <div className="flex flex-col items-center gap-1">
                         {/* Avatar — always visible */}
                         {photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={photo}
                             alt={p.name}
-                            className="w-9 h-9 rounded-full object-cover"
+                            className="w-9 h-9 rounded-full object-cover cursor-zoom-in"
                             style={{ border: "2px solid #2d5a2d" }}
+                            onClick={() => setEnlargedPhoto({ url: photo, name: p.name })}
                           />
                         ) : (
                           <div
@@ -559,7 +562,13 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                         : <span style={dim}>—</span>}
                     </td>
                     <td className="px-4 py-2 font-medium" style={head}>
-                      {p.nationality && <span className="mr-1.5">{flagEmoji(p.nationality)}</span>}{p.name}
+                      <span className="flex items-center gap-1.5">
+                        {p.nationality && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={flagUrl(p.nationality)} alt={p.nationality} className="w-5 shrink-0" style={{ height: "14px", objectFit: "cover", borderRadius: "2px" }} />
+                        )}
+                        {p.name}
+                      </span>
                     </td>
                     <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
                       {p.userId ? "✓" : "—"}
@@ -590,6 +599,31 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
             </tbody>
           </table>
         ))}
+
+      {/* Photo lightbox */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.85)" }}
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={enlargedPhoto.url}
+            alt={enlargedPhoto.name}
+            className="rounded-2xl object-contain shadow-2xl"
+            style={{ maxHeight: "80vh", maxWidth: "80vw" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setEnlargedPhoto(null)}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold transition-opacity hover:opacity-80"
+            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       </div>
     );
   }

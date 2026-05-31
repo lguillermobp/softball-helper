@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
-import { flagEmoji } from "@/lib/countries";
+import { flagUrl } from "@/lib/countries";
 
 const UNIQUE_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "SF", "LF", "CF", "RF", "DH"];
 const ALL_POSITIONS = [...UNIQUE_POSITIONS, "EH", "B"];
@@ -217,8 +217,12 @@ export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, play
                         </div>
                       )}
                       <div>
-                        <p className="font-medium" style={{ color: "var(--sh-text)" }}>
-                          {player.nationality && <span className="mr-1">{flagEmoji(player.nationality)}</span>}{player.name}
+                        <p className="font-medium flex items-center gap-1.5" style={{ color: "var(--sh-text)" }}>
+                          {player.nationality && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={flagUrl(player.nationality)} alt={player.nationality} className="w-5 shrink-0" style={{ height: "14px", objectFit: "cover", borderRadius: "2px" }} />
+                          )}
+                          {player.name}
                         </p>
                         {player.jerseyNumber && <p className="text-xs" style={{ color: "var(--sh-muted)" }}>#{player.jerseyNumber}</p>}
                       </div>

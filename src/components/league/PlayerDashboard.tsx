@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
-import { flagEmoji } from "@/lib/countries";
+import { flagUrl } from "@/lib/countries";
 
 interface Teammate {
   id: string;
@@ -147,8 +147,12 @@ export function PlayerDashboard({ slug, myTeams, seasons }: Props) {
                     <div key={p.id} className="flex items-center gap-2.5">
                       <Avatar name={p.name} photoUrl={p.photoUrl} size={9} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={head}>
-                          {p.nationality && <span className="mr-1">{flagEmoji(p.nationality)}</span>}{p.name}
+                        <p className="text-sm font-medium flex items-center gap-1.5" style={head}>
+                          {p.nationality && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={flagUrl(p.nationality)} alt={p.nationality} className="w-5 shrink-0" style={{ height: "14px", objectFit: "cover", borderRadius: "2px" }} />
+                          )}
+                          <span className="truncate">{p.name}</span>
                         </p>
                         {p.jerseyNumber && (
                           <p className="text-xs" style={{ color: "var(--sh-primary)" }}>#{p.jerseyNumber}</p>
