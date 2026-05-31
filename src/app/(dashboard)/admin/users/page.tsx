@@ -82,10 +82,6 @@ export default async function AdminUsersPage() {
                 {session?.user?.name?.charAt(0).toUpperCase() ?? "?"}
               </div>
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
-              <span className="text-xs font-bold rounded-full px-2.5 py-0.5 border"
-                style={{ background: "var(--sh-purple-bg)", color: "var(--sh-purple)", borderColor: "var(--sh-purple-border)" }}>
-                ★ Master Admin
-              </span>
             </div>
             <ChangePasswordButton />
             <Link href="/dashboard"
