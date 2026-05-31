@@ -3,13 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 
-interface Params { params: Promise<{ slug: string; userId: string }> }
+interface Params { params: Promise<{ slug: string; id: string }> }
 
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { slug, userId } = await params;
+  const { slug, id: userId } = await params;
 
   const league = await prisma.league.findUnique({
     where: { slug },
