@@ -99,6 +99,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!manager?.name || !manager?.email)
     return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
+  const oldManagerId = team.managerId;
+  const oldAssistantId = team.assistantId;
+
   const { updated, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
     const managerResult = await upsertStaff(tx, league.id, manager, "TEAM_MANAGER");
     const assistantResult =
@@ -116,6 +119,33 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         assistantId: assistantResult?.user.id ?? null,
       },
     });
+
+    // Upsert player record for new manager so they appear in the lineup
+    await tx.player.upsert({
+      where: { email_teamId: { email: manager.email, teamId } },
+      update: { name: manager.name, userId: managerResult.user.id },
+      create: { name: manager.name, email: manager.email, teamId, leagueId: league.id, userId: managerResult.user.id },
+    });
+
+    // Remove old manager's TEAM_MANAGER role if they no longer manage any team in this league
+    if (oldManagerId && oldManagerId !== managerResult.user.id) {
+      const stillManages = await tx.team.findFirst({
+        where: { leagueId: league.id, id: { not: teamId }, OR: [{ managerId: oldManagerId }, { assistantId: oldManagerId }] },
+      });
+      if (!stillManages) {
+        await tx.userLeagueRole.deleteMany({ where: { userId: oldManagerId, leagueId: league.id, role: "TEAM_MANAGER" } });
+      }
+    }
+
+    // Remove old assistant's TEAM_ASSISTANT role if they no longer assist any team in this league
+    if (oldAssistantId && oldAssistantId !== (assistantResult?.user.id ?? null)) {
+      const stillAssists = await tx.team.findFirst({
+        where: { leagueId: league.id, id: { not: teamId }, OR: [{ managerId: oldAssistantId }, { assistantId: oldAssistantId }] },
+      });
+      if (!stillAssists) {
+        await tx.userLeagueRole.deleteMany({ where: { userId: oldAssistantId, leagueId: league.id, role: "TEAM_ASSISTANT" } });
+      }
+    }
 
     return { updated, managerResult, assistantResult };
   });
