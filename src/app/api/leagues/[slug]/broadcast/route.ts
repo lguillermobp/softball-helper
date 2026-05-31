@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { logAudit } from "@/lib/audit";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM   = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
+const FROM      = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
 
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM,
         to: r.email,
         subject: `${league.name} — League update for ${r.teamName}`,

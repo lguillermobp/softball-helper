@@ -2,7 +2,9 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 const FROM = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
 const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "http://localhost:3001";
@@ -21,7 +23,7 @@ export async function sendVerificationEmail(email: string, name: string | null) 
   const token = await createVerificationToken(email);
   const url = `${APP_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Verify your Softball Helper email",
@@ -49,7 +51,7 @@ export async function sendStaffInviteEmail(
   const url = `${APP_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
   const roleLabel = role.replace(/_/g, " ").toLowerCase();
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: `You've been added to ${leagueName} on Softball Helper`,
@@ -74,7 +76,7 @@ export async function sendRoleNotificationEmail(
   leagueName: string,
   roleDescription: string   // human-readable, e.g. "team manager" or "player in Tigers"
 ) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: `You've been added to ${leagueName} on Softball Helper`,
@@ -101,7 +103,7 @@ export async function sendPlayerInviteEmail(
   const token = await createVerificationToken(email);
   const url = `${APP_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: `You've been added to ${teamName} on Softball Helper`,
@@ -123,7 +125,7 @@ export async function sendPasswordResetEmail(email: string, name: string | null)
   const token = await createVerificationToken(email);
   const url = `${APP_URL}/set-password?token=${token}&email=${encodeURIComponent(email)}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Reset your Softball Helper password",
@@ -149,7 +151,7 @@ export async function sendMemberInviteEmail(
   const url = `${APP_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
   const roleLabel = role.replace(/_/g, " ").toLowerCase();
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: `You've been added to ${leagueName} on Softball Helper`,
