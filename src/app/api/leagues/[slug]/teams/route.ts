@@ -121,6 +121,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
-  logAudit({ actor: session.user as any, action: "team.create", entityType: "Team", entityId: team.id, leagueId: league.id, leagueName: league.name, metadata: { name: team.name } });
+  await logAudit({ actor: session.user as any, action: "team.create", entityType: "Team", entityId: team.id, leagueId: league.id, leagueName: league.name, metadata: { name: team.name } });
   return NextResponse.json(team, { status: 201 });
 }

@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const player = await prisma.player.create({
       data: { name, email: null, jerseyNumber: jerseyNumber || null, teamId, leagueId: league.id },
     });
-    logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, teamId } });
+    await logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, teamId } });
     return NextResponse.json(player, { status: 201 });
   }
 
@@ -99,6 +99,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, email, teamId } });
+  await logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, email, teamId } });
   return NextResponse.json(player, { status: 201 });
 }

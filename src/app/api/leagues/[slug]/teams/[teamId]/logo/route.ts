@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
 
   await prisma.team.update({ where: { id: teamId }, data: { logoUrl: result.secure_url } });
-  logAudit({ actor: session.user as any, action: "team.logo.upload", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { teamName: team.name } });
+  await logAudit({ actor: session.user as any, action: "team.logo.upload", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { teamName: team.name } });
 
   return NextResponse.json({ logoUrl: result.secure_url });
 }

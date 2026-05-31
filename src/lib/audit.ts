@@ -7,8 +7,8 @@ export interface AuditActor {
 }
 
 export interface AuditContext {
-  actor:      AuditActor;
-  action:     string;
+  actor:       AuditActor;
+  action:      string;
   entityType?: string;
   entityId?:   string;
   leagueId?:   string;
@@ -16,10 +16,10 @@ export interface AuditContext {
   metadata?:   Record<string, unknown>;
 }
 
-export function logAudit(ctx: AuditContext): void {
-  prisma.auditLog.create({
+export function logAudit(ctx: AuditContext): Promise<void> {
+  return prisma.auditLog.create({
     data: {
-      userId:     ctx.actor.id,
+      userId:     ctx.actor.id    ?? null,
       userName:   ctx.actor.name  ?? null,
       userEmail:  ctx.actor.email ?? null,
       action:     ctx.action,
@@ -27,7 +27,9 @@ export function logAudit(ctx: AuditContext): void {
       entityId:   ctx.entityId    ?? null,
       leagueId:   ctx.leagueId    ?? null,
       leagueName: ctx.leagueName  ?? null,
-      metadata:   ctx.metadata ? JSON.parse(JSON.stringify(ctx.metadata)) : undefined,
+      metadata:   ctx.metadata ? JSON.parse(JSON.stringify(ctx.metadata)) : null,
     },
-  }).catch((e) => console.error("[AUDIT]", ctx.action, e));
+  }).then(() => {}).catch((e) => {
+    console.error("[AUDIT] Failed to write log for action:", ctx.action, e?.message ?? e);
+  });
 }

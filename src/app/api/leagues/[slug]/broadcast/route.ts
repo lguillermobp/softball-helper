@@ -257,6 +257,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }));
 
-  logAudit({ actor: session.user as any, action: "broadcast.send", leagueId: league.id, leagueName: league.name, metadata: { sent, failed, recipientCount: recipients.length, includeRoster, includeConditions, includeSchedule, seasonId } });
+  await logAudit({ actor: session.user as any, action: "broadcast.send", leagueId: league.id, leagueName: league.name, metadata: { sent, failed, recipientCount: recipients.length, includeRoster, includeConditions, includeSchedule, seasonId } });
   return NextResponse.json({ sent, failed });
 }

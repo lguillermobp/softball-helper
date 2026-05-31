@@ -111,7 +111,7 @@ export async function DELETE(req: NextRequest) {
     deleted.users++;
   }
 
-  logAudit({
+  await logAudit({
     actor: session!.user as any,
     action: "admin.cleanup",
     metadata: { deletedUsers: deleted.users, deletedTeams: deleted.teams, errors: deleted.errors },
