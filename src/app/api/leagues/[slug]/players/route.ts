@@ -57,49 +57,44 @@ export async function POST(req: NextRequest, { params }: Params) {
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  let player;
+  if (!email) {
+    const player = await prisma.player.create({
+      data: { name, email: null, jerseyNumber: jerseyNumber || null, teamId, leagueId: league.id },
+    });
+    return NextResponse.json(player, { status: 201 });
+  }
 
-  if (email) {
-    let user = await prisma.user.findUnique({ where: { email } });
-    const isNew = !user;
-    const wasVerified = !isNew && !!user!.emailVerified;
+  // --- email provided ---
+  let user = await prisma.user.findUnique({ where: { email } });
+  const isNew = !user;
+  const wasVerified = !isNew && !!user!.emailVerified;
 
-    if (!user) {
-      user = await prisma.user.create({ data: { name, email } });
-    }
+  if (!user) {
+    user = await prisma.user.create({ data: { name, email } });
+  }
 
-    player = await prisma.player.upsert({
+  const [player] = await prisma.$transaction([
+    prisma.player.upsert({
       where: { email_teamId: { email, teamId } },
       update: { name, jerseyNumber: jerseyNumber || null, userId: user.id },
-      create: {
-        name,
-        email,
-        jerseyNumber: jerseyNumber || null,
-        teamId,
-        leagueId: league.id,
-        userId: user.id,
-      },
-    });
+      create: { name, email, jerseyNumber: jerseyNumber || null, teamId, leagueId: league.id, userId: user.id },
+    }),
+    // Grant PLAYER league role so the league appears in their dashboard
+    prisma.userLeagueRole.upsert({
+      where: { userId_leagueId_role: { userId: user.id, leagueId: league.id, role: "PLAYER" } },
+      update: {},
+      create: { userId: user.id, leagueId: league.id, role: "PLAYER" },
+    }),
+  ]);
 
-    if (isNew) {
-      sendPlayerInviteEmail(email, name, team.name, league.name).catch(
-        (e) => console.error("[PLAYERS] invite failed:", e)
-      );
-    } else if (wasVerified) {
-      sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
-        (e) => console.error("[PLAYERS] notification failed:", e)
-      );
-    }
-  } else {
-    player = await prisma.player.create({
-      data: {
-        name,
-        email: null,
-        jerseyNumber: jerseyNumber || null,
-        teamId,
-        leagueId: league.id,
-      },
-    });
+  if (isNew) {
+    sendPlayerInviteEmail(email, name, team.name, league.name).catch(
+      (e) => console.error("[PLAYERS] invite failed:", e)
+    );
+  } else if (wasVerified) {
+    sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
+      (e) => console.error("[PLAYERS] notification failed:", e)
+    );
   }
 
   return NextResponse.json(player, { status: 201 });
