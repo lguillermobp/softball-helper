@@ -16,6 +16,7 @@ import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
 import { PlayerPhotoDialog } from "@/components/league/PlayerPhotoDialog";
 import { ConditionsSection } from "@/components/league/ConditionsSection";
 import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
+import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -195,7 +196,21 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
   const Overview = (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold" style={head}>{tl.overview.title}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold" style={head}>{tl.overview.title}</h2>
+        {isAdmin && (
+          <BroadcastDialog
+            slug={slug}
+            teams={teams.filter((t) => t.isActive).map((t) => ({
+              id: t.id, name: t.name,
+              manager:   t.manager   ? { id: t.manager.id,   name: t.manager.name,   email: t.manager.email }   : null,
+              assistant: t.assistant ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email } : null,
+            }))}
+            seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
+            hasConditions={conditions.length > 0}
+          />
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="col-span-2 sm:col-span-1 rounded-2xl border p-5" style={card}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>{tl.overview.info}</p>
