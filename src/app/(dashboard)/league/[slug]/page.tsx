@@ -94,18 +94,88 @@ export default async function LeaguePage({ params }: PageProps) {
           include: {
             manager:   { select: { name: true, email: true, phone: true } },
             assistant: { select: { name: true, email: true, phone: true } },
-            players:   { orderBy: { name: "asc" }, select: { id: true, name: true, jerseyNumber: true } },
+            players:   { orderBy: { name: "asc" }, select: { id: true, name: true, jerseyNumber: true, photoUrl: true } },
           },
         },
       },
     });
 
-    const myTeams = myPlayers.map(({ team }) => ({
+    // Load game stats for all of the player's lineup entries
+    const myPlayerIds = myPlayers.map((p) => p.id);
+    const gameLineups = myPlayerIds.length > 0
+      ? await prisma.gameLineup.findMany({
+          where: { playerId: { in: myPlayerIds } },
+          include: {
+            game: {
+              select: {
+                id: true, scheduledAt: true, status: true,
+                homeScore: true, awayScore: true,
+                homeTeam: { select: { id: true, name: true } },
+                awayTeam: { select: { id: true, name: true } },
+                season:   { select: { id: true, name: true } },
+              },
+            },
+          },
+          orderBy: { game: { scheduledAt: "desc" } },
+        })
+      : [];
+
+    // Compute stats per player
+    const statsMap: Record<string, {
+      gamesPlayed: number; wins: number; losses: number; ties: number;
+      positions: Record<string, number>;
+      recentGames: {
+        gameId: string; seasonId: string; seasonName: string; date: string;
+        opponentName: string; position: string; battingOrder: number | null;
+        teamScore: number | null; opponentScore: number | null;
+        status: string; result: "W" | "L" | "T" | null;
+      }[];
+    }> = {};
+
+    for (const entry of gameLineups) {
+      const { game } = entry;
+      if (!statsMap[entry.playerId]) {
+        statsMap[entry.playerId] = { gamesPlayed: 0, wins: 0, losses: 0, ties: 0, positions: {}, recentGames: [] };
+      }
+      const s = statsMap[entry.playerId];
+      const isHome = entry.isHome;
+      const teamScore = isHome ? game.homeScore : game.awayScore;
+      const oppScore  = isHome ? game.awayScore : game.homeScore;
+      const opponent  = isHome ? game.awayTeam.name : game.homeTeam.name;
+
+      let result: "W" | "L" | "T" | null = null;
+      if (game.status === "COMPLETED" && teamScore !== null && oppScore !== null) {
+        result = teamScore > oppScore ? "W" : teamScore < oppScore ? "L" : "T";
+        s.gamesPlayed++;
+        if (result === "W") s.wins++;
+        else if (result === "L") s.losses++;
+        else s.ties++;
+      } else if (game.status === "IN_PROGRESS") {
+        s.gamesPlayed++;
+      }
+
+      s.positions[entry.position] = (s.positions[entry.position] ?? 0) + 1;
+      s.recentGames.push({
+        gameId: game.id,
+        seasonId: game.season.id,
+        seasonName: game.season.name,
+        date: game.scheduledAt.toISOString(),
+        opponentName: opponent,
+        position: entry.position,
+        battingOrder: entry.battingOrder,
+        teamScore, opponentScore: oppScore,
+        status: game.status,
+        result,
+      });
+    }
+
+    const myTeams = myPlayers.map(({ id: playerId, team }) => ({
       id:         team.id,
       name:       team.name,
       manager:    team.manager,
       assistant:  team.assistant,
       teammates:  team.players,
+      stats: statsMap[playerId] ?? { gamesPlayed: 0, wins: 0, losses: 0, ties: 0, positions: {}, recentGames: [] },
     }));
 
     return (

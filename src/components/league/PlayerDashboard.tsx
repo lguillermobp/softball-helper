@@ -1,12 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useLanguage } from "@/context/language-context";
 
 interface Teammate {
   id: string;
   name: string;
   jerseyNumber: string | null;
+  photoUrl: string | null;
+}
+
+interface GameEntry {
+  gameId: string;
+  seasonId: string;
+  seasonName: string;
+  date: string;
+  opponentName: string;
+  position: string;
+  battingOrder: number | null;
+  teamScore: number | null;
+  opponentScore: number | null;
+  status: string;
+  result: "W" | "L" | "T" | null;
+}
+
+interface PlayerStats {
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  positions: Record<string, number>;
+  recentGames: GameEntry[];
 }
 
 interface MyTeam {
@@ -15,6 +38,7 @@ interface MyTeam {
   manager: { name: string | null; email: string; phone: string | null } | null;
   assistant: { name: string | null; email: string; phone: string | null } | null;
   teammates: Teammate[];
+  stats: PlayerStats;
 }
 
 interface Season {
@@ -38,15 +62,34 @@ function statusBadge(s: string) {
   return { bg: "#78350f", color: "#fbbf24", text: "Upcoming" };
 }
 
+function resultStyle(r: "W" | "L" | "T" | null) {
+  if (r === "W") return { color: "#4ade80", bg: "#14532d" };
+  if (r === "L") return { color: "#f87171", bg: "#450a0a" };
+  if (r === "T") return { color: "#fbbf24", bg: "#451a03" };
+  return { color: "#9ca3af", bg: "#1f2937" };
+}
+
 const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 const dim  = { color: "var(--sh-muted)" };
 const head = { color: "var(--sh-text)" };
 
-export function PlayerDashboard({ slug, league, myTeams, seasons }: Props) {
+function Avatar({ name, photoUrl, size = 10 }: { name: string; photoUrl: string | null; size?: number }) {
+  const cls = `w-${size} h-${size} rounded-full object-cover shrink-0`;
+  return photoUrl
+    ? <img src={photoUrl} alt={name} className={cls} style={{ border: "2px solid var(--sh-border2)" }} />
+    : (
+      <div className={`w-${size} h-${size} rounded-full flex items-center justify-center text-xs font-bold shrink-0`}
+        style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "2px solid var(--sh-border2)" }}>
+        {name.charAt(0).toUpperCase()}
+      </div>
+    );
+}
+
+export function PlayerDashboard({ slug, myTeams, seasons }: Props) {
   return (
     <div className="space-y-8">
 
-      {/* My Teams */}
+      {/* ── My Teams ── */}
       <section className="space-y-4">
         <h2 className="text-lg font-bold" style={head}>⚾ My Team{myTeams.length !== 1 ? "s" : ""}</h2>
 
@@ -54,78 +97,69 @@ export function PlayerDashboard({ slug, league, myTeams, seasons }: Props) {
           <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-muted)" }}>
             You are not assigned to any team yet.
           </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {myTeams.map((team) => (
-              <div key={team.id} className="rounded-2xl border overflow-hidden" style={card}>
-                {/* Team header */}
-                <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--sh-border)" }}>
-                  <p className="font-bold text-base" style={head}>{team.name}</p>
+        ) : myTeams.map((team) => (
+          <div key={team.id} className="rounded-2xl border overflow-hidden" style={card}>
+            {/* Team header */}
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--sh-border)" }}>
+              <p className="font-bold text-base" style={head}>{team.name}</p>
+              {team.manager && (
+                <p className="text-xs mt-1.5" style={dim}>
+                  <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>Manager</span>
+                  {" · "}<span style={head}>{team.manager.name ?? "—"}</span>
+                  {team.manager.email && (
+                    <a href={`mailto:${team.manager.email}`} className="ml-1 hover:underline" style={{ color: "var(--sh-secondary)" }}>
+                      {team.manager.email}
+                    </a>
+                  )}
+                  {team.manager.phone && <span> · {team.manager.phone}</span>}
+                </p>
+              )}
+              {team.assistant && (
+                <p className="text-xs mt-0.5" style={dim}>
+                  <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>Assistant</span>
+                  {" · "}<span style={head}>{team.assistant.name ?? "—"}</span>
+                  {team.assistant.email && (
+                    <a href={`mailto:${team.assistant.email}`} className="ml-1 hover:underline" style={{ color: "var(--sh-secondary)" }}>
+                      {team.assistant.email}
+                    </a>
+                  )}
+                </p>
+              )}
+            </div>
 
-                  {team.manager && (
-                    <div className="mt-2 space-y-0.5">
-                      <p className="text-xs" style={dim}>
-                        <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>Manager</span>
-                        {" · "}
-                        <span style={head}>{team.manager.name ?? "—"}</span>
-                        {team.manager.email && (
-                          <a href={`mailto:${team.manager.email}`} className="ml-1 hover:underline" style={{ color: "var(--sh-secondary)" }}>
-                            {team.manager.email}
-                          </a>
+            {/* Roster with photos */}
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>
+                Roster ({team.teammates.length})
+              </p>
+              {team.teammates.length === 0 ? (
+                <p className="text-xs" style={dim}>No players yet.</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {team.teammates.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2.5">
+                      <Avatar name={p.name} photoUrl={p.photoUrl} size={9} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate" style={head}>{p.name}</p>
+                        {p.jerseyNumber && (
+                          <p className="text-xs" style={{ color: "var(--sh-primary)" }}>#{p.jerseyNumber}</p>
                         )}
-                        {team.manager.phone && <span style={dim}> · {team.manager.phone}</span>}
-                      </p>
+                      </div>
                     </div>
-                  )}
-
-                  {team.assistant && (
-                    <p className="text-xs mt-0.5" style={dim}>
-                      <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>Assistant</span>
-                      {" · "}
-                      <span style={head}>{team.assistant.name ?? "—"}</span>
-                      {team.assistant.email && (
-                        <a href={`mailto:${team.assistant.email}`} className="ml-1 hover:underline" style={{ color: "var(--sh-secondary)" }}>
-                          {team.assistant.email}
-                        </a>
-                      )}
-                    </p>
-                  )}
+                  ))}
                 </div>
+              )}
+            </div>
 
-                {/* Roster */}
-                <div className="px-5 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>
-                    Roster ({team.teammates.length})
-                  </p>
-                  {team.teammates.length === 0 ? (
-                    <p className="text-xs" style={dim}>No players yet.</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {team.teammates.map((p) => (
-                        <li key={p.id} className="flex items-center gap-2">
-                          {p.jerseyNumber ? (
-                            <span className="text-xs font-bold w-7 text-right shrink-0" style={{ color: "var(--sh-primary)" }}>
-                              #{p.jerseyNumber}
-                            </span>
-                          ) : (
-                            <span className="w-7 shrink-0" />
-                          )}
-                          <span className="text-sm" style={head}>{p.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            ))}
+            {/* Stats */}
+            <StatsSection slug={slug} stats={team.stats} />
           </div>
-        )}
+        ))}
       </section>
 
-      {/* Seasons */}
+      {/* ── Seasons ── */}
       <section className="space-y-4">
         <h2 className="text-lg font-bold" style={head}>📅 Seasons</h2>
-
         {seasons.length === 0 ? (
           <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-muted)" }}>
             No seasons yet.
@@ -155,7 +189,103 @@ export function PlayerDashboard({ slug, league, myTeams, seasons }: Props) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
 
+function StatsSection({ slug, stats }: { slug: string; stats: PlayerStats }) {
+  const topPositions = Object.entries(stats.positions)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  const completedGames = stats.recentGames.filter((g) => g.status === "COMPLETED");
+  const pct = completedGames.length > 0
+    ? ((stats.wins / completedGames.length) * 100).toFixed(0)
+    : null;
+
+  return (
+    <div className="px-5 py-4">
+      <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>📊 My Stats</p>
+
+      {stats.gamesPlayed === 0 ? (
+        <p className="text-xs" style={dim}>No games played yet.</p>
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            {[
+              { label: "Games",  value: stats.gamesPlayed },
+              { label: "Wins",   value: stats.wins,   color: "#4ade80" },
+              { label: "Losses", value: stats.losses, color: "#f87171" },
+              { label: "Win %",  value: pct ? `${pct}%` : "—" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="rounded-xl border p-2.5 text-center"
+                style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+                <p className="text-lg font-bold" style={{ color: color ?? "var(--sh-text)" }}>{value}</p>
+                <p className="text-xs mt-0.5" style={dim}>{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Positions */}
+          {topPositions.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <span className="text-xs" style={dim}>Positions:</span>
+              {topPositions.map(([pos, cnt]) => (
+                <span key={pos} className="text-xs font-semibold rounded-full px-2.5 py-0.5"
+                  style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
+                  {pos} <span style={dim}>×{cnt}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Recent games */}
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>Recent games</p>
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--sh-border)" }}>
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ background: "var(--sh-bg-card2)", borderBottom: "1px solid var(--sh-border)" }}>
+                  {["Date", "Opponent", "Pos", "#", "Score", "Result"].map((h) => (
+                    <th key={h} className="px-3 py-2 text-left font-semibold uppercase tracking-wider" style={dim}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stats.recentGames.slice(0, 8).map((g) => {
+                  const rs = resultStyle(g.result);
+                  return (
+                    <tr key={g.gameId} style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                      <td className="px-3 py-2 whitespace-nowrap" style={dim}>
+                        {new Date(g.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </td>
+                      <td className="px-3 py-2 font-medium" style={head}>
+                        <Link href={`/league/${slug}/season/${g.seasonId}`}
+                          className="hover:underline">{g.opponentName}</Link>
+                      </td>
+                      <td className="px-3 py-2 font-semibold" style={{ color: "var(--sh-primary)" }}>{g.position}</td>
+                      <td className="px-3 py-2" style={dim}>{g.battingOrder ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap" style={head}>
+                        {g.teamScore !== null && g.opponentScore !== null
+                          ? `${g.teamScore} – ${g.opponentScore}`
+                          : g.status === "IN_PROGRESS" ? "Live" : "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {g.result ? (
+                          <span className="font-bold rounded-full px-2 py-0.5"
+                            style={{ background: rs.bg, color: rs.color }}>{g.result}</span>
+                        ) : (
+                          <span style={dim}>{g.status === "IN_PROGRESS" ? "●" : "—"}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
