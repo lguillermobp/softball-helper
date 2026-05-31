@@ -134,7 +134,10 @@ export default async function LeaguePage({ params }: PageProps) {
           category:  { select: { id: true, name: true } },
           manager:   { select: { id: true, name: true, email: true, phone: true } },
           assistant: { select: { id: true, name: true, email: true, phone: true } },
-          players:   { orderBy: { name: "asc" } },
+          players: {
+            orderBy: { name: "asc" },
+            include: { user: { select: { password: true, emailVerified: true } } },
+          },
         },
         orderBy: { name: "asc" },
       },
@@ -155,6 +158,7 @@ export default async function LeaguePage({ params }: PageProps) {
     assistant: t.assistant ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email, phone: t.assistant.phone } : null,
     players: t.players.map((p) => ({
       id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, photoUrl: p.photoUrl ?? null, userId: p.userId,
+      invitePending: !!(p.email && (!p.user?.password || !p.user?.emailVerified)),
     })),
   }));
 

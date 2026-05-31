@@ -23,7 +23,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; photoUrl: string | null; userId: string | null }
+interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface Team {
   id: string; name: string; status: string; isActive: boolean;
@@ -292,6 +292,13 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const canEdit = isAdmin || (isStaff && team.status === "PENDING");
     const approved = team.status === "APPROVED";
     const [showPlayers, setShowPlayers] = useState(false);
+    const [resending, setResending] = useState<string | null>(null);
+
+    async function resendInvite(playerId: string) {
+      setResending(playerId);
+      await fetch(`/api/leagues/${slug}/players/${playerId}/resend-invite`, { method: "POST" });
+      setResending(null);
+    }
 
     return (
       <div className="rounded-xl border overflow-hidden" style={{ ...card, opacity: inactive ? 0.7 : 1 }}>
@@ -489,7 +496,20 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     </td>
                     {canEdit && (
                       <td className="px-4 py-2">
-                        <EditPlayerDialog slug={slug} player={p} />
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <EditPlayerDialog slug={slug} player={p} />
+                          {p.invitePending && (
+                            <button
+                              onClick={() => resendInvite(p.id)}
+                              disabled={resending === p.id}
+                              title="Resend invitation email"
+                              className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
+                              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                            >
+                              {resending === p.id ? "Sending…" : "Resend invite"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
