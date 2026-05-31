@@ -16,9 +16,11 @@ export async function GET(req: NextRequest) {
   const action  = searchParams.get("action") ?? "";
   const from    = searchParams.get("from")   ?? "";
   const to      = searchParams.get("to")     ?? "";
-  const PAGE    = 50;
+  const userId  = searchParams.get("userId") ?? "";
+  const PAGE    = userId ? 100 : 50; // show more when scoped to a single user
 
   const where: Prisma.AuditLogWhereInput = {
+    ...(userId && { userId }),
     ...(query  && { OR: [
       { userName:  { contains: query, mode: Prisma.QueryMode.insensitive } },
       { userEmail: { contains: query, mode: Prisma.QueryMode.insensitive } },

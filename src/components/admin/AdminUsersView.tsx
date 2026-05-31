@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { EditUserDialog } from "./EditUserDialog";
 import { SetPasswordDialog } from "./SetPasswordDialog";
+import { UserAuditDialog } from "./UserAuditDialog";
 
 export interface AdminUser {
   id: string; name: string | null; email: string; phone: string | null;
@@ -130,6 +131,11 @@ export function AdminUsersView({ initialUsers }: Props) {
                         {!user.isMasterAdmin && (
                           <SetPasswordDialog userId={user.id} userName={user.name} />
                         )}
+                        <UserAuditDialog
+                          userId={user.id}
+                          userName={user.name}
+                          userEmail={user.email}
+                        />
                         {!user.isMasterAdmin && (
                           <button
                             onClick={() => toggleActive(user)}
