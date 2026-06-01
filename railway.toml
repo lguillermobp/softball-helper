@@ -2,7 +2,9 @@
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "timeout 30 npx prisma migrate deploy; npm run start"
+startCommand = "npm run start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 60
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
