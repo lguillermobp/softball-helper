@@ -2,7 +2,7 @@
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && npm run start"
+startCommand = "timeout 30 npx prisma migrate deploy; npm run start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
