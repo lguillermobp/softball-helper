@@ -138,12 +138,12 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const homeBatters = game.lineups
     .filter(l => l.isHome && l.battingOrder != null && l.position !== "B")
     .sort((a, b) => a.battingOrder! - b.battingOrder!)
-    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber }));
+    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber, photoUrl: l.player.photoUrl, nationality: l.player.nationality }));
 
   const awayBatters = game.lineups
     .filter(l => !l.isHome && l.battingOrder != null && l.position !== "B")
     .sort((a, b) => a.battingOrder! - b.battingOrder!)
-    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber }));
+    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber, photoUrl: l.player.photoUrl, nationality: l.player.nationality }));
 
   return (
     <div className="space-y-6">

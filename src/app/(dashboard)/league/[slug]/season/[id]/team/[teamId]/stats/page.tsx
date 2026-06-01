@@ -7,6 +7,7 @@ import { LanguageSelector } from "@/components/ui/language-selector";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 import { ChangePasswordButton } from "@/components/ui/change-password-button";
 import { PlayerStatsTable } from "@/components/league/game/PlayerStatsTable";
+import { CollapsibleGameStats } from "@/components/league/game/CollapsibleGameStats";
 import { computeSeasonStats, computeGameStats, type BatterRow } from "@/lib/stats";
 
 interface PageProps {
@@ -44,23 +45,22 @@ export default async function TeamStatsPage({ params }: PageProps) {
   // Load all scorebooks for this team in this season
   const scorebooks = await prisma.managerScorebook.findMany({
     where: { teamId, game: { seasonId, leagueId: league.id } },
-    select: { gameId: true, data: true, game: { select: { id: true, scheduledAt: true, homeTeam: { select: { name: true } }, awayTeam: { select: { name: true } } } } },
+    select: {
+      gameId: true, data: true,
+      game: { select: { id: true, scheduledAt: true, homeTeam: { select: { name: true } }, awayTeam: { select: { name: true } } } },
+    },
     orderBy: { game: { scheduledAt: "asc" } },
   });
 
   const gameIds = scorebooks.map(s => s.gameId);
 
-  // Load lineups for players of this team across those games
+  // Load lineups for this team's players across those games
   const lineupEntries = await prisma.gameLineup.findMany({
-    where: {
-      gameId: { in: gameIds },
-      player: { teamId },
-      battingOrder: { not: null },
-    },
+    where: { gameId: { in: gameIds }, player: { teamId }, battingOrder: { not: null } },
     select: {
       gameId: true,
       battingOrder: true,
-      player: { select: { id: true, name: true, jerseyNumber: true } },
+      player: { select: { id: true, name: true, jerseyNumber: true, photoUrl: true, nationality: true } },
     },
   });
 
@@ -73,28 +73,30 @@ export default async function TeamStatsPage({ params }: PageProps) {
       battingOrder: entry.battingOrder!,
       name: entry.player.name,
       jerseyNumber: entry.player.jerseyNumber ?? null,
+      photoUrl: entry.player.photoUrl ?? null,
+      nationality: entry.player.nationality ?? null,
     });
     lineupsByGame.set(entry.gameId, rows);
   }
 
-  // Build game entries for aggregation
+  // Season totals
   const gameEntries = scorebooks.map(sb => {
     const data = sb.data as { offense?: Record<string, Record<string, string>> } | null;
-    return {
-      lineup: lineupsByGame.get(sb.gameId) ?? [],
-      offense: data?.offense ?? null,
-    };
+    return { lineup: lineupsByGame.get(sb.gameId) ?? [], offense: data?.offense ?? null };
   });
-
   const seasonStats = computeSeasonStats(gameEntries);
 
-  // Per-game stats for the game-by-game breakdown
-  const perGameStats = scorebooks.map(sb => {
+  // Pre-compute per-game stats for the collapsible section
+  const perGameEntries = scorebooks.map(sb => {
     const data = sb.data as { offense?: Record<string, Record<string, string>> } | null;
     const lineup = lineupsByGame.get(sb.gameId) ?? [];
     const opponent = sb.game.homeTeam.name === team.name ? sb.game.awayTeam.name : sb.game.homeTeam.name;
     const date = sb.game.scheduledAt.toLocaleDateString();
-    return { gameId: sb.gameId, label: `${date} vs ${opponent}`, lineup, offense: data?.offense ?? null };
+    return {
+      gameId: sb.gameId,
+      label: `${date} vs ${opponent}`,
+      stats: computeGameStats(data?.offense ?? null, lineup),
+    };
   });
 
   return (
@@ -139,23 +141,19 @@ export default async function TeamStatsPage({ params }: PageProps) {
             </span>
           </div>
           <p className="text-sm mt-1" style={{ color: "var(--sh-muted)" }}>
-            These are the manager&apos;s own records, kept independently from the official league statistics.
+            Manager&apos;s own records — independent from the official league statistics.
             Aggregated from {scorebooks.length} scored game{scorebooks.length !== 1 ? "s" : ""}.
           </p>
         </div>
 
-        {/* Season totals */}
         <PlayerStatsTable stats={seasonStats} teamName={team.name} label="Season Totals" />
 
-        {/* Per-game breakdown */}
-        {perGameStats.length > 0 && (
-          <div className="space-y-4">
+        {perGameEntries.length > 0 && (
+          <div className="space-y-3">
             <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: "var(--sh-primary)" }}>
               Game by Game
             </h3>
-            {perGameStats.map(g => (
-              <PlayerStatsTable key={g.gameId} stats={computeGameStats(g.offense, g.lineup)} teamName={team.name} label={g.label} />
-            ))}
+            <CollapsibleGameStats games={perGameEntries} teamName={team.name} />
           </div>
         )}
       </main>

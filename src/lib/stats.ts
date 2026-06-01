@@ -5,12 +5,16 @@ export interface BatterRow {
   battingOrder: number;
   name: string;
   jerseyNumber: string | null;
+  photoUrl: string | null;
+  nationality: string | null;
 }
 
 export interface PlayerStat {
   playerId: string;
   name: string;
   jerseyNumber: string | null;
+  photoUrl: string | null;
+  nationality: string | null;
   ab: number;
   h: number;
   singles: number;
@@ -45,7 +49,11 @@ export function computeGameStats(
 ): PlayerStat[] {
   return batters.map(b => {
     const t = offense ? tallyOffense(offense, b.battingOrder) : { ab: 0, h: 0, singles: 0, doubles: 0, triples: 0, hr: 0 };
-    return { playerId: b.playerId, name: b.name, jerseyNumber: b.jerseyNumber, ...t, ba: formatBA(t.h, t.ab) };
+    return {
+      playerId: b.playerId, name: b.name, jerseyNumber: b.jerseyNumber,
+      photoUrl: b.photoUrl, nationality: b.nationality,
+      ...t, ba: formatBA(t.h, t.ab),
+    };
   });
 }
 
@@ -53,7 +61,7 @@ export function computeSeasonStats(
   games: Array<{ lineup: BatterRow[]; offense: Offense | null }>,
 ): PlayerStat[] {
   const acc = new Map<string, {
-    name: string; jerseyNumber: string | null;
+    name: string; jerseyNumber: string | null; photoUrl: string | null; nationality: string | null;
     ab: number; h: number; singles: number; doubles: number; triples: number; hr: number;
   }>();
 
@@ -61,9 +69,12 @@ export function computeSeasonStats(
     if (!offense) continue;
     for (const b of lineup) {
       const t = tallyOffense(offense, b.battingOrder);
-      const prev = acc.get(b.playerId) ?? { name: b.name, jerseyNumber: b.jerseyNumber, ab: 0, h: 0, singles: 0, doubles: 0, triples: 0, hr: 0 };
+      const prev = acc.get(b.playerId) ?? {
+        name: b.name, jerseyNumber: b.jerseyNumber, photoUrl: b.photoUrl, nationality: b.nationality,
+        ab: 0, h: 0, singles: 0, doubles: 0, triples: 0, hr: 0,
+      };
       acc.set(b.playerId, {
-        name: b.name, jerseyNumber: b.jerseyNumber,
+        name: b.name, jerseyNumber: b.jerseyNumber, photoUrl: b.photoUrl ?? prev.photoUrl, nationality: b.nationality ?? prev.nationality,
         ab: prev.ab + t.ab, h: prev.h + t.h,
         singles: prev.singles + t.singles, doubles: prev.doubles + t.doubles,
         triples: prev.triples + t.triples, hr: prev.hr + t.hr,
@@ -72,6 +83,10 @@ export function computeSeasonStats(
   }
 
   return Array.from(acc.entries())
-    .map(([playerId, s]) => ({ playerId, name: s.name, jerseyNumber: s.jerseyNumber, ab: s.ab, h: s.h, singles: s.singles, doubles: s.doubles, triples: s.triples, hr: s.hr, ba: formatBA(s.h, s.ab) }))
+    .map(([playerId, s]) => ({
+      playerId, name: s.name, jerseyNumber: s.jerseyNumber, photoUrl: s.photoUrl, nationality: s.nationality,
+      ab: s.ab, h: s.h, singles: s.singles, doubles: s.doubles, triples: s.triples, hr: s.hr,
+      ba: formatBA(s.h, s.ab),
+    }))
     .sort((a, b) => b.ab - a.ab || a.name.localeCompare(b.name));
 }

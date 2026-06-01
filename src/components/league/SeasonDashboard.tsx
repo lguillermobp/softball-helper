@@ -405,6 +405,13 @@ export function SeasonDashboard({
                 >
                   <span className="font-semibold text-sm" style={{ color: "var(--sh-text)" }}>{team.name}</span>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/league/${slug}/season/${seasonId}/team/${team.id}/stats`}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-lg border"
+                      style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
+                    >
+                      📊 Stats
+                    </Link>
                     {groupValues[team.id] && (
                       <span
                         className="text-xs font-bold rounded-full px-2.5 py-0.5"
