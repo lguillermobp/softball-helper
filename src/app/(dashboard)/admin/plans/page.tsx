@@ -1,19 +1,25 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AuditLogView } from "@/components/admin/AuditLogView";
+import { AdminPlansView } from "@/components/admin/AdminPlansView";
 import { ChangePasswordButton } from "@/components/ui/change-password-button";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AuditPage() {
+export default async function AdminPlansPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
+
+  const plans = await prisma.plan.findMany({
+    orderBy: { price: "asc" },
+    include: { _count: { select: { leagues: true } } },
+  });
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
       <header className="border-b sticky top-0 z-10" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-header)" }}>
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+        <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
               <circle cx="14" cy="14" r="13" fill="var(--sh-bg-card2)" stroke="var(--sh-primary)" strokeWidth="1.5"/>
@@ -27,21 +33,14 @@ export default async function AuditPage() {
             <span className="text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Softball Helper</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
-                {session?.user?.name?.charAt(0).toUpperCase() ?? "?"}
-              </div>
-              <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{session?.user?.name}</span>
-            </div>
             <ChangePasswordButton />
-            <Link href="/admin/plans" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
-              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-              Plans
-            </Link>
             <Link href="/admin/users" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-              ← Users
+              Users
+            </Link>
+            <Link href="/admin/audit" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+              Audit
             </Link>
             <Link href="/dashboard" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
@@ -51,12 +50,18 @@ export default async function AuditPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>Audit Log</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>All tracked user actions across the system</p>
-        </div>
-        <AuditLogView />
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        <AdminPlansView initialPlans={plans.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          maxTeams: p.maxTeams,
+          maxSeasons: p.maxSeasons,
+          maxPlayers: p.maxPlayers,
+          isActive: p.isActive,
+          stripePriceId: p.stripePriceId,
+          leagueCount: p._count.leagues,
+        }))} />
       </main>
     </div>
   );

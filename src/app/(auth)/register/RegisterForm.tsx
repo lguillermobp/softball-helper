@@ -32,7 +32,7 @@ export function RegisterForm({ loggedInUser }: Props) {
   const p = r.plans;
 
   const PLANS = [
-    { id: "free",    name: p.free.name,    price: 0,  description: p.free.description },
+    { id: "basic",   name: p.basic.name,   price: 9,  description: p.basic.description },
     { id: "starter", name: p.starter.name, price: 29, description: p.starter.description },
     { id: "pro",     name: p.pro.name,     price: 79, description: p.pro.description },
   ];
@@ -212,7 +212,7 @@ export function RegisterForm({ loggedInUser }: Props) {
                             <p className="text-sm text-white/40">{plan.description}</p>
                           </div>
                           <span className="text-lg font-bold text-green-400">
-                            {plan.price === 0 ? p.free.name : `$${plan.price}/mo`}
+                            {`$${plan.price}/mo`}
                           </span>
                         </label>
                       ))}

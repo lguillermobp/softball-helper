@@ -14,7 +14,7 @@ export const translations = {
       badge: "Multi-league softball management",
       headline1: "Step up to the", headline2: "plate.",
       tagline: "Manage your softball leagues, schedules, rosters, and standings — all from one dugout.",
-      cta: "🏆 Start your league free", signin: "Sign in",
+      cta: "🏆 Start your league today", signin: "Sign in",
     },
     stats: [
       { value: "Multi-league", label: "One account" },
@@ -34,7 +34,7 @@ export const translations = {
       title: "From signup to first pitch", subtitle: "Get your league running in minutes.",
       items: [{ icon: "👤", label: "Create account" }, { icon: "🏟️", label: "Set up league" }, { icon: "📋", label: "Add teams" }, { icon: "⚾", label: "Play ball!" }],
     },
-    cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Softball Helper to run their seasons.", button: "Create your league — it's free" },
+    cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Softball Helper to run their seasons.", button: "Create your league" },
     footer: "Built for the love of the game.",
     login: {
       pageTitle: "Sign in to your account", title: "Welcome back", subtitle: "Enter your credentials to continue",
@@ -53,7 +53,7 @@ export const translations = {
         teams:      { title: "Add your first teams",      subtitle: "You can always add more teams later", placeholder: "Team name", addBtn: "+ Add team", back: "Back", finish: "Finish setup", finishing: "Creating league..." },
       },
       plans: {
-        free:    { name: "Free",    description: "Up to 4 teams, 1 season" },
+        basic:   { name: "Basic",   description: "Up to 4 teams, 1 season" },
         starter: { name: "Starter", description: "Up to 12 teams, 3 seasons" },
         pro:     { name: "Pro",     description: "Unlimited teams and seasons" },
       },
@@ -255,7 +255,7 @@ export const translations = {
       title: "Del registro al primer pitcheo", subtitle: "Pon tu liga en marcha en minutos.",
       items: [{ icon: "👤", label: "Crear cuenta" }, { icon: "🏟️", label: "Configurar liga" }, { icon: "📋", label: "Agregar equipos" }, { icon: "⚾", label: "¡A jugar!" }],
     },
-    cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.", button: "Crea tu liga — es gratis" },
+    cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.", button: "Crea tu liga" },
     footer: "Hecho por amor al juego.",
     login: {
       pageTitle: "Iniciar sesión en tu cuenta", title: "Bienvenido de vuelta", subtitle: "Ingresa tus credenciales para continuar",
@@ -274,7 +274,7 @@ export const translations = {
         teams:      { title: "Agrega tus primeros equipos", subtitle: "Siempre puedes agregar más equipos después", placeholder: "Nombre del equipo", addBtn: "+ Agregar equipo", back: "Atrás", finish: "Finalizar configuración", finishing: "Creando liga..." },
       },
       plans: {
-        free:    { name: "Gratis",  description: "Hasta 4 equipos, 1 temporada" },
+        basic:   { name: "Básico",  description: "Hasta 4 equipos, 1 temporada" },
         starter: { name: "Inicial", description: "Hasta 12 equipos, 3 temporadas" },
         pro:     { name: "Pro",     description: "Equipos y temporadas ilimitados" },
       },
@@ -456,7 +456,7 @@ export const translations = {
       badge: "マルチリーグ ソフトボール管理",
       headline1: "打席に", headline2: "立とう。",
       tagline: "ソフトボールリーグのスケジュール、名簿、順位表をひとつのダグアウトから管理。",
-      cta: "🏆 リーグを無料で作成", signin: "サインイン",
+      cta: "🏆 リーグを今すぐ作成", signin: "サインイン",
     },
     stats: [
       { value: "マルチリーグ", label: "1アカウント" },
@@ -476,7 +476,7 @@ export const translations = {
       title: "登録から初球まで", subtitle: "数分でリーグを開始できます。",
       items: [{ icon: "👤", label: "アカウント作成" }, { icon: "🏟️", label: "リーグ設定" }, { icon: "📋", label: "チーム追加" }, { icon: "⚾", label: "プレイボール！" }],
     },
-    cta:    { title: "プレイする準備はできた？", subtitle: "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成 — 無料" },
+    cta:    { title: "プレイする準備はできた？", subtitle: "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成" },
     footer: "野球への愛から生まれた。",
     login: {
       pageTitle: "アカウントにサインイン", title: "おかえりなさい", subtitle: "認証情報を入力して続けてください",
@@ -495,7 +495,7 @@ export const translations = {
         teams:      { title: "最初のチームを追加",   subtitle: "後でいつでも追加できます", placeholder: "チーム名", addBtn: "+ チームを追加", back: "戻る", finish: "設定を完了", finishing: "リーグを作成中..." },
       },
       plans: {
-        free:    { name: "無料",      description: "最大4チーム、1シーズン" },
+        basic:   { name: "ベーシック", description: "最大4チーム、1シーズン" },
         starter: { name: "スターター", description: "最大12チーム、3シーズン" },
         pro:     { name: "プロ",      description: "無制限のチームとシーズン" },
       },

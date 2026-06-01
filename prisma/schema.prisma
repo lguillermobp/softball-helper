@@ -78,13 +78,14 @@ model VerificationToken {
 // ─── Plans ───────────────────────────────────────────────────────────────────
 
 model Plan {
-  id        String  @id @default(cuid())
-  name      String  @unique
-  maxTeams  Int
-  maxSeasons Int
-  maxPlayers Int
-  price     Float
-  isActive  Boolean @default(true)
+  id            String  @id @default(cuid())
+  name          String  @unique
+  maxTeams      Int
+  maxSeasons    Int
+  maxPlayers    Int
+  price         Float
+  isActive      Boolean @default(true)
+  stripePriceId String?
 
   leagues League[]
 
@@ -94,16 +95,19 @@ model Plan {
 // ─── Leagues ─────────────────────────────────────────────────────────────────
 
 model League {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  logoUrl   String?
-  city      String?
-  state     String?
-  status    LeagueStatus @default(ACTIVE)
-  planId    String
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id                   String       @id @default(cuid())
+  name                 String
+  slug                 String       @unique
+  logoUrl              String?
+  city                 String?
+  state                String?
+  status               LeagueStatus @default(ACTIVE)
+  planId               String
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String       @default("active")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]

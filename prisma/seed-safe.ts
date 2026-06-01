@@ -11,10 +11,13 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Plans
+  // Ensure old Free plan is renamed if it still exists
+  await prisma.plan.updateMany({ where: { name: "Free" }, data: { name: "Basic", price: 9 } });
+
   await prisma.plan.upsert({
-    where: { name: "Free" },
+    where: { name: "Basic" },
     update: {},
-    create: { name: "Free", price: 0, maxTeams: 4, maxSeasons: 1, maxPlayers: 40 },
+    create: { name: "Basic", price: 9, maxTeams: 4, maxSeasons: 1, maxPlayers: 40 },
   });
   await prisma.plan.upsert({
     where: { name: "Starter" },
