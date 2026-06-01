@@ -154,8 +154,8 @@ export function SeasonDashboard({
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.pct].map((h) => (
-                <th key={h} className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center first:text-left" style={dim}>
+              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.pct, ""].map((h, i) => (
+                <th key={i} className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center first:text-left" style={dim}>
                   {h}
                 </th>
               ))}
@@ -179,6 +179,15 @@ export function SeasonDashboard({
                 <td className="px-3 py-3 text-center" style={dim}>{s.rf}</td>
                 <td className="px-3 py-3 text-center" style={dim}>{s.ra}</td>
                 <td className="px-3 py-3 text-center" style={{ color: "var(--sh-secondary)" }}>{s.pct}</td>
+                <td className="px-3 py-3 text-center">
+                  <Link
+                    href={`/league/${slug}/season/${seasonId}/team/${s.team.id}/stats`}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-lg border"
+                    style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
+                  >
+                    📊 Stats
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

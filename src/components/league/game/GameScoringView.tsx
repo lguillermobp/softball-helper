@@ -6,6 +6,8 @@ import { useLanguage } from "@/context/language-context";
 import { OfficialsSetup } from "./OfficialsSetup";
 import { LineupEditor } from "./LineupEditor";
 import { ManagerScorebook } from "./ManagerScorebook";
+import { PlayerStatsTable } from "./PlayerStatsTable";
+import { computeGameStats } from "@/lib/stats";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Player {
@@ -63,7 +65,7 @@ interface Props {
   awayScorebook: ScoreBookData | null;
 }
 
-type Tab = "setup" | "home" | "away" | "home-book" | "away-book";
+type Tab = "setup" | "home" | "away" | "home-book" | "away-book" | "home-stats" | "away-stats";
 
 function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   const active = lineups.filter(l => l.isHome === isHome && l.position !== "B");
@@ -122,8 +124,14 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
     { key: "setup", label: ts.setup, indicator: officialsComplete },
     { key: "home",  label: `${ts.homeLineup}`, indicator: homeComplete },
     { key: "away",  label: `${ts.awayLineup}`, indicator: awayComplete },
-    ...(showHomeScorebookTab ? [{ key: "home-book" as Tab, label: `📓 ${game.homeTeam.name}` }] : []),
-    ...(showAwayScorebookTab ? [{ key: "away-book" as Tab, label: `📓 ${game.awayTeam.name}` }] : []),
+    ...(showHomeScorebookTab ? [
+      { key: "home-book"   as Tab, label: `📓 ${game.homeTeam.name}` },
+      { key: "home-stats"  as Tab, label: `📊 ${game.homeTeam.name}` },
+    ] : []),
+    ...(showAwayScorebookTab ? [
+      { key: "away-book"   as Tab, label: `📓 ${game.awayTeam.name}` },
+      { key: "away-stats"  as Tab, label: `📊 ${game.awayTeam.name}` },
+    ] : []),
   ];
 
   // Build batter rows from lineups (sorted by battingOrder)
@@ -304,6 +312,22 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           lineup={awayBatters}
           canEdit={permissions.canEditAwayScorebook}
           initialData={awayScorebook}
+        />
+      )}
+
+      {tab === "home-stats" && showHomeScorebookTab && (
+        <PlayerStatsTable
+          stats={computeGameStats(homeScorebook?.offense as Record<string, Record<string, string>> ?? null, homeBatters)}
+          teamName={game.homeTeam.name}
+          label="Game Stats"
+        />
+      )}
+
+      {tab === "away-stats" && showAwayScorebookTab && (
+        <PlayerStatsTable
+          stats={computeGameStats(awayScorebook?.offense as Record<string, Record<string, string>> ?? null, awayBatters)}
+          teamName={game.awayTeam.name}
+          label="Game Stats"
         />
       )}
     </div>
