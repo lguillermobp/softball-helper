@@ -51,6 +51,7 @@ type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
 interface ScoreBookData {
   offense: Record<string, Record<string, OffenseResult>>;
   defense: Record<string, { outs: number; k: number }>;
+  runs:    Record<string, number>;
 }
 
 interface Props {
@@ -299,7 +300,9 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           teamName={game.homeTeam.name}
           lineup={homeBatters}
           canEdit={permissions.canEditHomeScorebook}
+          isHome={true}
           initialData={homeScorebook}
+          opponentRuns={(awayScorebook?.runs ?? null) as Record<string, number> | null}
         />
       )}
 
@@ -311,7 +314,9 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           teamName={game.awayTeam.name}
           lineup={awayBatters}
           canEdit={permissions.canEditAwayScorebook}
+          isHome={false}
           initialData={awayScorebook}
+          opponentRuns={(homeScorebook?.runs ?? null) as Record<string, number> | null}
         />
       )}
 

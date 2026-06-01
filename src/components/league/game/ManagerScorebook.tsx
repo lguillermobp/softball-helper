@@ -8,8 +8,9 @@ type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
 const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "1B", "2B", "3B", "HR"];
 
 interface ScoreBookData {
-  offense: Record<string, Record<string, OffenseResult>>; // [inning][battingOrder]
-  defense: Record<string, { outs: number; k: number }>;   // [inning]
+  offense: Record<string, Record<string, OffenseResult>>; // [inningKey][battingOrder]
+  defense: Record<string, { outs: number; k: number }>;   // [inningKey]
+  runs:    Record<string, number>;                         // [inningKey] → runs this team scored
 }
 
 interface BatterRow {
@@ -20,52 +21,91 @@ interface BatterRow {
 }
 
 interface Props {
-  slug:       string;
-  gameId:     string;
-  teamId:     string;
-  teamName:   string;
-  lineup:     BatterRow[];
-  canEdit:    boolean;
-  initialData: ScoreBookData | null;
+  slug:         string;
+  gameId:       string;
+  teamId:       string;
+  teamName:     string;
+  lineup:       BatterRow[];
+  canEdit:      boolean;
+  isHome:       boolean;
+  initialData:  ScoreBookData | null;
+  opponentRuns: Record<string, number> | null; // other team's runs, read-only
 }
 
 const DEFAULT_INNINGS = 7;
 
 const RESULT_STYLE: Record<OffenseResult, { bg: string; color: string; label: string }> = {
-  "":    { bg: "transparent",  color: "var(--sh-muted)",    label: "—"  },
-  "OUT": { bg: "#450a0a",      color: "#f87171",            label: "OUT" },
-  "K":   { bg: "#451a03",      color: "#fbbf24",            label: "K"  },
-  "1B":  { bg: "#14532d",      color: "#4ade80",            label: "1B" },
-  "2B":  { bg: "#1e3a5f",      color: "#93c5fd",            label: "2B" },
-  "3B":  { bg: "#1a1a3d",      color: "#a78bfa",            label: "3B" },
-  "HR":  { bg: "#78350f",      color: "#fcd34d",            label: "HR" },
+  "":    { bg: "transparent", color: "var(--sh-muted)",  label: "—"   },
+  "OUT": { bg: "#450a0a",     color: "#f87171",           label: "OUT" },
+  "K":   { bg: "#451a03",     color: "#fbbf24",           label: "K"   },
+  "1B":  { bg: "#14532d",     color: "#4ade80",           label: "1B"  },
+  "2B":  { bg: "#1e3a5f",     color: "#93c5fd",           label: "2B"  },
+  "3B":  { bg: "#1a1a3d",     color: "#a78bfa",           label: "3B"  },
+  "HR":  { bg: "#78350f",     color: "#fcd34d",           label: "HR"  },
 };
 
-function emptyData(innings: number): ScoreBookData {
-  const offense: ScoreBookData["offense"] = {};
-  const defense: ScoreBookData["defense"] = {};
-  for (let i = 1; i <= innings; i++) {
-    offense[i] = {};
-    defense[i] = { outs: 0, k: 0 };
-  }
-  return { offense, defense };
+// ── Inning-key helpers ────────────────────────────────────────────────────────
+
+function parseKey(key: string): { base: number; ext: string } {
+  const m = key.match(/^(\d+)([a-z]*)$/);
+  return m ? { base: parseInt(m[1]), ext: m[2] } : { base: 0, ext: "" };
 }
 
-function mergeWithEmpty(data: ScoreBookData | null, innings: number): ScoreBookData {
-  const base = emptyData(innings);
-  if (!data) return base;
+function sortKeys(keys: string[]): string[] {
+  return [...keys].sort((a, b) => {
+    const pa = parseKey(a), pb = parseKey(b);
+    return pa.base !== pb.base ? pa.base - pb.base : pa.ext.localeCompare(pb.ext);
+  });
+}
+
+function nextExtKey(keys: string[], baseKey: string): string {
+  const { base } = parseKey(baseKey);
+  const exts = keys.filter(k => parseKey(k).base === base).map(k => parseKey(k).ext);
+  const maxExt = exts.reduce((m, e) => (e > m ? e : m), "");
+  const nextExt = maxExt === "" ? "b" : String.fromCharCode(maxExt.charCodeAt(maxExt.length - 1) + 1);
+  return String(base) + nextExt;
+}
+
+function defaultKeys(): string[] {
+  return Array.from({ length: DEFAULT_INNINGS }, (_, i) => String(i + 1));
+}
+
+// ── Data helpers ──────────────────────────────────────────────────────────────
+
+function emptyInning(): { offense: Record<string, OffenseResult>; defense: { outs: number; k: number }; runs: number } {
+  return { offense: {}, defense: { outs: 0, k: 0 }, runs: 0 };
+}
+
+function mergeWithDefaults(data: ScoreBookData | null): { data: ScoreBookData; keys: string[] } {
+  if (!data || !data.offense || Object.keys(data.offense).length === 0) {
+    const keys = defaultKeys();
+    const offense: ScoreBookData["offense"] = {};
+    const defense: ScoreBookData["defense"] = {};
+    const runs: ScoreBookData["runs"]       = {};
+    keys.forEach(k => { offense[k] = {}; defense[k] = { outs: 0, k: 0 }; runs[k] = 0; });
+    return { data: { offense, defense, runs }, keys };
+  }
+  const keys = sortKeys(Object.keys(data.offense));
   return {
-    offense: { ...base.offense, ...data.offense },
-    defense: { ...base.defense, ...data.defense },
+    data: {
+      offense: data.offense,
+      defense: data.defense ?? {},
+      runs:    data.runs    ?? {},
+    },
+    keys,
   };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEdit, initialData }: Props) {
-  const [innings, setInnings] = useState(DEFAULT_INNINGS);
-  const [data,    setData]    = useState<ScoreBookData>(() => mergeWithEmpty(initialData, DEFAULT_INNINGS));
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+export function ManagerScorebook({
+  slug, gameId, teamId, teamName, lineup, canEdit, isHome, initialData, opponentRuns,
+}: Props) {
+  const { data: initData, keys: initKeys } = mergeWithDefaults(initialData as ScoreBookData | null);
+
+  const [inningKeys, setInningKeys] = useState<string[]>(initKeys);
+  const [data,       setData]       = useState<ScoreBookData>(initData);
+  const [saveState,  setSaveState]  = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const save = useCallback(async (next: ScoreBookData) => {
@@ -89,31 +129,38 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
     saveTimer.current = setTimeout(() => save(next), 1200);
   }
 
-  function cycleOffense(inning: number, order: number) {
+  function cycleOffense(key: string, order: number) {
     if (!canEdit) return;
     setData(prev => {
-      const cur = (prev.offense[inning]?.[order] ?? "") as OffenseResult;
-      const idx = OFFENSE_CYCLE.indexOf(cur);
-      const next: OffenseResult = OFFENSE_CYCLE[(idx + 1) % OFFENSE_CYCLE.length];
+      const cur = (prev.offense[key]?.[order] ?? "") as OffenseResult;
+      const next: OffenseResult = OFFENSE_CYCLE[(OFFENSE_CYCLE.indexOf(cur) + 1) % OFFENSE_CYCLE.length];
       const updated: ScoreBookData = {
         ...prev,
-        offense: {
-          ...prev.offense,
-          [inning]: { ...prev.offense[inning], [order]: next },
-        },
+        offense: { ...prev.offense, [key]: { ...prev.offense[key], [order]: next } },
       };
       scheduleAutosave(updated);
       return updated;
     });
   }
 
-  function cycleDefenseK(inning: number) {
+  function cycleDefenseK(key: string) {
     if (!canEdit) return;
     setData(prev => {
-      const cur = prev.defense[inning]?.k ?? 0;
       const updated: ScoreBookData = {
         ...prev,
-        defense: { ...prev.defense, [inning]: { ...prev.defense[inning], k: (cur + 1) % 10 } },
+        defense: { ...prev.defense, [key]: { ...prev.defense[key], k: ((prev.defense[key]?.k ?? 0) + 1) % 10 } },
+      };
+      scheduleAutosave(updated);
+      return updated;
+    });
+  }
+
+  function cycleRuns(key: string) {
+    if (!canEdit) return;
+    setData(prev => {
+      const updated: ScoreBookData = {
+        ...prev,
+        runs: { ...prev.runs, [key]: ((prev.runs?.[key] ?? 0) + 1) % 16 },
       };
       scheduleAutosave(updated);
       return updated;
@@ -121,33 +168,89 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
   }
 
   function addInning() {
-    const next = innings + 1;
-    setInnings(next);
+    if (!canEdit) return;
+    const maxBase = inningKeys.reduce((m, k) => Math.max(m, parseKey(k).base), 0);
+    const newKey = String(maxBase + 1);
+    setInningKeys(prev => [...prev, newKey]);
     setData(prev => ({
-      offense: { ...prev.offense, [next]: {} },
-      defense: { ...prev.defense, [next]: { outs: 0, k: 0 } },
+      offense: { ...prev.offense, [newKey]: {} },
+      defense: { ...prev.defense, [newKey]: { outs: 0, k: 0 } },
+      runs:    { ...prev.runs,    [newKey]: 0 },
     }));
   }
 
-  const inningNums = Array.from({ length: innings }, (_, i) => i + 1);
-
-  // Per-inning offensive totals
-  function inningTotals(inning: number) {
-    const cells = Object.values(data.offense[inning] ?? {}) as OffenseResult[];
-    const hits = cells.filter(r => r === "1B" || r === "2B" || r === "3B" || r === "HR").length;
-    const outs = cells.filter(r => r === "OUT" || r === "K").length;
-    const k    = cells.filter(r => r === "K").length;
-    return { hits, outs, k };
+  function extendInning(key: string) {
+    if (!canEdit) return;
+    const newKey  = nextExtKey(inningKeys, key);
+    const base    = parseKey(key).base;
+    // Find the index of the last column belonging to this base inning
+    const lastIdx = inningKeys.reduce((idx, k, i) => parseKey(k).base === base ? i : idx, 0);
+    setInningKeys(prev => [
+      ...prev.slice(0, lastIdx + 1),
+      newKey,
+      ...prev.slice(lastIdx + 1),
+    ]);
+    setData(prev => ({
+      offense: { ...prev.offense, [newKey]: {} },
+      defense: { ...prev.defense, [newKey]: { outs: 0, k: 0 } },
+      runs:    { ...prev.runs,    [newKey]: 0 },
+    }));
   }
 
-  const col   = "w-14 shrink-0 text-center";
-  const cell  = "w-14 h-9 shrink-0 text-center text-xs font-bold rounded flex items-center justify-center";
-  const hdr   = { color: "var(--sh-muted)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
-  const card  = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
+  function inningTotals(key: string) {
+    const cells = Object.values(data.offense[key] ?? {}) as OffenseResult[];
+    return {
+      hits: cells.filter(r => r === "1B" || r === "2B" || r === "3B" || r === "HR").length,
+      outs: cells.filter(r => r === "OUT" || r === "K").length,
+    };
+  }
+
+  // Visitor = away team; Home = home team
+  function getVisitorRuns(key: string) { return isHome ? (opponentRuns?.[key] ?? 0) : (data.runs?.[key] ?? 0); }
+  function getHomeRuns(key: string)    { return isHome ? (data.runs?.[key] ?? 0) : (opponentRuns?.[key] ?? 0); }
+
+  const col  = "w-14 shrink-0 text-center";
+  const cell = "w-14 h-9 shrink-0 text-center text-xs font-bold rounded flex items-center justify-center";
+  const hdr  = { color: "var(--sh-muted)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
+  const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
+
+  const totalVisitor = inningKeys.reduce((s, k) => s + getVisitorRuns(k), 0);
+  const totalHome    = inningKeys.reduce((s, k) => s + getHomeRuns(k), 0);
+
+  // Shared inning header row (with extend buttons)
+  function InningHeaders({ showExtend }: { showExtend: boolean }) {
+    return (
+      <div className="flex items-center gap-1">
+        <div className="w-36 shrink-0" />
+        {inningKeys.map(key => {
+          const { base, ext } = parseKey(key);
+          const isExt = ext !== "";
+          return (
+            <div key={key} className="w-14 shrink-0 flex flex-col items-center" style={{ gap: 1 }}>
+              <span style={{ ...hdr, color: isExt ? "#4ade80" : "var(--sh-muted)" }}>
+                {isExt ? `+${base}` : `Inn ${base}`}
+              </span>
+              {showExtend && canEdit && (
+                <button
+                  onClick={() => extendInning(key)}
+                  title="Extend this inning (batter bats again)"
+                  className="text-xs hover:opacity-70 leading-none"
+                  style={{ color: "#4ade80", fontSize: 11 }}
+                >
+                  ⊕
+                </button>
+              )}
+            </div>
+          );
+        })}
+        <div className="w-14 shrink-0 text-center" style={hdr}>TOT</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -176,7 +279,7 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
         </div>
       </div>
 
-      {/* Legend */}
+      {/* ── Legend ── */}
       <div className="flex flex-wrap gap-2">
         {OFFENSE_CYCLE.slice(1).map(r => {
           const s = RESULT_STYLE[r];
@@ -188,23 +291,84 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
         })}
       </div>
 
+      {/* ── Runs per Inning ── */}
+      <div className="rounded-2xl border overflow-hidden" style={card}>
+        <div className="px-4 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+          <span style={{ ...hdr, color: "#fbbf24" }}>🏃 RUNS PER INNING</span>
+          {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap your row · ⊕ extends an inning</span>}
+        </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-max p-3 space-y-1">
+            <InningHeaders showExtend={true} />
+
+            {/* Visitor row */}
+            <div className="flex items-center gap-1">
+              <div className="w-36 shrink-0 text-right pr-2">
+                <span style={{ ...hdr, color: "var(--sh-muted)" }}>🚌 Visitor</span>
+              </div>
+              {inningKeys.map(key => {
+                const runs = getVisitorRuns(key);
+                const editable = !isHome && canEdit;
+                return (
+                  <button key={key}
+                    onClick={editable ? () => cycleRuns(key) : undefined}
+                    disabled={!editable}
+                    className={cell}
+                    style={{
+                      background: runs > 0 ? "#1e3a5f" : "transparent",
+                      color: runs > 0 ? "#93c5fd" : "var(--sh-muted)",
+                      border: "1px solid var(--sh-border)",
+                      cursor: editable ? "pointer" : "default",
+                    }}>
+                    {runs}
+                  </button>
+                );
+              })}
+              <div className="w-14 shrink-0 text-center font-bold text-sm" style={{ color: "#93c5fd" }}>
+                {totalVisitor}
+              </div>
+            </div>
+
+            {/* Home row */}
+            <div className="flex items-center gap-1">
+              <div className="w-36 shrink-0 text-right pr-2">
+                <span style={{ ...hdr, color: "var(--sh-muted)" }}>🏠 Home</span>
+              </div>
+              {inningKeys.map(key => {
+                const runs = getHomeRuns(key);
+                const editable = isHome && canEdit;
+                return (
+                  <button key={key}
+                    onClick={editable ? () => cycleRuns(key) : undefined}
+                    disabled={!editable}
+                    className={cell}
+                    style={{
+                      background: runs > 0 ? "#14532d" : "transparent",
+                      color: runs > 0 ? "#4ade80" : "var(--sh-muted)",
+                      border: "1px solid var(--sh-border)",
+                      cursor: editable ? "pointer" : "default",
+                    }}>
+                    {runs}
+                  </button>
+                );
+              })}
+              <div className="w-14 shrink-0 text-center font-bold text-sm" style={{ color: "#4ade80" }}>
+                {totalHome}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Offense ── */}
       <div className="rounded-2xl border overflow-hidden" style={card}>
         <div className="px-4 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
           <span style={{ ...hdr, color: "var(--sh-primary)" }}>⚔️ OFFENSE</span>
         </div>
-
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            {/* Inning header */}
-            <div className="flex items-center gap-1">
-              <div className="w-36 shrink-0" />
-              {inningNums.map(i => (
-                <div key={i} className={col} style={hdr}>Inn {i}</div>
-              ))}
-            </div>
+            <InningHeaders showExtend={false} />
 
-            {/* Batter rows */}
             {lineup.map(batter => (
               <div key={batter.playerId} className="flex items-center gap-1">
                 <div className="w-36 shrink-0 flex items-center gap-1.5 pr-2">
@@ -213,40 +377,41 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
                   </span>
                   <span className="text-xs truncate" style={{ color: "var(--sh-text)" }}>{batter.name}</span>
                 </div>
-                {inningNums.map(inning => {
-                  const result = (data.offense[inning]?.[batter.battingOrder] ?? "") as OffenseResult;
+                {inningKeys.map(key => {
+                  const result = (data.offense[key]?.[batter.battingOrder] ?? "") as OffenseResult;
                   const s = RESULT_STYLE[result];
                   return (
-                    <button
-                      key={inning}
-                      onClick={() => cycleOffense(inning, batter.battingOrder)}
+                    <button key={key}
+                      onClick={() => cycleOffense(key, batter.battingOrder)}
                       disabled={!canEdit}
                       className={cell}
                       style={{ background: s.bg, color: s.color, border: "1px solid var(--sh-border)", cursor: canEdit ? "pointer" : "default" }}
-                      title={canEdit ? "Tap to cycle result" : undefined}
-                    >
+                      title={canEdit ? "Tap to cycle result" : undefined}>
                       {s.label}
                     </button>
                   );
                 })}
+                {/* Totals column placeholder */}
+                <div className="w-14 shrink-0" />
               </div>
             ))}
 
-            {/* Totals row */}
+            {/* H / O totals row */}
             <div className="flex items-center gap-1 pt-2" style={{ borderTop: "1px solid var(--sh-border)" }}>
               <div className="w-36 shrink-0 text-right pr-2">
                 <span style={{ ...hdr, color: "var(--sh-muted)" }}>H / O</span>
               </div>
-              {inningNums.map(inning => {
-                const t = inningTotals(inning);
+              {inningKeys.map(key => {
+                const t = inningTotals(key);
                 return (
-                  <div key={inning} className={col} style={{ fontSize: "11px", color: "var(--sh-muted)", lineHeight: 1.4 }}>
+                  <div key={key} className={col} style={{ fontSize: "11px", color: "var(--sh-muted)", lineHeight: 1.4 }}>
                     <span style={{ color: "#4ade80" }}>{t.hits}H</span>
                     <br />
                     <span style={{ color: "#f87171" }}>{t.outs}O</span>
                   </div>
                 );
               })}
+              <div className="w-14 shrink-0" />
             </div>
           </div>
         </div>
@@ -257,27 +422,19 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
         <div className="px-4 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
           <span style={{ ...hdr, color: "#93c5fd" }}>🛡️ DEFENSE (allowed)</span>
         </div>
-
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            {/* Inning header */}
-            <div className="flex items-center gap-1">
-              <div className="w-36 shrink-0" />
-              {inningNums.map(i => (
-                <div key={i} className={col} style={hdr}>Inn {i}</div>
-              ))}
-            </div>
+            <InningHeaders showExtend={false} />
 
-            {/* Strikeouts row */}
             <div className="flex items-center gap-1">
               <div className="w-36 shrink-0 text-right pr-2">
                 <span style={hdr}>Strikeouts</span>
               </div>
-              {inningNums.map(inning => {
-                const val = data.defense[inning]?.k ?? 0;
+              {inningKeys.map(key => {
+                const val = data.defense[key]?.k ?? 0;
                 return (
-                  <button key={inning}
-                    onClick={() => cycleDefenseK(inning)}
+                  <button key={key}
+                    onClick={() => cycleDefenseK(key)}
                     disabled={!canEdit}
                     className={cell}
                     style={{
@@ -290,6 +447,7 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
                   </button>
                 );
               })}
+              <div className="w-14 shrink-0" />
             </div>
           </div>
         </div>
