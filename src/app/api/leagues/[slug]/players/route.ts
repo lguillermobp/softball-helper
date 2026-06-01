@@ -68,6 +68,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // --- email provided ---
+  const existing = await prisma.player.findFirst({ where: { email, leagueId: league.id } });
+  if (existing)
+    return NextResponse.json({ error: "This email is already registered as a player in this league" }, { status: 409 });
+
   let user = await prisma.user.findUnique({ where: { email } });
   const isNew = !user;
   const wasVerified = !isNew && !!user!.emailVerified;

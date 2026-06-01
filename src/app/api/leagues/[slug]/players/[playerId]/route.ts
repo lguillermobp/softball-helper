@@ -39,13 +39,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const email: string | null | undefined = "email" in body ? ((body.email as string | undefined)?.trim() || null) : undefined;
   const nationality: string | null | undefined = "nationality" in body ? (body.nationality || null) : undefined;
 
-  // Duplicate email check within the same team
+  // Reject if email is already used by another player anywhere in this league
   if (email && email !== player.email) {
-    const conflict = await prisma.player.findUnique({
-      where: { email_teamId: { email, teamId: player.teamId } },
+    const conflict = await prisma.player.findFirst({
+      where: { email, leagueId: league.id, id: { not: playerId } },
     });
-    if (conflict && conflict.id !== playerId)
-      return NextResponse.json({ error: "A player with this email already exists in the team" }, { status: 409 });
+    if (conflict)
+      return NextResponse.json({ error: "This email is already registered as a player in this league" }, { status: 409 });
   }
 
   // When email is being set or changed, wire up the user account and send email
