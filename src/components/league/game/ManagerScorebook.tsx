@@ -150,9 +150,16 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h3 className="font-bold text-base" style={{ color: "var(--sh-text)" }}>📓 {teamName} — Scorebook</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-base" style={{ color: "var(--sh-text)" }}>📓 {teamName} — Manager's Scorebook</h3>
+            <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-warn)", border: "1px solid var(--sh-border2)" }}>
+              Unofficial
+            </span>
+          </div>
           <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
-            {canEdit ? "Tap any cell to record. Auto-saves." : "Read-only view."}
+            {canEdit
+              ? "Manager's own record — independent from the official league scoring. Auto-saves."
+              : "Manager's own record — independent from the official league scoring."}
           </p>
         </div>
         <div className="flex items-center gap-3">

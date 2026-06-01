@@ -14,9 +14,12 @@ export function PlayerStatsTable({ stats, teamName, label }: Props) {
 
   return (
     <div className="rounded-2xl border overflow-hidden" style={card}>
-      <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+      <div className="px-4 py-2.5 border-b flex items-center gap-2 flex-wrap" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
         <span className="font-bold text-sm" style={{ color: "var(--sh-text)" }}>
           📊 {teamName}{label ? ` — ${label}` : ""}
+        </span>
+        <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-warn)", border: "1px solid var(--sh-border2)" }}>
+          Unofficial
         </span>
         {!hasData && (
           <span className="text-xs" style={{ color: "var(--sh-muted)" }}>No at-bats recorded yet</span>

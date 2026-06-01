@@ -132,9 +132,15 @@ export default async function TeamStatsPage({ params }: PageProps) {
 
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-8" style={{ color: "var(--sh-text)" }}>
         <div>
-          <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>{season.name} — Season Stats</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--sh-muted)" }}>
-            Aggregated from {scorebooks.length} scored game{scorebooks.length !== 1 ? "s" : ""}
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>{season.name} — Season Stats</h2>
+            <span className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-warn)", border: "1px solid var(--sh-border2)" }}>
+              Unofficial
+            </span>
+          </div>
+          <p className="text-sm mt-1" style={{ color: "var(--sh-muted)" }}>
+            These are the manager&apos;s own records, kept independently from the official league statistics.
+            Aggregated from {scorebooks.length} scored game{scorebooks.length !== 1 ? "s" : ""}.
           </p>
         </div>
 
