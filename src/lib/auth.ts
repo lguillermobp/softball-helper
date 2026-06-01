@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { logAudit } from "./audit";
 
 // NOTE: We intentionally do NOT include the PrismaAdapter here.
 // NextAuth v5 throws ?error=Configuration when an adapter is present
@@ -66,6 +67,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).isMasterAdmin = token.isMasterAdmin;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      try {
+        await logAudit({
+          actor: { id: user.id!, name: user.name, email: user.email },
+          action: "user.signin",
+          metadata: { email: user.email },
+        });
+      } catch (e) {
+        console.error("[audit] signIn log failed:", e);
+      }
+    },
+    async signOut(message) {
+      try {
+        const token = (message as any).token;
+        if (token?.id) {
+          await logAudit({
+            actor: { id: token.id as string, name: token.name as string ?? null, email: token.email as string ?? null },
+            action: "user.signout",
+            metadata: { email: token.email },
+          });
+        }
+      } catch (e) {
+        console.error("[audit] signOut log failed:", e);
+      }
     },
   },
 });
