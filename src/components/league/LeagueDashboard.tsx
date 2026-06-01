@@ -395,6 +395,17 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
             </div>
             </div>  {/* end logo+name flex */}
 
+            {/* Stats link — visible to all roles when team has a season */}
+            {team.seasonId && (
+              <Link
+                href={`/league/${slug}/season/${team.seasonId}/team/${team.id}/stats`}
+                className="text-xs font-semibold px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 shrink-0"
+                style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
+              >
+                📊 Stats
+              </Link>
+            )}
+
             {/* Right: action buttons */}
             {(isAdmin || isStaff) && (
               <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
