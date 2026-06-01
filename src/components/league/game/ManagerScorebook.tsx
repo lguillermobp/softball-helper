@@ -107,19 +107,6 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
     });
   }
 
-  function cycleDefenseOuts(inning: number) {
-    if (!canEdit) return;
-    setData(prev => {
-      const cur = prev.defense[inning]?.outs ?? 0;
-      const updated: ScoreBookData = {
-        ...prev,
-        defense: { ...prev.defense, [inning]: { ...prev.defense[inning], outs: (cur + 1) % 4 } },
-      };
-      scheduleAutosave(updated);
-      return updated;
-    });
-  }
-
   function cycleDefenseK(inning: number) {
     if (!canEdit) return;
     setData(prev => {
@@ -272,30 +259,6 @@ export function ManagerScorebook({ slug, gameId, teamId, teamName, lineup, canEd
               {inningNums.map(i => (
                 <div key={i} className={col} style={hdr}>Inn {i}</div>
               ))}
-            </div>
-
-            {/* Outs row */}
-            <div className="flex items-center gap-1">
-              <div className="w-36 shrink-0 text-right pr-2">
-                <span style={hdr}>Outs (0-3)</span>
-              </div>
-              {inningNums.map(inning => {
-                const val = data.defense[inning]?.outs ?? 0;
-                return (
-                  <button key={inning}
-                    onClick={() => cycleDefenseOuts(inning)}
-                    disabled={!canEdit}
-                    className={cell}
-                    style={{
-                      background: val > 0 ? "#450a0a" : "transparent",
-                      color: val > 0 ? "#f87171" : "var(--sh-muted)",
-                      border: "1px solid var(--sh-border)",
-                      cursor: canEdit ? "pointer" : "default",
-                    }}>
-                    {val}
-                  </button>
-                );
-              })}
             </div>
 
             {/* Strikeouts row */}
