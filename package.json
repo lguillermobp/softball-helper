@@ -14,7 +14,7 @@
     "db:studio": "prisma studio"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.0.0"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
