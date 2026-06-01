@@ -114,16 +114,16 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
 
   const date = new Date(game.scheduledAt);
 
-  const showScorebookTabs = game.status === "IN_PROGRESS" || game.status === "COMPLETED";
+  const gameActive = game.status === "IN_PROGRESS" || game.status === "COMPLETED";
+  const showHomeScorebookTab = gameActive || (game.status === "SCHEDULED" && homeComplete);
+  const showAwayScorebookTab = gameActive || (game.status === "SCHEDULED" && awayComplete);
 
   const tabs: { key: Tab; label: string; indicator?: boolean }[] = [
     { key: "setup", label: ts.setup, indicator: officialsComplete },
     { key: "home",  label: `${ts.homeLineup}`, indicator: homeComplete },
     { key: "away",  label: `${ts.awayLineup}`, indicator: awayComplete },
-    ...(showScorebookTabs ? [
-      { key: "home-book" as Tab, label: `📓 ${game.homeTeam.name}` },
-      { key: "away-book" as Tab, label: `📓 ${game.awayTeam.name}` },
-    ] : []),
+    ...(showHomeScorebookTab ? [{ key: "home-book" as Tab, label: `📓 ${game.homeTeam.name}` }] : []),
+    ...(showAwayScorebookTab ? [{ key: "away-book" as Tab, label: `📓 ${game.awayTeam.name}` }] : []),
   ];
 
   // Build batter rows from lineups (sorted by battingOrder)
@@ -283,7 +283,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
         />
       )}
 
-      {tab === "home-book" && showScorebookTabs && (
+      {tab === "home-book" && showHomeScorebookTab && (
         <ManagerScorebook
           slug={slug}
           gameId={game.id}
@@ -295,7 +295,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
         />
       )}
 
-      {tab === "away-book" && showScorebookTabs && (
+      {tab === "away-book" && showAwayScorebookTab && (
         <ManagerScorebook
           slug={slug}
           gameId={game.id}
