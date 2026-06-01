@@ -118,6 +118,7 @@ model League {
   players     Player[]
   fields      Field[]
   conditions  Condition[]
+  publicPage  LeaguePublicPage?
 
   @@map("leagues")
 }
@@ -218,6 +219,7 @@ model Team {
   awayGames  Game[]             @relation("AwayGames")
   players    Player[]
   scorebooks ManagerScorebook[]
+  publicPage TeamPublicPage?
 
   @@map("teams")
 }
@@ -382,6 +384,40 @@ model ManagerScorebook {
 
   @@unique([gameId, teamId])
   @@map("manager_scorebooks")
+}
+
+// ─── Public Pages ────────────────────────────────────────────────────────────
+
+model LeaguePublicPage {
+  id            String   @id @default(cuid())
+  leagueId      String   @unique
+  published     Boolean  @default(false)
+  description   String?  @db.Text
+  showStandings Boolean  @default(true)
+  showSchedule  Boolean  @default(true)
+  showTeams     Boolean  @default(true)
+  socialLinks   Json?
+  updatedAt     DateTime @updatedAt
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@map("league_public_pages")
+}
+
+model TeamPublicPage {
+  id           String   @id @default(cuid())
+  teamId       String   @unique
+  published    Boolean  @default(false)
+  description  String?  @db.Text
+  showRoster   Boolean  @default(true)
+  showStats    Boolean  @default(true)
+  showSchedule Boolean  @default(true)
+  socialLinks  Json?
+  updatedAt    DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_public_pages")
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

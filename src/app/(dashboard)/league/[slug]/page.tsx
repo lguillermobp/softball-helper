@@ -208,9 +208,11 @@ export default async function LeaguePage({ params }: PageProps) {
   const fullLeague = await prisma.league.findUnique({
     where: { slug },
     include: {
+      publicPage: true,
       categories: true,
       teams: {
         include: {
+          publicPage: true,
           season:    { select: { id: true, name: true } },
           category:  { select: { id: true, name: true } },
           manager:   { select: { id: true, name: true, email: true, phone: true } },
@@ -241,6 +243,14 @@ export default async function LeaguePage({ params }: PageProps) {
       id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null, userId: p.userId,
       invitePending: !!(p.email && (!p.user?.password || !p.user?.emailVerified)),
     })),
+    publicPage: t.publicPage ? {
+      published: t.publicPage.published,
+      description: t.publicPage.description,
+      showRoster: t.publicPage.showRoster,
+      showStats: t.publicPage.showStats,
+      showSchedule: t.publicPage.showSchedule,
+      socialLinks: t.publicPage.socialLinks as Record<string, string> | null,
+    } : null,
   }));
 
   const members = league.userRoles.map((ur) => ({
@@ -280,6 +290,14 @@ export default async function LeaguePage({ params }: PageProps) {
           members={members}
           fields={fields}
           conditions={conditions}
+          publicPage={fullLeague.publicPage ? {
+            published: fullLeague.publicPage.published,
+            description: fullLeague.publicPage.description,
+            showStandings: fullLeague.publicPage.showStandings,
+            showSchedule: fullLeague.publicPage.showSchedule,
+            showTeams: fullLeague.publicPage.showTeams,
+            socialLinks: fullLeague.publicPage.socialLinks as Record<string, string> | null,
+          } : null}
         />
       </main>
     </div>

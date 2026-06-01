@@ -70,7 +70,7 @@ export const translations = {
     },
     league: {
       back: "← Dashboard", signOut: "Sign out",
-      nav: { overview: "Overview", seasons: "Seasons", categories: "Categories", teams: "Teams", members: "Members", fields: "Fields", conditions: "Conditions" },
+      nav: { overview: "Overview", seasons: "Seasons", categories: "Categories", teams: "Teams", members: "Members", fields: "Fields", conditions: "Conditions", publicPage: "Public page" },
       overview: {
         title: "League Overview", info: "Info", plan: "Plan", status: "Status",
         active: "active", suspended: "suspended", archived: "archived",
@@ -291,7 +291,7 @@ export const translations = {
     },
     league: {
       back: "← Panel", signOut: "Cerrar sesión",
-      nav: { overview: "Resumen", seasons: "Temporadas", categories: "Categorías", teams: "Equipos", members: "Miembros", fields: "Campos", conditions: "Condiciones" },
+      nav: { overview: "Resumen", seasons: "Temporadas", categories: "Categorías", teams: "Equipos", members: "Miembros", fields: "Campos", conditions: "Condiciones", publicPage: "Página pública" },
       overview: {
         title: "Resumen de la Liga", info: "Info", plan: "Plan", status: "Estado",
         active: "activa", suspended: "suspendida", archived: "archivada",
@@ -512,7 +512,7 @@ export const translations = {
     },
     league: {
       back: "← ダッシュボード", signOut: "サインアウト",
-      nav: { overview: "概要", seasons: "シーズン", categories: "カテゴリ", teams: "チーム", members: "メンバー", fields: "フィールド", conditions: "条件" },
+      nav: { overview: "概要", seasons: "シーズン", categories: "カテゴリ", teams: "チーム", members: "メンバー", fields: "フィールド", conditions: "条件", publicPage: "公開ページ" },
       overview: {
         title: "リーグ概要", info: "情報", plan: "プラン", status: "ステータス",
         active: "アクティブ", suspended: "停止中", archived: "アーカイブ",

@@ -25,12 +25,28 @@ import { flagUrl } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions";
+type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions" | "public-page";
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
 interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
+interface PublicPageConfig {
+  published: boolean;
+  description: string | null;
+  showStandings: boolean;
+  showSchedule: boolean;
+  showTeams: boolean;
+  socialLinks: Record<string, string> | null;
+}
+interface TeamPublicPageConfig {
+  published: boolean;
+  description: string | null;
+  showRoster: boolean;
+  showStats: boolean;
+  showSchedule: boolean;
+  socialLinks: Record<string, string> | null;
+}
 interface Team {
   id: string; name: string; logoUrl: string | null; status: string; isActive: boolean;
   seasonId: string | null; categoryId: string | null;
@@ -39,6 +55,7 @@ interface Team {
   manager: StaffMember | null;
   assistant: StaffMember | null;
   players: Player[];
+  publicPage: TeamPublicPageConfig | null;
 }
 interface Member {
   id: string; role: string;
@@ -85,6 +102,7 @@ interface Props {
   members: Member[];
   fields: Field[];
   conditions: Condition[];
+  publicPage: PublicPageConfig | null;
 }
 
 // ── Styles (CSS variables — adapt to dark/light theme) ────────────────────────
@@ -113,18 +131,19 @@ const FIELD_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
 
 // Nav items — labels filled dynamically from translations in the component
 const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
-  { key: "overview",   icon: "⚾" },
-  { key: "seasons",    icon: "📅" },
-  { key: "categories", icon: "🏷️" },
-  { key: "teams",      icon: "👥" },
-  { key: "members",    icon: "🙋", adminOnly: true },
-  { key: "fields",     icon: "🏟️" },
-  { key: "conditions", icon: "📋" },
+  { key: "overview",    icon: "⚾" },
+  { key: "seasons",     icon: "📅" },
+  { key: "categories",  icon: "🏷️" },
+  { key: "teams",       icon: "👥" },
+  { key: "members",     icon: "🙋", adminOnly: true },
+  { key: "fields",      icon: "🏟️" },
+  { key: "conditions",  icon: "📋" },
+  { key: "public-page", icon: "🌐", adminOnly: true },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields, conditions }: Props) {
+export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields, conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const tl = t.league;
@@ -135,6 +154,35 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
   const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
+
+  // ── Public page state ────────────────────────────────────────────────────────
+  const [pp, setPp] = useState<PublicPageConfig>(initialPublicPage ?? {
+    published: false, description: null,
+    showStandings: true, showSchedule: true, showTeams: true, socialLinks: null,
+  });
+  const [ppSaving, setPpSaving] = useState(false);
+  const [ppSaved,  setPpSaved]  = useState(false);
+  const [teamPp, setTeamPp] = useState<Record<string, TeamPublicPageConfig>>(() =>
+    Object.fromEntries(teams.map(t => [t.id, t.publicPage ?? { published: false, description: null, showRoster: true, showStats: true, showSchedule: true, socialLinks: null }]))
+  );
+  const [teamPpSaving, setTeamPpSaving] = useState<Record<string, boolean>>({});
+  const [teamPpSaved,  setTeamPpSaved]  = useState<Record<string, boolean>>({});
+  const [teamPpOpen,   setTeamPpOpen]   = useState<Record<string, boolean>>({});
+
+  async function saveLeaguePp() {
+    setPpSaving(true);
+    const res = await fetch(`/api/leagues/${slug}/public-page`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pp) });
+    setPpSaving(false);
+    if (res.ok) { setPpSaved(true); setTimeout(() => setPpSaved(false), 2500); }
+  }
+
+  async function saveTeamPp(teamId: string) {
+    setTeamPpSaving(p => ({ ...p, [teamId]: true }));
+    await fetch(`/api/leagues/${slug}/teams/${teamId}/public-page`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(teamPp[teamId]) });
+    setTeamPpSaving(p => ({ ...p, [teamId]: false }));
+    setTeamPpSaved(p => ({ ...p, [teamId]: true }));
+    setTimeout(() => setTeamPpSaved(p => ({ ...p, [teamId]: false })), 2500);
+  }
 
   const activeTeams   = teams.filter((t) => t.isActive);
   const inactiveTeams = teams.filter((t) => !t.isActive);
@@ -497,6 +545,93 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
           {teamError[team.id] && (
             <p className="text-xs mt-2" style={{ color: "#f87171" }}>{teamError[team.id]}</p>
           )}
+
+          {/* ── Public page inline ── */}
+          {(isAdmin || isStaff) && (() => {
+            const tpp = teamPp[team.id] ?? { published: false, description: null, showRoster: true, showStats: true, showSchedule: true, socialLinks: null };
+            const isOpen = !!teamPpOpen[team.id];
+            const teamPublicUrl = typeof window !== "undefined" ? `${window.location.origin}/league/${slug}/team/${team.id}/public` : `/league/${slug}/team/${team.id}/public`;
+            return (
+              <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+                <button
+                  onClick={() => setTeamPpOpen(p => ({ ...p, [team.id]: !p[team.id] }))}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--sh-muted)" }}>
+                    🌐 Public page
+                    <span className="font-normal normal-case" style={{ color: tpp.published ? "var(--sh-primary)" : "var(--sh-muted)", opacity: tpp.published ? 1 : 0.6 }}>
+                      {tpp.published ? "● Published" : "○ Off"}
+                    </span>
+                  </span>
+                  <span style={{ color: "var(--sh-muted)", fontSize: 10 }}>{isOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {isOpen && (
+                  <div className="mt-3 space-y-3">
+                    {/* Published + URL */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <button
+                        onClick={() => setTeamPp(p => ({ ...p, [team.id]: { ...tpp, published: !tpp.published } }))}
+                        className="text-xs px-3 py-1 rounded-full border font-bold"
+                        style={tpp.published
+                          ? { borderColor: "#16a34a", color: "#4ade80", background: "#14532d" }
+                          : { borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+                      >
+                        {tpp.published ? "Published" : "Unpublished"}
+                      </button>
+                      {tpp.published && (
+                        <div className="flex items-center gap-2">
+                          <a href={`/league/${slug}/team/${team.id}/public`} target="_blank" className="text-xs hover:underline" style={{ color: "var(--sh-primary)" }}>View ↗</a>
+                          <button onClick={() => navigator.clipboard.writeText(teamPublicUrl)} className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}>Copy</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section toggles */}
+                    <div className="space-y-2">
+                      {([["showRoster", "👕 Roster"], ["showStats", "📊 Stats"], ["showSchedule", "📅 Schedule"]] as [keyof TeamPublicPageConfig, string][]).map(([key, label]) => (
+                        <div key={key} className="flex items-center justify-between">
+                          <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{label}</span>
+                          <button
+                            onClick={() => setTeamPp(p => ({ ...p, [team.id]: { ...tpp, [key]: !tpp[key] } }))}
+                            className="text-xs px-2.5 py-0.5 rounded-full border font-semibold"
+                            style={(tpp[key] as boolean)
+                              ? { borderColor: "#16a34a", color: "#4ade80", background: "#14532d" }
+                              : { borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+                          >
+                            {(tpp[key] as boolean) ? "On" : "Off"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Description */}
+                    <textarea
+                      value={tpp.description ?? ""}
+                      onChange={e => setTeamPp(p => ({ ...p, [team.id]: { ...tpp, description: e.target.value || null } }))}
+                      rows={2}
+                      placeholder="Short description for the public page…"
+                      className="w-full rounded-lg border px-3 py-2 text-xs resize-none outline-none focus:ring-1 focus:ring-green-500"
+                      style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+                    />
+
+                    {/* Save */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => saveTeamPp(team.id)}
+                        disabled={!!teamPpSaving[team.id]}
+                        className="text-xs px-4 py-1.5 rounded-lg font-bold disabled:opacity-40"
+                        style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+                      >
+                        {teamPpSaving[team.id] ? "Saving…" : "Save"}
+                      </button>
+                      {teamPpSaved[team.id] && <span className="text-xs" style={{ color: "var(--sh-primary)" }}>✓ Saved</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Player roster toggle ── */}
@@ -817,13 +952,130 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     </div>
   );
 
+  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/league/${slug}/public` : `/league/${slug}/public`;
+
+  const PublicPageSection = (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>🌐 Public page</h2>
+        <p className="text-sm mt-1" style={{ color: "var(--sh-muted)" }}>
+          Configure what visitors see at your public league page. No login required.
+        </p>
+      </div>
+
+      {/* Published toggle + URL */}
+      <div className="rounded-2xl border p-4 space-y-3" style={card}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="font-semibold text-sm" style={{ color: "var(--sh-text)" }}>Published</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
+              When off, the page returns 404.
+            </p>
+          </div>
+          <button
+            onClick={() => setPp(p => ({ ...p, published: !p.published }))}
+            className="text-xs px-4 py-1.5 rounded-full font-bold border transition-colors"
+            style={pp.published
+              ? { borderColor: "#16a34a", color: "#4ade80", background: "#14532d" }
+              : { borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+          >
+            {pp.published ? "● Published" : "○ Unpublished"}
+          </button>
+        </div>
+        {pp.published && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <a href={`/league/${slug}/public`} target="_blank" className="text-xs font-medium hover:underline truncate" style={{ color: "var(--sh-primary)" }}>
+              /league/{slug}/public ↗
+            </a>
+            <button
+              onClick={() => navigator.clipboard.writeText(publicUrl)}
+              className="text-xs px-2 py-0.5 rounded border shrink-0"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+            >
+              Copy link
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Description */}
+      <div className="rounded-2xl border p-4 space-y-2" style={card}>
+        <p className="font-semibold text-sm" style={{ color: "var(--sh-text)" }}>Description</p>
+        <textarea
+          value={pp.description ?? ""}
+          onChange={e => setPp(p => ({ ...p, description: e.target.value || null }))}
+          rows={3}
+          placeholder="A short description shown on your public page…"
+          className="w-full rounded-lg border px-3 py-2 text-sm resize-none outline-none focus:ring-2 focus:ring-green-500"
+          style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+        />
+      </div>
+
+      {/* Section toggles */}
+      <div className="rounded-2xl border p-4 space-y-3" style={card}>
+        <p className="font-semibold text-sm" style={{ color: "var(--sh-text)" }}>Sections</p>
+        {([
+          ["showStandings", "🏆 Standings"],
+          ["showSchedule",  "📅 Schedule"],
+          ["showTeams",     "👥 Teams"],
+        ] as [keyof PublicPageConfig, string][]).map(([key, label]) => (
+          <div key={key} className="flex items-center justify-between">
+            <span className="text-sm" style={{ color: "var(--sh-muted)" }}>{label}</span>
+            <button
+              onClick={() => setPp(p => ({ ...p, [key]: !p[key] }))}
+              className="text-xs px-3 py-1 rounded-full border font-semibold"
+              style={(pp[key] as boolean)
+                ? { borderColor: "#16a34a", color: "#4ade80", background: "#14532d" }
+                : { borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+            >
+              {(pp[key] as boolean) ? "On" : "Off"}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Social links */}
+      <div className="rounded-2xl border p-4 space-y-3" style={card}>
+        <p className="font-semibold text-sm" style={{ color: "var(--sh-text)" }}>Social links</p>
+        {(["instagram", "facebook", "whatsapp", "twitter"] as const).map(net => (
+          <div key={net} className="flex items-center gap-2">
+            <span className="text-sm w-24 shrink-0" style={{ color: "var(--sh-muted)" }}>
+              {net === "instagram" ? "📸" : net === "facebook" ? "📘" : net === "whatsapp" ? "💬" : "𝕏"} {net.charAt(0).toUpperCase() + net.slice(1)}
+            </span>
+            <input
+              type="url"
+              value={(pp.socialLinks?.[net] ?? "")}
+              onChange={e => setPp(p => ({ ...p, socialLinks: { ...(p.socialLinks ?? {}), [net]: e.target.value || "" } }))}
+              placeholder={`https://${net}.com/…`}
+              className="flex-1 rounded-lg border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Save */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={saveLeaguePp}
+          disabled={ppSaving}
+          className="px-5 py-2 rounded-xl text-sm font-bold disabled:opacity-40"
+          style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+        >
+          {ppSaving ? "Saving…" : "Save"}
+        </button>
+        {ppSaved && <span className="text-sm" style={{ color: "var(--sh-primary)" }}>✓ Saved</span>}
+      </div>
+    </div>
+  );
+
   const CONTENT: Record<Section, React.ReactNode> = {
-    overview:   Overview,
-    seasons:    Seasons,
-    categories: Categories,
-    teams:      Teams,
-    members:    Members,
-    fields:     Fields,
+    overview:    Overview,
+    seasons:     Seasons,
+    categories:  Categories,
+    teams:       Teams,
+    members:     Members,
+    fields:      Fields,
     conditions: (
       <ConditionsSection
         slug={slug}
@@ -831,6 +1083,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         conditions={conditions}
       />
     ),
+    "public-page": PublicPageSection,
   };
 
   return (
