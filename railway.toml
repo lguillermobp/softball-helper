@@ -1,8 +1,7 @@
 [build]
-buildCommand = "npm run build"
+buildCommand = "npx prisma migrate deploy && npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-safe.ts && npm run build"
 
 [deploy]
 startCommand = "npm run start"
-preDeployCommand = "npx prisma migrate deploy && npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-safe.ts"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
