@@ -90,6 +90,18 @@ export default async function GameScoringPage({ params }: PageProps) {
   const canEditAwayLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager)) ||
     (game.status === "IN_PROGRESS" && (isAdmin || isScorer));
+  const canEditHomeScorebook = isAdmin || isHomeManager;
+  const canEditAwayScorebook = isAdmin || isAwayManager;
+
+  // Load scorebooks
+  const [homeScorebook, awayScorebook] = await Promise.all([
+    prisma.managerScorebook.findUnique({
+      where: { gameId_teamId: { gameId: game.id, teamId: game.homeTeamId } },
+    }),
+    prisma.managerScorebook.findUnique({
+      where: { gameId_teamId: { gameId: game.id, teamId: game.awayTeamId } },
+    }),
+  ]);
 
   // Serialize for client
   const serializedGame = {
@@ -187,7 +199,13 @@ export default async function GameScoringPage({ params }: PageProps) {
             canEditHomeLineup,
             canEditAwayLineup,
             canSwapTeams,
+            canEditHomeScorebook,
+            canEditAwayScorebook,
           }}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          homeScorebook={(homeScorebook?.data ?? null) as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          awayScorebook={(awayScorebook?.data ?? null) as any}
         />
       </main>
     </div>

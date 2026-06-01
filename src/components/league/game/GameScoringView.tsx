@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
 import { OfficialsSetup } from "./OfficialsSetup";
 import { LineupEditor } from "./LineupEditor";
+import { ManagerScorebook } from "./ManagerScorebook";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Player {
@@ -40,6 +41,14 @@ interface Permissions {
   canEditHomeLineup: boolean;
   canEditAwayLineup: boolean;
   canSwapTeams: boolean;
+  canEditHomeScorebook: boolean;
+  canEditAwayScorebook: boolean;
+}
+
+type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
+interface ScoreBookData {
+  offense: Record<string, Record<string, OffenseResult>>;
+  defense: Record<string, { outs: number; k: number }>;
 }
 
 interface Props {
@@ -50,9 +59,11 @@ interface Props {
   umpireOptions: UserOption[];
   scorerOptions: UserOption[];
   permissions: Permissions;
+  homeScorebook: ScoreBookData | null;
+  awayScorebook: ScoreBookData | null;
 }
 
-type Tab = "setup" | "home" | "away";
+type Tab = "setup" | "home" | "away" | "home-book" | "away-book";
 
 function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   const active = lineups.filter(l => l.isHome === isHome && l.position !== "B");
@@ -65,7 +76,7 @@ function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   return true;
 }
 
-export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, scorerOptions, permissions }: Props) {
+export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, scorerOptions, permissions, homeScorebook, awayScorebook }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const ts = t.scoring;
@@ -103,11 +114,28 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
 
   const date = new Date(game.scheduledAt);
 
+  const showScorebookTabs = game.status === "IN_PROGRESS" || game.status === "COMPLETED";
+
   const tabs: { key: Tab; label: string; indicator?: boolean }[] = [
     { key: "setup", label: ts.setup, indicator: officialsComplete },
     { key: "home",  label: `${ts.homeLineup}`, indicator: homeComplete },
     { key: "away",  label: `${ts.awayLineup}`, indicator: awayComplete },
+    ...(showScorebookTabs ? [
+      { key: "home-book" as Tab, label: `📓 ${game.homeTeam.name}` },
+      { key: "away-book" as Tab, label: `📓 ${game.awayTeam.name}` },
+    ] : []),
   ];
+
+  // Build batter rows from lineups (sorted by battingOrder)
+  const homeBatters = game.lineups
+    .filter(l => l.isHome && l.battingOrder != null && l.position !== "B")
+    .sort((a, b) => a.battingOrder! - b.battingOrder!)
+    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber }));
+
+  const awayBatters = game.lineups
+    .filter(l => !l.isHome && l.battingOrder != null && l.position !== "B")
+    .sort((a, b) => a.battingOrder! - b.battingOrder!)
+    .map(l => ({ playerId: l.player.id, battingOrder: l.battingOrder!, name: l.player.name, jerseyNumber: l.player.jerseyNumber }));
 
   return (
     <div className="space-y-6">
@@ -252,6 +280,30 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
             battingOrder: l.battingOrder,
           }))}
           canEdit={permissions.canEditAwayLineup}
+        />
+      )}
+
+      {tab === "home-book" && showScorebookTabs && (
+        <ManagerScorebook
+          slug={slug}
+          gameId={game.id}
+          teamId={game.homeTeam.id}
+          teamName={game.homeTeam.name}
+          lineup={homeBatters}
+          canEdit={permissions.canEditHomeScorebook}
+          initialData={homeScorebook}
+        />
+      )}
+
+      {tab === "away-book" && showScorebookTabs && (
+        <ManagerScorebook
+          slug={slug}
+          gameId={game.id}
+          teamId={game.awayTeam.id}
+          teamName={game.awayTeam.name}
+          lineup={awayBatters}
+          canEdit={permissions.canEditAwayScorebook}
+          initialData={awayScorebook}
         />
       )}
     </div>

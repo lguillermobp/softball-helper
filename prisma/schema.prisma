@@ -214,9 +214,10 @@ model Team {
   category  Category? @relation(fields: [categoryId], references: [id])
   manager   User?     @relation("TeamManager", fields: [managerId], references: [id])
   assistant User?     @relation("TeamAssistant", fields: [assistantId], references: [id])
-  homeGames Game[]    @relation("HomeGames")
-  awayGames Game[]    @relation("AwayGames")
-  players   Player[]
+  homeGames  Game[]             @relation("HomeGames")
+  awayGames  Game[]             @relation("AwayGames")
+  players    Player[]
+  scorebooks ManagerScorebook[]
 
   @@map("teams")
 }
@@ -274,6 +275,7 @@ model Game {
   awayTeam        Team      @relation("AwayGames", fields: [awayTeamId], references: [id])
   officials       GameOfficial[]
   lineups         GameLineup[]
+  scorebooks      ManagerScorebook[]
   rescheduledFrom Game?     @relation("GameReschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
   rescheduledTo   Game[]    @relation("GameReschedule")
 
@@ -363,6 +365,23 @@ model Condition {
   createdBy User   @relation("ConditionAuthor", fields: [createdById], references: [id])
 
   @@map("conditions")
+}
+
+// ─── Manager Scorebook ───────────────────────────────────────────────────────
+
+model ManagerScorebook {
+  id        String   @id @default(cuid())
+  gameId    String
+  teamId    String
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, teamId])
+  @@map("manager_scorebooks")
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────
