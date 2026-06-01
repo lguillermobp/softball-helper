@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPlayerInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
+import { sendPlayerAcceptInviteEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; playerId: string }> }
@@ -39,8 +39,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const email: string | null | undefined = "email" in body ? ((body.email as string | undefined)?.trim() || null) : undefined;
   const nationality: string | null | undefined = "nationality" in body ? (body.nationality || null) : undefined;
 
-  // Reject if email is already used by another player anywhere in this league
-  if (email && email !== player.email) {
+  const emailChanging = email !== undefined && email !== player.email;
+
+  // Block if new email is already used by another player in this league
+  if (emailChanging && email) {
     const conflict = await prisma.player.findFirst({
       where: { email, leagueId: league.id, id: { not: playerId } },
     });
@@ -48,49 +50,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "This email is already registered as a player in this league" }, { status: 409 });
   }
 
-  // When email is being set or changed, wire up the user account and send email
-  let newUserId: string | undefined;
-  let pendingEmail: (() => void) | null = null;
-
-  if (email && email !== player.email) {
-    let user = await prisma.user.findUnique({ where: { email } });
-    const isNew = !user;
-    const wasVerified = !isNew && !!user!.emailVerified;
-
-    if (!user) {
-      user = await prisma.user.create({ data: { name: name ?? player.name, email } });
-    }
-    newUserId = user.id;
-
-    await prisma.userLeagueRole.upsert({
-      where: { userId_leagueId_role: { userId: user.id, leagueId: league.id, role: "PLAYER" } },
-      update: {},
-      create: { userId: user.id, leagueId: league.id, role: "PLAYER" },
-    });
-
-    if (isNew) {
-      pendingEmail = () =>
-        sendPlayerInviteEmail(email, name ?? player.name, player.team.name, league.name)
-          .catch((e) => console.error("[PLAYERS] invite failed:", e));
-    } else if (wasVerified) {
-      pendingEmail = () =>
-        sendRoleNotificationEmail(email, user!.name, league.name, `player in ${player.team.name}`)
-          .catch((e) => console.error("[PLAYERS] notification failed:", e));
-    }
-  }
-
   const updated = await prisma.player.update({
     where: { id: playerId },
     data: {
       ...(name        !== undefined && { name }),
       ...(email       !== undefined && { email }),
-      ...(newUserId   !== undefined && { userId: newUserId }),
+      // Reset account link when email changes — re-confirmed via accept-invite
+      ...(emailChanging            && { userId: null }),
       ...(jerseyNumber !== undefined && { jerseyNumber: jerseyNumber || null }),
       ...(nationality !== undefined && { nationality }),
     },
   });
 
-  pendingEmail?.();
+  // Send accept-invite when email is set or changed to a non-null value
+  if (emailChanging && email) {
+    sendPlayerAcceptInviteEmail(email, updated.name, player.team.name, league.name, playerId).catch(
+      (e) => console.error("[PLAYERS] accept-invite failed:", e)
+    );
+  }
 
   await logAudit({
     actor: session.user as any, action: "player.update",

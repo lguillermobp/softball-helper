@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPlayerInviteEmail } from "@/lib/email";
+import { sendPlayerAcceptInviteEmail, sendPlayerInviteEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; playerId: string }> }
@@ -35,27 +35,22 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
   if (!player.email) return NextResponse.json({ error: "Player has no email address" }, { status: 400 });
 
-  // If user already has a password and verified email, no need to resend
-  if (player.user?.password && player.user?.emailVerified) {
+  if (player.user?.password && player.user?.emailVerified)
     return NextResponse.json({ error: "Player already has an active account" }, { status: 400 });
+
+  if (!player.userId) {
+    // New deferred-link flow: player hasn't confirmed yet — resend accept-invite
+    await sendPlayerAcceptInviteEmail(player.email, player.name, player.team.name, league.name, playerId);
+  } else {
+    // Legacy: userId already set but account incomplete (e.g. manager auto-added as player)
+    await sendPlayerInviteEmail(player.email, player.name, player.team.name, league.name);
   }
 
-  // Create/find user if they don't have one yet
-  if (!player.user) {
-    const user = await prisma.user.upsert({
-      where: { email: player.email },
-      update: {},
-      create: { name: player.name, email: player.email },
-    });
-    await prisma.player.update({ where: { id: playerId }, data: { userId: user.id } });
-    await prisma.userLeagueRole.upsert({
-      where: { userId_leagueId_role: { userId: user.id, leagueId: league.id, role: "PLAYER" } },
-      update: {},
-      create: { userId: user.id, leagueId: league.id, role: "PLAYER" },
-    });
-  }
-
-  await sendPlayerInviteEmail(player.email, player.name, player.team.name, league.name);
-  await logAudit({ actor: session.user as any, action: "player.invite.resend", entityType: "Player", entityId: playerId, leagueId: league.id, leagueName: league.name, metadata: { playerName: player.name, email: player.email } });
+  await logAudit({
+    actor: session.user as any, action: "player.invite.resend",
+    entityType: "Player", entityId: playerId,
+    leagueId: league.id, leagueName: league.name,
+    metadata: { playerName: player.name, email: player.email },
+  });
   return NextResponse.json({ ok: true });
 }

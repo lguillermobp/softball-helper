@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPlayerInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
+import { sendPlayerAcceptInviteEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string }> }
@@ -59,51 +59,28 @@ export async function POST(req: NextRequest, { params }: Params) {
   const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  if (!email) {
-    const player = await prisma.player.create({
-      data: { name, email: null, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id },
-    });
-    await logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, teamId } });
-    return NextResponse.json(player, { status: 201 });
+  if (email) {
+    const existing = await prisma.player.findFirst({ where: { email, leagueId: league.id } });
+    if (existing)
+      return NextResponse.json({ error: "This email is already registered as a player in this league" }, { status: 409 });
   }
 
-  // --- email provided ---
-  const existing = await prisma.player.findFirst({ where: { email, leagueId: league.id } });
-  if (existing)
-    return NextResponse.json({ error: "This email is already registered as a player in this league" }, { status: 409 });
+  // Create player without linking a user account — ownership confirmed via accept-invite email
+  const player = await prisma.player.create({
+    data: { name, email, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id },
+  });
 
-  let user = await prisma.user.findUnique({ where: { email } });
-  const isNew = !user;
-  const wasVerified = !isNew && !!user!.emailVerified;
-
-  if (!user) {
-    user = await prisma.user.create({ data: { name, email } });
-  }
-
-  const [player] = await prisma.$transaction([
-    prisma.player.upsert({
-      where: { email_teamId: { email, teamId } },
-      update: { name, jerseyNumber: jerseyNumber || null, nationality, userId: user.id },
-      create: { name, email, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id, userId: user.id },
-    }),
-    // Grant PLAYER league role so the league appears in their dashboard
-    prisma.userLeagueRole.upsert({
-      where: { userId_leagueId_role: { userId: user.id, leagueId: league.id, role: "PLAYER" } },
-      update: {},
-      create: { userId: user.id, leagueId: league.id, role: "PLAYER" },
-    }),
-  ]);
-
-  if (isNew) {
-    sendPlayerInviteEmail(email, name, team.name, league.name).catch(
-      (e) => console.error("[PLAYERS] invite failed:", e)
-    );
-  } else if (wasVerified) {
-    sendRoleNotificationEmail(email, user.name, league.name, `player in ${team.name}`).catch(
-      (e) => console.error("[PLAYERS] notification failed:", e)
+  if (email) {
+    sendPlayerAcceptInviteEmail(email, name, team.name, league.name, player.id).catch(
+      (e) => console.error("[PLAYERS] accept-invite failed:", e)
     );
   }
 
-  await logAudit({ actor: session.user as any, action: "player.create", entityType: "Player", entityId: player.id, leagueId: league.id, leagueName: league.name, metadata: { name, email, teamId } });
+  await logAudit({
+    actor: session.user as any, action: "player.create",
+    entityType: "Player", entityId: player.id,
+    leagueId: league.id, leagueName: league.name,
+    metadata: { name, email, teamId },
+  });
   return NextResponse.json(player, { status: 201 });
 }

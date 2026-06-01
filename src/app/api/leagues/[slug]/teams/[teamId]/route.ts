@@ -121,12 +121,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       },
     });
 
-    // Upsert player record for new manager so they appear in the lineup
+    // Upsert player record for manager so they appear in the lineup
     await tx.player.upsert({
       where: { email_teamId: { email: manager.email, teamId } },
       update: { name: manager.name, userId: managerResult.user.id },
       create: { name: manager.name, email: manager.email, teamId, leagueId: league.id, userId: managerResult.user.id },
     });
+
+    // Upsert player record for assistant (same rationale as manager)
+    if (assistantResult && assistant?.email) {
+      await tx.player.upsert({
+        where: { email_teamId: { email: assistant.email, teamId } },
+        update: { name: assistant.name, userId: assistantResult.user.id },
+        create: { name: assistant.name, email: assistant.email, teamId, leagueId: league.id, userId: assistantResult.user.id },
+      });
+    }
 
     // Remove old manager's TEAM_MANAGER role if they no longer manage any team in this league
     if (oldManagerId && oldManagerId !== managerResult.user.id) {
