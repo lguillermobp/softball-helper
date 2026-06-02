@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +115,7 @@ export async function DELETE(req: NextRequest) {
     actor: session!.user as any,
     action: "admin.cleanup",
     metadata: { deletedUsers: deleted.users, deletedTeams: deleted.teams, errors: deleted.errors },
+    ...getRequestMeta(req),
   });
 
   return NextResponse.json(deleted);

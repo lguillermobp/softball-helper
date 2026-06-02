@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendStaffInviteEmail, sendMemberInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -124,6 +124,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
-  await logAudit({ actor: session.user as any, action: "team.create", entityType: "Team", entityId: team.id, leagueId: league.id, leagueName: league.name, metadata: { name: team.name } });
+  await logAudit({ actor: session.user as any, action: "team.create", entityType: "Team", entityId: team.id, leagueId: league.id, leagueName: league.name, metadata: { name: team.name }, ...getRequestMeta(req) });
   return NextResponse.json(team, { status: 201 });
 }

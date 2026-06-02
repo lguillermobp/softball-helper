@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const FROM      = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
@@ -257,6 +257,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }));
 
-  await logAudit({ actor: session.user as any, action: "broadcast.send", leagueId: league.id, leagueName: league.name, metadata: { sent, failed, recipientCount: recipients.length, includeRoster, includeConditions, includeSchedule, seasonId } });
+  await logAudit({ actor: session.user as any, action: "broadcast.send", leagueId: league.id, leagueName: league.name, metadata: { sent, failed, recipientCount: recipients.length, includeRoster, includeConditions, includeSchedule, seasonId }, ...getRequestMeta(req) });
   return NextResponse.json({ sent, failed });
 }

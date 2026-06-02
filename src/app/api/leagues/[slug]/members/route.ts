@@ -6,7 +6,7 @@ import {
   sendMemberInviteEmail,
   sendRoleNotificationEmail,
 } from "@/lib/email";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -67,6 +67,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  await logAudit({ actor: session.user as any, action: "member.add", entityType: "UserLeagueRole", entityId: membership.id, leagueId: league.id, leagueName: league.name, metadata: { email, role } });
+  await logAudit({ actor: session.user as any, action: "member.add", entityType: "UserLeagueRole", entityId: membership.id, leagueId: league.id, leagueName: league.name, metadata: { email, role }, ...getRequestMeta(req) });
   return NextResponse.json(membership, { status: 201 });
 }

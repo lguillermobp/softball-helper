@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 const ALLOWED_ROLES = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER"];
 
@@ -62,12 +62,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     leagueId: league.id,
     leagueName: league.name,
     metadata: { email: membership.user.email, oldRole: membership.role, newRole },
+    ...getRequestMeta(req),
   });
 
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -102,6 +103,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     leagueId: league.id,
     leagueName: league.name,
     metadata: { email: membership.user.email, role: membership.role },
+    ...getRequestMeta(req),
   });
 
   return NextResponse.json({ success: true });

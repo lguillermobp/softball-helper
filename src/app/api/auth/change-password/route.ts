@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -22,6 +22,6 @@ export async function POST(req: NextRequest) {
 
   const hashed = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({ where: { id: session.user.id }, data: { password: hashed } });
-  await logAudit({ actor: session.user as any, action: "user.password.change", entityType: "User", entityId: session.user.id });
+  await logAudit({ actor: session.user as any, action: "user.password.change", entityType: "User", entityId: session.user.id, ...getRequestMeta(req) });
   return NextResponse.json({ success: true });
 }

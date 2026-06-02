@@ -435,6 +435,8 @@ model AuditLog {
   leagueId   String?
   leagueName String?
   metadata   Json?
+  ipAddress  String?
+  location   String?
   createdAt  DateTime @default(now())
 
   @@index([userId])

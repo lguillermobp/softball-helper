@@ -1,0 +1,2 @@
+ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "ipAddress" TEXT;
+ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "location" TEXT;

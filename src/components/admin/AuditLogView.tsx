@@ -13,12 +13,15 @@ interface AuditEntry {
   leagueId: string | null;
   leagueName: string | null;
   metadata: Record<string, unknown> | null;
+  ipAddress: string | null;
+  location: string | null;
   createdAt: string;
 }
 
 const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
   "player.create":        { bg: "#14532d", color: "#4ade80" },
   "player.update":        { bg: "#1e3a5f", color: "#93c5fd" },
+  "player.remove":        { bg: "#450a0a", color: "#f87171" },
   "player.invite.resend": { bg: "#1e3a5f", color: "#93c5fd" },
   "team.create":          { bg: "#14532d", color: "#4ade80" },
   "team.update":          { bg: "#1e3a5f", color: "#93c5fd" },
@@ -132,7 +135,7 @@ export function AuditLogView() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-                  {["Time", "User", "Action", "League", "Details"].map((h) => (
+                  {["Time", "User", "Action", "League", "Details", "Origin"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{h}</th>
                   ))}
                 </tr>
@@ -153,6 +156,11 @@ export function AuditLogView() {
                     <td className="px-4 py-3 text-xs" style={head}>{log.leagueName ?? "—"}</td>
                     <td className="px-4 py-3 text-xs max-w-xs truncate" style={dim} title={JSON.stringify(log.metadata)}>
                       {metaSummary(log.metadata)}
+                    </td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap" style={dim}>
+                      {log.location && <p>{log.location}</p>}
+                      {log.ipAddress && <p className="font-mono opacity-60">{log.ipAddress}</p>}
+                      {!log.location && !log.ipAddress && "—"}
                     </td>
                   </tr>
                 ))}

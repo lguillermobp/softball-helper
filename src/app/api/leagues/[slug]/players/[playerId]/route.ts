@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPlayerAcceptInviteEmail } from "@/lib/email";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; playerId: string }> }
 
@@ -74,11 +74,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     entityType: "Player", entityId: playerId,
     leagueId: league.id, leagueName: league.name,
     metadata: { name, email },
+    ...getRequestMeta(req),
   });
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -112,6 +113,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     entityType: "Player", entityId: playerId,
     leagueId: league.id, leagueName: league.name,
     metadata: { name: player.name, team: player.team.name },
+    ...getRequestMeta(req),
   });
   return NextResponse.json({ success: true });
 }

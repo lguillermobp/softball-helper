@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendStaffInviteEmail, sendMemberInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 interface Params { params: Promise<{ slug: string; teamId: string }> }
 
@@ -194,7 +194,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   }
 
-  await logAudit({ actor: session.user as any, action: "team.update", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { name } });
+  await logAudit({ actor: session.user as any, action: "team.update", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { name }, ...getRequestMeta(req) });
   return NextResponse.json(updated);
 }
 
@@ -223,6 +223,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
 
   await prisma.team.delete({ where: { id: teamId } });
-  await logAudit({ actor: session.user as any, action: "team.delete", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { teamName: team.name } });
+  await logAudit({ actor: session.user as any, action: "team.delete", entityType: "Team", entityId: teamId, leagueId: league.id, leagueName: league.name, metadata: { teamName: team.name }, ...getRequestMeta(req) });
   return NextResponse.json({ success: true });
 }

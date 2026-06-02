@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
+import { logAudit, getRequestMeta } from "@/lib/audit";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
 
   await prisma.league.update({ where: { id: league.id }, data: { logoUrl: result.secure_url } });
-  await logAudit({ actor: session.user as any, action: "league.logo.upload", leagueId: league.id, leagueName: league.name });
+  await logAudit({ actor: session.user as any, action: "league.logo.upload", leagueId: league.id, leagueName: league.name, ...getRequestMeta(req) });
 
   return NextResponse.json({ logoUrl: result.secure_url });
 }
