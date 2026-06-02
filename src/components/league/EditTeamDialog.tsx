@@ -21,6 +21,7 @@ interface Props {
     manager: StaffMember | null;
     assistant: StaffMember | null;
   };
+  managerRole?: string;
   seasons: Season[];
   categories: Category[];
 }
@@ -79,12 +80,13 @@ function StaffFields({
   );
 }
 
-export function EditTeamDialog({ slug, team, seasons, categories }: Props) {
+export function EditTeamDialog({ slug, team, managerRole, seasons, categories }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasAssistant, setHasAssistant] = useState(!!team.assistant);
+  const [managerPlays, setManagerPlays] = useState(managerRole === "TEAM_MANAGER_PLAYER");
 
   function handleClose() { setOpen(false); setError(""); }
 
@@ -103,6 +105,7 @@ export function EditTeamDialog({ slug, team, seasons, categories }: Props) {
         email: fd.get("manager-email"),
         phone: fd.get("manager-phone") || undefined,
       },
+      managerRole: managerPlays ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER",
     };
 
     if (hasAssistant) {
@@ -176,6 +179,18 @@ export function EditTeamDialog({ slug, team, seasons, categories }: Props) {
               ? { name: team.manager.name, email: team.manager.email, phone: team.manager.phone }
               : undefined}
           />
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={managerPlays}
+              onChange={(e) => setManagerPlays(e.target.checked)}
+              className="w-4 h-4 rounded accent-green-500"
+            />
+            <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
+              Manager also plays (Manager-player)
+            </span>
+          </label>
 
           {hasAssistant ? (
             <div className="space-y-2">

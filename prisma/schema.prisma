@@ -151,6 +151,7 @@ enum LeagueRole {
   UMPIRE
   SCOREKEEPER
   TEAM_MANAGER
+  TEAM_MANAGER_PLAYER
   TEAM_ASSISTANT
   PLAYER
 }
@@ -309,6 +310,7 @@ model Player {
   teamId       String
   leagueId     String
   userId       String?
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)

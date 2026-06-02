@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(
-    (r) => r.role === "LEAGUE_ADMIN" || r.role === "TEAM_MANAGER"
+    (r) => r.role === "LEAGUE_ADMIN" || r.role === "TEAM_MANAGER" || r.role === "TEAM_MANAGER_PLAYER"
   );
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

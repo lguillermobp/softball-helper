@@ -383,12 +383,16 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
   function TeamCard({ team, inactive }: { team: Team; inactive?: boolean }) {
     const isStaff = team.manager?.id === currentUserId || team.assistant?.id === currentUserId;
+    const isManager = team.manager?.id === currentUserId;
     const canEdit = isAdmin || (isStaff && team.status === "PENDING");
+    const canRemovePlayer = isAdmin || isManager;
     const approved = team.status === "APPROVED";
     const [showPlayers, setShowPlayers] = useState(false);
     const [resending,     setResending]     = useState<string | null>(null);
     const [sentId,        setSentId]        = useState<string | null>(null);
     const [logoUrl,       setLogoUrl]       = useState<string | null>(team.logoUrl);
+    const [removingId,    setRemovingId]    = useState<string | null>(null);
+    const [removedIds,    setRemovedIds]    = useState<Set<string>>(new Set());
     const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
 
     async function resendInvite(playerId: string) {
@@ -399,6 +403,14 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         setSentId(playerId);
         setTimeout(() => setSentId((prev) => prev === playerId ? null : prev), 3000);
       }
+    }
+
+    async function removePlayer(playerId: string) {
+      if (removingId) return;
+      setRemovingId(playerId);
+      const res = await fetch(`/api/leagues/${slug}/players/${playerId}`, { method: "DELETE" });
+      setRemovingId(null);
+      if (res.ok) setRemovedIds((prev) => new Set(prev).add(playerId));
     }
 
     return (
@@ -462,6 +474,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     <EditTeamDialog
                       slug={slug}
                       team={team}
+                      managerRole={members.find(m => m.user.id === team.manager?.id &&
+                        (m.role === "TEAM_MANAGER" || m.role === "TEAM_MANAGER_PLAYER"))?.role}
                       seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
                       categories={categories.map((c) => ({ id: c.id, name: c.name }))}
                     />
@@ -653,7 +667,9 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         </button>
 
         {/* ── Player roster ── */}
-        {showPlayers && (team.players.length === 0 ? (
+        {showPlayers && (() => {
+          const visiblePlayers = team.players.filter((p) => !removedIds.has(p.id));
+          return visiblePlayers.length === 0 ? (
           <p className="px-4 py-3 text-xs" style={dim}>{tl.teams.noPlayers}</p>
         ) : (
           <table className="w-full text-sm">
@@ -663,11 +679,11 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>{tl.teams.jersey}</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{tl.teams.name}</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.account}</th>
-                {canEdit && <th className="px-4 py-2 w-16" />}
+                {(canEdit || canRemovePlayer) && <th className="px-4 py-2 w-16" />}
               </tr>
             </thead>
             <tbody>
-              {team.players.map((p) => {
+              {visiblePlayers.map((p) => {
                 const photo = playerPhotos[p.id] ?? p.photoUrl;
                 return (
                   <tr key={p.id} style={{ borderBottom: "1px solid #0f2310" }}>
@@ -719,11 +735,11 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
                       {p.userId ? "✓" : "—"}
                     </td>
-                    {canEdit && (
+                    {(canEdit || canRemovePlayer) && (
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <EditPlayerDialog slug={slug} player={p} />
-                          {p.invitePending && (
+                          {canEdit && <EditPlayerDialog slug={slug} player={p} />}
+                          {canEdit && p.invitePending && (
                             <button
                               onClick={() => resendInvite(p.id)}
                               disabled={resending === p.id || sentId === p.id}
@@ -736,6 +752,17 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                               {resending === p.id ? "Sending…" : sentId === p.id ? "✓ Sent" : "Resend invite"}
                             </button>
                           )}
+                          {canRemovePlayer && (
+                            <button
+                              onClick={() => removePlayer(p.id)}
+                              disabled={removingId === p.id}
+                              title="Remove player from roster"
+                              className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
+                              style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}
+                            >
+                              {removingId === p.id ? "…" : "Remove"}
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -744,7 +771,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
               })}
             </tbody>
           </table>
-        ))}
+        );
+        })()}
 
       {/* Photo lightbox */}
       {enlargedPhoto && (

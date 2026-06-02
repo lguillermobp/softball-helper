@@ -77,3 +77,41 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   });
   return NextResponse.json(updated);
 }
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { slug, playerId } = await params;
+  const userId = session.user.id!;
+  const isMasterAdmin = (session.user as any).isMasterAdmin;
+
+  const league = await prisma.league.findUnique({
+    where: { slug },
+    include: { userRoles: { where: { userId } } },
+  });
+  if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const isLeagueAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
+
+  const player = await prisma.player.findFirst({
+    where: { id: playerId, leagueId: league.id },
+    include: { team: { select: { managerId: true, name: true } } },
+  });
+  if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
+
+  if (!isLeagueAdmin) {
+    const isManager = player.team.managerId === userId;
+    if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await prisma.player.update({ where: { id: playerId }, data: { isActive: false } });
+
+  await logAudit({
+    actor: session.user as any, action: "player.remove",
+    entityType: "Player", entityId: playerId,
+    leagueId: league.id, leagueName: league.name,
+    metadata: { name: player.name, team: player.team.name },
+  });
+  return NextResponse.json({ success: true });
+}

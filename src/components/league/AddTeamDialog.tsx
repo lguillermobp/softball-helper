@@ -45,8 +45,9 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasAssistant, setHasAssistant] = useState(false);
+  const [managerPlays, setManagerPlays] = useState(false);
 
-  function handleClose() { setOpen(false); setHasAssistant(false); setError(""); }
+  function handleClose() { setOpen(false); setHasAssistant(false); setManagerPlays(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,6 +64,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
         email: fd.get("manager-email"),
         phone: fd.get("manager-phone") || undefined,
       },
+      managerRole: managerPlays ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER",
     };
 
     if (hasAssistant) {
@@ -124,6 +126,18 @@ export function AddTeamDialog({ slug, seasons, categories }: {
           )}
 
           <StaffFields prefix="manager" label="Manager" required />
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={managerPlays}
+              onChange={(e) => setManagerPlays(e.target.checked)}
+              className="w-4 h-4 rounded accent-green-500"
+            />
+            <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
+              Manager also plays (Manager-player)
+            </span>
+          </label>
 
           {hasAssistant ? (
             <div className="space-y-2">

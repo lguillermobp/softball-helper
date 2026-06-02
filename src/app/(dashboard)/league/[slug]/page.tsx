@@ -14,7 +14,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_ASSISTANT", "PLAYER"];
+const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT", "PLAYER"];
 
 export default async function LeaguePage({ params }: PageProps) {
   const { slug } = await params;
@@ -314,6 +314,7 @@ export default async function LeaguePage({ params }: PageProps) {
           manager:   { select: { id: true, name: true, email: true, phone: true } },
           assistant: { select: { id: true, name: true, email: true, phone: true } },
           players: {
+            where: { isActive: true },
             orderBy: { name: "asc" },
             include: { user: { select: { password: true, emailVerified: true } } },
           },

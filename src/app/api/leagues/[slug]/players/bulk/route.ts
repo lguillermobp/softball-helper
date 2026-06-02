@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const isMasterAdmin = (session.user as any).isMasterAdmin;
   const isAdmin = isMasterAdmin || league.userRoles.some((r) =>
-    r.role === "LEAGUE_ADMIN" || r.role === "TEAM_MANAGER"
+    r.role === "LEAGUE_ADMIN" || r.role === "TEAM_MANAGER" || r.role === "TEAM_MANAGER_PLAYER"
   );
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

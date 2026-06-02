@@ -1,4 +1,4 @@
-export type LeagueRole = "LEAGUE_ADMIN" | "UMPIRE" | "SCOREKEEPER" | "TEAM_MANAGER" | "PLAYER";
+export type LeagueRole = "LEAGUE_ADMIN" | "UMPIRE" | "SCOREKEEPER" | "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT" | "PLAYER";
 
 export interface SessionUser {
   id: string;

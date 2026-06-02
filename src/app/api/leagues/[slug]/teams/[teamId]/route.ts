@@ -23,7 +23,7 @@ async function upsertStaff(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   leagueId: string,
   staff: StaffInput,
-  role: "TEAM_MANAGER" | "TEAM_ASSISTANT"
+  role: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT"
 ) {
   let user = await tx.user.findUnique({ where: { email: staff.email } });
   const isNew = !user;
@@ -95,16 +95,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const canEdit = admin || (isStaff && team.status === "PENDING");
   if (!canEdit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, seasonId, categoryId, manager, assistant } = body;
+  const { name, seasonId, categoryId, manager, assistant, managerRole } = body;
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
   if (!manager?.name || !manager?.email)
     return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
+
+  const resolvedManagerRole: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" =
+    managerRole === "TEAM_MANAGER_PLAYER" ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
 
   const oldManagerId = team.managerId;
   const oldAssistantId = team.assistantId;
 
   const { updated, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
-    const managerResult = await upsertStaff(tx, league.id, manager, "TEAM_MANAGER");
+    const managerResult = await upsertStaff(tx, league.id, manager, resolvedManagerRole);
     const assistantResult =
       assistant?.name && assistant?.email
         ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
@@ -143,7 +146,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         where: { leagueId: league.id, id: { not: teamId }, OR: [{ managerId: oldManagerId }, { assistantId: oldManagerId }] },
       });
       if (!stillManages) {
-        await tx.userLeagueRole.deleteMany({ where: { userId: oldManagerId, leagueId: league.id, role: "TEAM_MANAGER" } });
+        await tx.userLeagueRole.deleteMany({ where: { userId: oldManagerId, leagueId: league.id, role: { in: ["TEAM_MANAGER", "TEAM_MANAGER_PLAYER"] } } });
       }
     }
 
