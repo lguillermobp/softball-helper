@@ -8,9 +8,10 @@ type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
 const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "1B", "2B", "3B", "HR"];
 
 interface ScoreBookData {
-  offense: Record<string, Record<string, OffenseResult>>; // [inningKey][battingOrder]
-  defense: Record<string, { outs: number; k: number }>;   // [inningKey]
-  runs:    Record<string, number>;                         // [inningKey] → runs this team scored
+  offense:    Record<string, Record<string, OffenseResult>>; // [inningKey][battingOrder]
+  defense:    Record<string, { outs: number; k: number }>;   // [inningKey]
+  runs:       Record<string, number>;                        // [inningKey] → this team's runs
+  rivalRuns:  Record<string, number>;                        // [inningKey] → opponent's runs (manually entered)
 }
 
 interface BatterRow {
@@ -25,11 +26,11 @@ interface Props {
   gameId:       string;
   teamId:       string;
   teamName:     string;
+  opponentName: string;
   lineup:       BatterRow[];
   canEdit:      boolean;
   isHome:       boolean;
   initialData:  ScoreBookData | null;
-  opponentRuns: Record<string, number> | null; // other team's runs, read-only
 }
 
 const DEFAULT_INNINGS = 7;
@@ -82,15 +83,17 @@ function mergeWithDefaults(data: ScoreBookData | null): { data: ScoreBookData; k
     const offense: ScoreBookData["offense"] = {};
     const defense: ScoreBookData["defense"] = {};
     const runs: ScoreBookData["runs"]       = {};
-    keys.forEach(k => { offense[k] = {}; defense[k] = { outs: 0, k: 0 }; runs[k] = 0; });
-    return { data: { offense, defense, runs }, keys };
+    const rivalRuns: ScoreBookData["rivalRuns"] = {};
+    keys.forEach(k => { offense[k] = {}; defense[k] = { outs: 0, k: 0 }; runs[k] = 0; rivalRuns[k] = 0; });
+    return { data: { offense, defense, runs, rivalRuns }, keys };
   }
   const keys = sortKeys(Object.keys(data.offense));
   return {
     data: {
-      offense: data.offense,
-      defense: data.defense ?? {},
-      runs:    data.runs    ?? {},
+      offense:   data.offense,
+      defense:   data.defense   ?? {},
+      runs:      data.runs      ?? {},
+      rivalRuns: data.rivalRuns ?? {},
     },
     keys,
   };
@@ -99,7 +102,7 @@ function mergeWithDefaults(data: ScoreBookData | null): { data: ScoreBookData; k
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ManagerScorebook({
-  slug, gameId, teamId, teamName, lineup, canEdit, isHome, initialData, opponentRuns,
+  slug, gameId, teamId, teamName, opponentName, lineup, canEdit, isHome, initialData,
 }: Props) {
   const { data: initData, keys: initKeys } = mergeWithDefaults(initialData as ScoreBookData | null);
 
@@ -158,10 +161,26 @@ export function ManagerScorebook({
   function cycleRuns(key: string) {
     if (!canEdit) return;
     setData(prev => {
-      const updated: ScoreBookData = {
-        ...prev,
-        runs: { ...prev.runs, [key]: ((prev.runs?.[key] ?? 0) + 1) % 16 },
-      };
+      const updated: ScoreBookData = { ...prev, runs: { ...prev.runs, [key]: ((prev.runs?.[key] ?? 0) + 1) % 16 } };
+      scheduleAutosave(updated);
+      return updated;
+    });
+  }
+
+  function cycleRivalRuns(key: string) {
+    if (!canEdit) return;
+    setData(prev => {
+      const updated: ScoreBookData = { ...prev, rivalRuns: { ...prev.rivalRuns, [key]: ((prev.rivalRuns?.[key] ?? 0) + 1) % 16 } };
+      scheduleAutosave(updated);
+      return updated;
+    });
+  }
+
+  function resetRuns() {
+    if (!canEdit) return;
+    setData(prev => {
+      const zeros = Object.fromEntries(inningKeys.map(k => [k, 0]));
+      const updated: ScoreBookData = { ...prev, runs: { ...zeros }, rivalRuns: { ...zeros } };
       scheduleAutosave(updated);
       return updated;
     });
@@ -173,9 +192,10 @@ export function ManagerScorebook({
     const newKey = String(maxBase + 1);
     setInningKeys(prev => [...prev, newKey]);
     setData(prev => ({
-      offense: { ...prev.offense, [newKey]: {} },
-      defense: { ...prev.defense, [newKey]: { outs: 0, k: 0 } },
-      runs:    { ...prev.runs,    [newKey]: 0 },
+      offense:   { ...prev.offense,   [newKey]: {} },
+      defense:   { ...prev.defense,   [newKey]: { outs: 0, k: 0 } },
+      runs:      { ...prev.runs,      [newKey]: 0 },
+      rivalRuns: { ...prev.rivalRuns, [newKey]: 0 },
     }));
   }
 
@@ -191,9 +211,10 @@ export function ManagerScorebook({
       ...prev.slice(lastIdx + 1),
     ]);
     setData(prev => ({
-      offense: { ...prev.offense, [newKey]: {} },
-      defense: { ...prev.defense, [newKey]: { outs: 0, k: 0 } },
-      runs:    { ...prev.runs,    [newKey]: 0 },
+      offense:   { ...prev.offense,   [newKey]: {} },
+      defense:   { ...prev.defense,   [newKey]: { outs: 0, k: 0 } },
+      runs:      { ...prev.runs,      [newKey]: 0 },
+      rivalRuns: { ...prev.rivalRuns, [newKey]: 0 },
     }));
   }
 
@@ -206,8 +227,10 @@ export function ManagerScorebook({
   }
 
   // Visitor = away team; Home = home team
-  function getVisitorRuns(key: string) { return isHome ? (opponentRuns?.[key] ?? 0) : (data.runs?.[key] ?? 0); }
-  function getHomeRuns(key: string)    { return isHome ? (data.runs?.[key] ?? 0) : (opponentRuns?.[key] ?? 0); }
+  function getVisitorRuns(key: string) { return isHome ? (data.rivalRuns?.[key] ?? 0) : (data.runs?.[key] ?? 0); }
+  function getHomeRuns(key: string)    { return isHome ? (data.runs?.[key] ?? 0) : (data.rivalRuns?.[key] ?? 0); }
+  const visitorName = isHome ? opponentName : teamName;
+  const homeName    = isHome ? teamName     : opponentName;
 
   const col  = "w-14 shrink-0 text-center";
   const cell = "w-14 h-9 shrink-0 text-center text-xs font-bold rounded flex items-center justify-center";
@@ -293,9 +316,18 @@ export function ManagerScorebook({
 
       {/* ── Runs per Inning ── */}
       <div className="rounded-2xl border overflow-hidden" style={card}>
-        <div className="px-4 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
-          <span style={{ ...hdr, color: "#fbbf24" }}>🏃 RUNS PER INNING</span>
-          {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap your row · ⊕ extends an inning</span>}
+        <div className="px-4 py-2 border-b flex items-center justify-between gap-2 flex-wrap" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+          <div className="flex items-center gap-2">
+            <span style={{ ...hdr, color: "#fbbf24" }}>🏃 RUNS PER INNING</span>
+            {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap to edit · ⊕ extends an inning</span>}
+          </div>
+          {canEdit && (
+            <button onClick={resetRuns}
+              className="text-xs px-2.5 py-1 rounded-lg border hover:opacity-70"
+              style={{ borderColor: "var(--sh-border2)", color: "#f87171", background: "transparent" }}>
+              ↺ Reset
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
@@ -304,21 +336,23 @@ export function ManagerScorebook({
             {/* Visitor row */}
             <div className="flex items-center gap-1">
               <div className="w-36 shrink-0 text-right pr-2">
-                <span style={{ ...hdr, color: "var(--sh-muted)" }}>🚌 Visitor</span>
+                <span className="text-xs font-semibold truncate" style={{ color: "#93c5fd" }}>
+                  🚌 {visitorName}
+                </span>
               </div>
               {inningKeys.map(key => {
                 const runs = getVisitorRuns(key);
-                const editable = !isHome && canEdit;
+                const onTap = isHome ? cycleRivalRuns : cycleRuns;
                 return (
                   <button key={key}
-                    onClick={editable ? () => cycleRuns(key) : undefined}
-                    disabled={!editable}
+                    onClick={canEdit ? () => onTap(key) : undefined}
+                    disabled={!canEdit}
                     className={cell}
                     style={{
                       background: runs > 0 ? "#1e3a5f" : "transparent",
                       color: runs > 0 ? "#93c5fd" : "var(--sh-muted)",
                       border: "1px solid var(--sh-border)",
-                      cursor: editable ? "pointer" : "default",
+                      cursor: canEdit ? "pointer" : "default",
                     }}>
                     {runs}
                   </button>
@@ -332,21 +366,23 @@ export function ManagerScorebook({
             {/* Home row */}
             <div className="flex items-center gap-1">
               <div className="w-36 shrink-0 text-right pr-2">
-                <span style={{ ...hdr, color: "var(--sh-muted)" }}>🏠 Home</span>
+                <span className="text-xs font-semibold truncate" style={{ color: "#4ade80" }}>
+                  🏠 {homeName}
+                </span>
               </div>
               {inningKeys.map(key => {
                 const runs = getHomeRuns(key);
-                const editable = isHome && canEdit;
+                const onTap = isHome ? cycleRuns : cycleRivalRuns;
                 return (
                   <button key={key}
-                    onClick={editable ? () => cycleRuns(key) : undefined}
-                    disabled={!editable}
+                    onClick={canEdit ? () => onTap(key) : undefined}
+                    disabled={!canEdit}
                     className={cell}
                     style={{
                       background: runs > 0 ? "#14532d" : "transparent",
                       color: runs > 0 ? "#4ade80" : "var(--sh-muted)",
                       border: "1px solid var(--sh-border)",
-                      cursor: editable ? "pointer" : "default",
+                      cursor: canEdit ? "pointer" : "default",
                     }}>
                     {runs}
                   </button>
