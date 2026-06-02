@@ -104,9 +104,11 @@ function mergeWithDefaults(data: ScoreBookData | null): { data: ScoreBookData; k
 export function ManagerScorebook({
   slug, gameId, teamId, teamName, opponentName, lineup, canEdit, isHome, initialData,
 }: Props) {
-  const { data: initData, keys: initKeys } = mergeWithDefaults(initialData as ScoreBookData | null);
+  const { data: initData, keys: initOffenseKeys } = mergeWithDefaults(initialData as ScoreBookData | null);
+  const initBaseKeys = initOffenseKeys.filter(k => parseKey(k).ext === "");
 
-  const [inningKeys, setInningKeys] = useState<string[]>(initKeys);
+  const [baseKeys,    setBaseKeys]    = useState<string[]>(initBaseKeys);
+  const [offenseKeys, setOffenseKeys] = useState<string[]>(initOffenseKeys);
   const [data,       setData]       = useState<ScoreBookData>(initData);
   const [saveState,  setSaveState]  = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -196,9 +198,10 @@ export function ManagerScorebook({
 
   function addInning() {
     if (!canEdit) return;
-    const maxBase = inningKeys.reduce((m, k) => Math.max(m, parseKey(k).base), 0);
+    const maxBase = baseKeys.reduce((m, k) => Math.max(m, parseKey(k).base), 0);
     const newKey = String(maxBase + 1);
-    setInningKeys(prev => [...prev, newKey]);
+    setBaseKeys(prev => [...prev, newKey]);
+    setOffenseKeys(prev => [...prev, newKey]);
     setData(prev => ({
       offense:   { ...prev.offense,   [newKey]: {} },
       defense:   { ...prev.defense,   [newKey]: { outs: 0, k: 0 } },
@@ -209,20 +212,17 @@ export function ManagerScorebook({
 
   function extendInning(key: string) {
     if (!canEdit) return;
-    const newKey  = nextExtKey(inningKeys, key);
+    const newKey  = nextExtKey(offenseKeys, key);
     const base    = parseKey(key).base;
-    // Find the index of the last column belonging to this base inning
-    const lastIdx = inningKeys.reduce((idx, k, i) => parseKey(k).base === base ? i : idx, 0);
-    setInningKeys(prev => [
+    const lastIdx = offenseKeys.reduce((idx, k, i) => parseKey(k).base === base ? i : idx, 0);
+    setOffenseKeys(prev => [
       ...prev.slice(0, lastIdx + 1),
       newKey,
       ...prev.slice(lastIdx + 1),
     ]);
     setData(prev => ({
-      offense:   { ...prev.offense,   [newKey]: {} },
-      defense:   { ...prev.defense,   [newKey]: { outs: 0, k: 0 } },
-      runs:      { ...prev.runs,      [newKey]: 0 },
-      rivalRuns: { ...prev.rivalRuns, [newKey]: 0 },
+      ...prev,
+      offense: { ...prev.offense, [newKey]: {} },
     }));
   }
 
@@ -245,15 +245,14 @@ export function ManagerScorebook({
   const hdr  = { color: "var(--sh-muted)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 
-  const totalVisitor = inningKeys.reduce((s, k) => s + getVisitorRuns(k), 0);
-  const totalHome    = inningKeys.reduce((s, k) => s + getHomeRuns(k), 0);
+  const totalVisitor = baseKeys.reduce((s, k) => s + getVisitorRuns(k), 0);
+  const totalHome    = baseKeys.reduce((s, k) => s + getHomeRuns(k), 0);
 
-  // Shared inning header row (with extend buttons)
-  function InningHeaders({ showExtend }: { showExtend: boolean }) {
+  function InningHeaders({ keys, showExtend }: { keys: string[]; showExtend: boolean }) {
     return (
       <div className="flex items-center gap-1">
         <div className="w-36 shrink-0" />
-        {inningKeys.map(key => {
+        {keys.map(key => {
           const { base, ext } = parseKey(key);
           const isExt = ext !== "";
           return (
@@ -332,7 +331,7 @@ export function ManagerScorebook({
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            <InningHeaders showExtend={false} />
+            <InningHeaders keys={baseKeys} showExtend={false} />
 
             {/* Visitor row */}
             <div className="flex items-center gap-1">
@@ -341,7 +340,7 @@ export function ManagerScorebook({
                   🚌 {visitorName}
                 </span>
               </div>
-              {inningKeys.map(key => {
+              {baseKeys.map(key => {
                 const runs = getVisitorRuns(key);
                 const onTap   = isHome ? cycleRivalRuns : cycleRuns;
                 const onReset = isHome ? resetRivalRun  : resetRun;
@@ -373,7 +372,7 @@ export function ManagerScorebook({
                   🏠 {homeName}
                 </span>
               </div>
-              {inningKeys.map(key => {
+              {baseKeys.map(key => {
                 const runs = getHomeRuns(key);
                 const onTap   = isHome ? cycleRuns : cycleRivalRuns;
                 const onReset = isHome ? resetRun  : resetRivalRun;
@@ -408,7 +407,7 @@ export function ManagerScorebook({
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            <InningHeaders showExtend={true} />
+            <InningHeaders keys={offenseKeys} showExtend={true} />
 
             {lineup.map(batter => (
               <div key={batter.playerId} className="flex items-center gap-1">
@@ -418,7 +417,7 @@ export function ManagerScorebook({
                   </span>
                   <span className="text-xs truncate" style={{ color: "var(--sh-text)" }}>{batter.name}</span>
                 </div>
-                {inningKeys.map(key => {
+                {offenseKeys.map(key => {
                   const result = (data.offense[key]?.[batter.battingOrder] ?? "") as OffenseResult;
                   const s = RESULT_STYLE[result];
                   return (
@@ -442,7 +441,7 @@ export function ManagerScorebook({
               <div className="w-36 shrink-0 text-right pr-2">
                 <span style={{ ...hdr, color: "var(--sh-muted)" }}>H / O</span>
               </div>
-              {inningKeys.map(key => {
+              {offenseKeys.map(key => {
                 const t = inningTotals(key);
                 return (
                   <div key={key} className={col} style={{ fontSize: "11px", color: "var(--sh-muted)", lineHeight: 1.4 }}>
@@ -465,13 +464,13 @@ export function ManagerScorebook({
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            <InningHeaders showExtend={false} />
+            <InningHeaders keys={baseKeys} showExtend={false} />
 
             <div className="flex items-center gap-1">
               <div className="w-36 shrink-0 text-right pr-2">
                 <span style={hdr}>Strikeouts</span>
               </div>
-              {inningKeys.map(key => {
+              {baseKeys.map(key => {
                 const val = data.defense[key]?.k ?? 0;
                 return (
                   <button key={key}
