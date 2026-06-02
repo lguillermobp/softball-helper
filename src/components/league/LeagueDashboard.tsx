@@ -424,74 +424,126 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
         ? "Manager-Player" : "Manager";
 
       const leagueLogo = leagueLogoUrl
-        ? `<img src="${leagueLogoUrl}" style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid #ddd;flex-shrink:0;" />`
-        : `<div style="width:88px;height:88px;border-radius:12px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;flex-shrink:0;">${league.name.charAt(0)}</div>`;
+        ? `<img src="${leagueLogoUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #ddd;flex-shrink:0;" />`
+        : `<div style="width:80px;height:80px;border-radius:10px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;flex-shrink:0;">${league.name.charAt(0)}</div>`;
 
       const teamLogo = logoUrl
-        ? `<img src="${logoUrl}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #ddd;flex-shrink:0;" />`
-        : `<div style="width:52px;height:52px;border-radius:8px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;">${team.name.charAt(0)}</div>`;
+        ? `<img src="${logoUrl}" style="width:46px;height:46px;object-fit:cover;border-radius:7px;border:1px solid #ddd;flex-shrink:0;" />`
+        : `<div style="width:46px;height:46px;border-radius:7px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;">${team.name.charAt(0)}</div>`;
 
       const playerCards = activePlayers.map((p) => {
         const photo = playerPhotos[p.id] ?? p.photoUrl;
         const avatar = photo
-          ? `<img src="${photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #16a34a;flex-shrink:0;" />`
-          : `<div style="width:60px;height:60px;border-radius:50%;background:#166534;color:#4ade80;border:2px solid #16a34a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;flex-shrink:0;">${p.name.charAt(0).toUpperCase()}</div>`;
+          ? `<img src="${photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #16a34a;flex-shrink:0;" />`
+          : `<div style="width:52px;height:52px;border-radius:50%;background:#166534;color:#4ade80;border:2px solid #16a34a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex-shrink:0;">${p.name.charAt(0).toUpperCase()}</div>`;
         const flag = p.nationality
-          ? `<img src="https://flagcdn.com/w40/${p.nationality.toLowerCase()}.png" style="width:18px;height:13px;object-fit:cover;border-radius:2px;margin-right:5px;vertical-align:middle;" />`
+          ? `<img src="https://flagcdn.com/w40/${p.nationality.toLowerCase()}.png" style="width:16px;height:11px;object-fit:cover;border-radius:2px;margin-right:4px;vertical-align:middle;" />`
           : "";
         return `
-          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eee;">
+          <div class="player-card">
             ${avatar}
-            <div style="min-width:0;">
-              ${p.jerseyNumber ? `<div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">#${p.jerseyNumber}</div>` : ""}
-              <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${flag}${p.name}</div>
+            <div class="player-info">
+              ${p.jerseyNumber ? `<div class="jersey">#${p.jerseyNumber}</div>` : ""}
+              <div class="player-name">${flag}${p.name}</div>
             </div>
           </div>`;
       }).join("");
 
       const coachingRow = [
-        team.manager ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">${managerRoleLabel}</div><div style="font-size:14px;font-weight:600;">${team.manager.name ?? team.manager.email}</div></div>` : "",
-        team.assistant ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Assistant</div><div style="font-size:14px;font-weight:600;">${team.assistant.name ?? team.assistant.email}</div></div>` : "",
-      ].filter(Boolean).join(`<div style="width:1px;background:#ddd;margin:0 24px;align-self:stretch;"></div>`);
+        team.manager   ? `<div><div class="coach-role">${managerRoleLabel}</div><div class="coach-name">${team.manager.name   ?? team.manager.email}</div></div>`   : "",
+        team.assistant ? `<div><div class="coach-role">Assistant</div><div class="coach-name">${team.assistant.name ?? team.assistant.email}</div></div>` : "",
+      ].filter(Boolean).join(`<div class="divider"></div>`);
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
         <title>${team.name} — Roster</title>
         <style>
-          *{box-sizing:border-box;margin:0;padding:0;}
-          body{font-family:sans-serif;color:#111;padding:24px;}
-          @media print{body{padding:14px;}}
+          @page {
+            size: letter portrait;
+            margin: 16mm 14mm;
+          }
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: sans-serif;
+            color: #111;
+            /* match the @page content area: letter 8.5in minus 2×14mm margins */
+            width: 178mm;
+            padding: 20px 24px;
+          }
+          @media print {
+            body { padding: 0; }
+          }
+
+          .league-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding-bottom: 11px;
+            border-bottom: 3px solid #16a34a;
+            margin-bottom: 11px;
+          }
+          .team-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+          }
+          .player-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 24px;
+            margin-bottom: 14px;
+          }
+          .player-card {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            break-inside: avoid;
+          }
+          .player-info { min-width: 0; }
+          .jersey { font-size: 10px; font-weight: 700; color: #16a34a; margin-bottom: 1px; }
+          .player-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .coaching {
+            border-top: 2px solid #eee;
+            padding-top: 11px;
+            display: flex;
+            align-items: flex-start;
+            gap: 0;
+          }
+          .coach-role { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: 2px; }
+          .coach-name { font-size: 13px; font-weight: 600; }
+          .divider { width: 1px; background: #ddd; margin: 0 20px; align-self: stretch; }
         </style>
       </head><body>
 
         <!-- League header -->
-        <div style="display:flex;align-items:center;gap:20px;padding-bottom:14px;border-bottom:3px solid #16a34a;margin-bottom:14px;">
+        <div class="league-header">
           ${leagueLogo}
           <div>
-            <div style="font-size:24px;font-weight:800;line-height:1.1;">${league.name}</div>
-            ${team.category ? `<div style="font-size:14px;color:#555;margin-top:5px;">${team.category.name}</div>` : ""}
+            <div style="font-size:22px;font-weight:800;line-height:1.1;">${league.name}</div>
+            ${team.category ? `<div style="font-size:13px;color:#555;margin-top:4px;">${team.category.name}</div>` : ""}
           </div>
         </div>
 
         <!-- Team header -->
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <div class="team-header">
           ${teamLogo}
           <div>
-            <div style="font-size:18px;font-weight:700;">${team.name}</div>
-            <div style="font-size:12px;color:#888;margin-top:3px;">${activePlayers.length} player${activePlayers.length !== 1 ? "s" : ""}</div>
+            <div style="font-size:16px;font-weight:700;">${team.name}</div>
+            <div style="font-size:11px;color:#888;margin-top:2px;">${activePlayers.length} player${activePlayers.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
 
         <!-- Players: 2-column grid -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 28px;margin-bottom:20px;">
-          ${playerCards}
-        </div>
+        <div class="player-grid">${playerCards}</div>
 
         <!-- Coaching staff -->
-        ${coachingRow ? `<div style="border-top:2px solid #eee;padding-top:14px;display:flex;align-items:flex-start;gap:0;">${coachingRow}</div>` : ""}
+        ${coachingRow ? `<div class="coaching">${coachingRow}</div>` : ""}
 
       </body></html>`;
 
-      const w = window.open("", "_blank", "width=750,height=1000");
+      const w = window.open("", "_blank", "width=820,height=1060");
       if (!w) return;
       w.document.write(html);
       w.document.close();
