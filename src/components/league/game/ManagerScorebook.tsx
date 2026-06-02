@@ -176,11 +176,19 @@ export function ManagerScorebook({
     });
   }
 
-  function resetRuns() {
+  function resetRun(key: string) {
     if (!canEdit) return;
     setData(prev => {
-      const zeros = Object.fromEntries(inningKeys.map(k => [k, 0]));
-      const updated: ScoreBookData = { ...prev, runs: { ...zeros }, rivalRuns: { ...zeros } };
+      const updated: ScoreBookData = { ...prev, runs: { ...prev.runs, [key]: 0 } };
+      scheduleAutosave(updated);
+      return updated;
+    });
+  }
+
+  function resetRivalRun(key: string) {
+    if (!canEdit) return;
+    setData(prev => {
+      const updated: ScoreBookData = { ...prev, rivalRuns: { ...prev.rivalRuns, [key]: 0 } };
       scheduleAutosave(updated);
       return updated;
     });
@@ -319,15 +327,8 @@ export function ManagerScorebook({
         <div className="px-4 py-2 border-b flex items-center justify-between gap-2 flex-wrap" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
           <div className="flex items-center gap-2">
             <span style={{ ...hdr, color: "#fbbf24" }}>🏃 RUNS PER INNING</span>
-            {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap to edit · ⊕ extends an inning</span>}
+            {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap to add · double-tap to reset · ⊕ extends an inning</span>}
           </div>
-          {canEdit && (
-            <button onClick={resetRuns}
-              className="text-xs px-2.5 py-1 rounded-lg border hover:opacity-70"
-              style={{ borderColor: "var(--sh-border2)", color: "#f87171", background: "transparent" }}>
-              ↺ Reset
-            </button>
-          )}
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
@@ -342,10 +343,12 @@ export function ManagerScorebook({
               </div>
               {inningKeys.map(key => {
                 const runs = getVisitorRuns(key);
-                const onTap = isHome ? cycleRivalRuns : cycleRuns;
+                const onTap   = isHome ? cycleRivalRuns : cycleRuns;
+                const onReset = isHome ? resetRivalRun  : resetRun;
                 return (
                   <button key={key}
                     onClick={canEdit ? () => onTap(key) : undefined}
+                    onDoubleClick={canEdit ? (e) => { e.preventDefault(); onReset(key); } : undefined}
                     disabled={!canEdit}
                     className={cell}
                     style={{
@@ -372,10 +375,12 @@ export function ManagerScorebook({
               </div>
               {inningKeys.map(key => {
                 const runs = getHomeRuns(key);
-                const onTap = isHome ? cycleRuns : cycleRivalRuns;
+                const onTap   = isHome ? cycleRuns : cycleRivalRuns;
+                const onReset = isHome ? resetRun  : resetRivalRun;
                 return (
                   <button key={key}
                     onClick={canEdit ? () => onTap(key) : undefined}
+                    onDoubleClick={canEdit ? (e) => { e.preventDefault(); onReset(key); } : undefined}
                     disabled={!canEdit}
                     className={cell}
                     style={{
