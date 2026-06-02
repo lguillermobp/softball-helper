@@ -248,6 +248,20 @@ export function ManagerScorebook({
   const totalVisitor = baseKeys.reduce((s, k) => s + getVisitorRuns(k), 0);
   const totalHome    = baseKeys.reduce((s, k) => s + getHomeRuns(k), 0);
 
+  function isExtEmpty(key: string) {
+    return Object.values(data.offense[key] ?? {}).every(v => !v);
+  }
+
+  function removeExtInning(key: string) {
+    if (!canEdit) return;
+    setOffenseKeys(prev => prev.filter(k => k !== key));
+    setData(prev => {
+      const offense = { ...prev.offense };
+      delete offense[key];
+      return { ...prev, offense };
+    });
+  }
+
   function InningHeaders({ keys, showExtend }: { keys: string[]; showExtend: boolean }) {
     return (
       <div className="flex items-center gap-1">
@@ -255,9 +269,13 @@ export function ManagerScorebook({
         {keys.map(key => {
           const { base, ext } = parseKey(key);
           const isExt = ext !== "";
+          const canRemove = isExt && canEdit && isExtEmpty(key);
           return (
             <div key={key} className="w-14 shrink-0 flex flex-col items-center" style={{ gap: 1 }}>
-              <span style={{ ...hdr, color: isExt ? "#4ade80" : "var(--sh-muted)" }}>
+              <span
+                onDoubleClick={canRemove ? (e) => { e.preventDefault(); removeExtInning(key); } : undefined}
+                title={canRemove ? "Double-tap to remove this column" : undefined}
+                style={{ ...hdr, color: isExt ? "#4ade80" : "var(--sh-muted)", cursor: canRemove ? "pointer" : "default" }}>
                 {isExt ? `+${base}` : `Inn ${base}`}
               </span>
               {showExtend && canEdit && (
