@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { computeSeasonStats, computeGameStats, type BatterRow } from "@/lib/stats";
 import Link from "next/link";
 import { LeagueDashboard } from "@/components/league/LeagueDashboard";
 import { PlayerDashboard } from "@/components/league/PlayerDashboard";
@@ -179,15 +180,110 @@ export default async function LeaguePage({ params }: PageProps) {
       });
     }
 
-    const myTeams = myPlayers.map(({ id: playerId, team }) => ({
-      id:         team.id,
-      name:       team.name,
-      logoUrl:    team.logoUrl ?? null,
-      manager:    team.manager,
-      assistant:  team.assistant,
-      teammates:  team.players,
-      stats: statsMap[playerId] ?? { gamesPlayed: 0, wins: 0, losses: 0, ties: 0, positions: {}, recentGames: [] },
-    }));
+    // ── Full schedule + scorebook data ────────────────────────────────────────
+    const allTeamIds = myPlayers.map(p => p.team.id);
+
+    const [teamGames, teamScorebooks] = await Promise.all([
+      allTeamIds.length > 0 ? prisma.game.findMany({
+        where: { OR: [{ homeTeamId: { in: allTeamIds } }, { awayTeamId: { in: allTeamIds } }] },
+        select: {
+          id: true, scheduledAt: true, status: true,
+          homeScore: true, awayScore: true, homeTeamId: true, awayTeamId: true,
+          homeTeam: { select: { name: true } },
+          awayTeam: { select: { name: true } },
+          season:   { select: { id: true, name: true } },
+        },
+        orderBy: { scheduledAt: "asc" },
+      }) : Promise.resolve([]),
+      allTeamIds.length > 0 ? prisma.managerScorebook.findMany({
+        where: { teamId: { in: allTeamIds } },
+        select: {
+          gameId: true, teamId: true, data: true,
+          game: {
+            select: {
+              scheduledAt: true, homeTeamId: true,
+              homeTeam: { select: { name: true } },
+              awayTeam: { select: { name: true } },
+            }
+          },
+        },
+      }) : Promise.resolve([]),
+    ]);
+
+    const sbGameIds = teamScorebooks.map(s => s.gameId);
+    const playerLineupsBySb = sbGameIds.length > 0 && myPlayerIds.length > 0
+      ? await prisma.gameLineup.findMany({
+          where: { playerId: { in: myPlayerIds }, gameId: { in: sbGameIds }, battingOrder: { not: null } },
+          select: { gameId: true, battingOrder: true, playerId: true },
+        })
+      : [];
+
+    const myTeams = myPlayers.map(({ id: playerId, team }) => {
+      // ── Official schedule ────────────────────────────────────────────────────
+      const schedule = teamGames
+        .filter(g => g.homeTeamId === team.id || g.awayTeamId === team.id)
+        .map(g => {
+          const isMyTeamHome = g.homeTeamId === team.id;
+          const myScore  = isMyTeamHome ? g.homeScore : g.awayScore;
+          const oppScore = isMyTeamHome ? g.awayScore : g.homeScore;
+          let result: "W" | "L" | "T" | null = null;
+          if (g.status === "COMPLETED" && myScore !== null && oppScore !== null) {
+            result = myScore > oppScore ? "W" : myScore < oppScore ? "L" : "T";
+          }
+          return {
+            gameId: g.id, seasonId: g.season.id, seasonName: g.season.name,
+            date: g.scheduledAt.toISOString(),
+            homeTeamName: g.homeTeam.name, awayTeamName: g.awayTeam.name,
+            isMyTeamHome, homeScore: g.homeScore, awayScore: g.awayScore,
+            status: g.status, result,
+          };
+        });
+
+      // ── Unofficial batting stats from manager's scorebook ────────────────────
+      const teamSbs = teamScorebooks.filter(s => s.teamId === team.id);
+      const sbEntries = teamSbs
+        .map(sb => {
+          const lineupEntry = playerLineupsBySb.find(l => l.playerId === playerId && l.gameId === sb.gameId);
+          const data = sb.data as { offense?: Record<string, Record<string, string>> } | null;
+          const isMyTeamHome = sb.game.homeTeamId === team.id;
+          return {
+            gameId: sb.gameId,
+            date: sb.game.scheduledAt.toISOString(),
+            opponentName: isMyTeamHome ? sb.game.awayTeam.name : sb.game.homeTeam.name,
+            batter: lineupEntry
+              ? { playerId, battingOrder: lineupEntry.battingOrder!, name: "", jerseyNumber: null, photoUrl: null, nationality: null } as BatterRow
+              : null,
+            offense: data?.offense ?? null,
+          };
+        })
+        .filter(e => e.batter !== null);
+
+      const seasonTotalsArr = computeSeasonStats(
+        sbEntries.map(e => ({ lineup: [e.batter as BatterRow], offense: e.offense }))
+      );
+      const st = seasonTotalsArr[0];
+
+      const perGame = sbEntries
+        .map(e => {
+          const [s] = computeGameStats(e.offense, [e.batter as BatterRow]);
+          return s && s.ab > 0 ? {
+            gameId: e.gameId, date: e.date, opponentName: e.opponentName,
+            ab: s.ab, h: s.h, singles: s.singles, doubles: s.doubles, triples: s.triples, hr: s.hr, ba: s.ba,
+          } : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+
+      return {
+        id: team.id, name: team.name, logoUrl: team.logoUrl ?? null,
+        manager: team.manager, assistant: team.assistant, teammates: team.players,
+        stats: statsMap[playerId] ?? { gamesPlayed: 0, wins: 0, losses: 0, ties: 0, positions: {}, recentGames: [] },
+        schedule,
+        unofficialStats: sbEntries.length > 0 ? {
+          seasonTotals: st ? { ab: st.ab, h: st.h, singles: st.singles, doubles: st.doubles, triples: st.triples, hr: st.hr, ba: st.ba } : null,
+          perGame,
+        } : null,
+      };
+    });
 
     return (
       <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
