@@ -415,51 +415,88 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
     function printRoster() {
       const activePlayers = team.players.filter((p) => !removedIds.has(p.id));
-      const rows = activePlayers.map((p) => {
+
+      const managerRecord = members.find(
+        (m) => m.user.id === team.manager?.id &&
+          (m.role === "TEAM_MANAGER" || m.role === "TEAM_MANAGER_PLAYER")
+      );
+      const managerRoleLabel = managerRecord?.role === "TEAM_MANAGER_PLAYER"
+        ? "Manager-Player" : "Manager";
+
+      const leagueLogo = leagueLogoUrl
+        ? `<img src="${leagueLogoUrl}" style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid #ddd;flex-shrink:0;" />`
+        : `<div style="width:88px;height:88px;border-radius:12px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;flex-shrink:0;">${league.name.charAt(0)}</div>`;
+
+      const teamLogo = logoUrl
+        ? `<img src="${logoUrl}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #ddd;flex-shrink:0;" />`
+        : `<div style="width:52px;height:52px;border-radius:8px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;">${team.name.charAt(0)}</div>`;
+
+      const playerCards = activePlayers.map((p) => {
         const photo = playerPhotos[p.id] ?? p.photoUrl;
         const avatar = photo
-          ? `<img src="${photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #2d5a2d;" />`
-          : `<div style="width:36px;height:36px;border-radius:50%;background:#1a3d1a;color:#4ade80;border:2px solid #1e3a1e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${p.name.charAt(0).toUpperCase()}</div>`;
+          ? `<img src="${photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #16a34a;flex-shrink:0;" />`
+          : `<div style="width:60px;height:60px;border-radius:50%;background:#166534;color:#4ade80;border:2px solid #16a34a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;flex-shrink:0;">${p.name.charAt(0).toUpperCase()}</div>`;
         const flag = p.nationality
-          ? `<img src="https://flagcdn.com/w40/${p.nationality.toLowerCase()}.png" style="width:20px;height:14px;object-fit:cover;border-radius:2px;margin-right:4px;" />`
+          ? `<img src="https://flagcdn.com/w40/${p.nationality.toLowerCase()}.png" style="width:18px;height:13px;object-fit:cover;border-radius:2px;margin-right:5px;vertical-align:middle;" />`
           : "";
-        return `<tr>
-          <td style="padding:8px 10px;text-align:center;font-weight:700;color:#16a34a;">${p.jerseyNumber ?? "—"}</td>
-          <td style="padding:8px 6px;">${avatar}</td>
-          <td style="padding:8px 6px;">${flag}${p.name}</td>
-        </tr>`;
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eee;">
+            ${avatar}
+            <div style="min-width:0;">
+              ${p.jerseyNumber ? `<div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">#${p.jerseyNumber}</div>` : ""}
+              <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${flag}${p.name}</div>
+            </div>
+          </div>`;
       }).join("");
+
+      const coachingRow = [
+        team.manager ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">${managerRoleLabel}</div><div style="font-size:14px;font-weight:600;">${team.manager.name ?? team.manager.email}</div></div>` : "",
+        team.assistant ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Assistant</div><div style="font-size:14px;font-weight:600;">${team.assistant.name ?? team.assistant.email}</div></div>` : "",
+      ].filter(Boolean).join(`<div style="width:1px;background:#ddd;margin:0 24px;align-self:stretch;"></div>`);
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
         <title>${team.name} — Roster</title>
         <style>
-          body { font-family: sans-serif; margin: 32px; color: #111; }
-          h1 { font-size: 22px; margin: 0 0 4px; }
-          p  { font-size: 13px; color: #555; margin: 0 0 20px; }
-          table { border-collapse: collapse; width: 100%; }
-          th { text-align: left; font-size: 11px; text-transform: uppercase;
-               letter-spacing: .05em; color: #888; border-bottom: 2px solid #ddd; padding: 6px 10px; }
-          td { border-bottom: 1px solid #eee; vertical-align: middle; font-size: 14px; }
-          td:first-child { text-align: center; width: 40px; }
-          td:nth-child(2) { width: 50px; }
-          td:last-child { display: flex; align-items: center; }
-          @media print { body { margin: 16px; } }
+          *{box-sizing:border-box;margin:0;padding:0;}
+          body{font-family:sans-serif;color:#111;padding:24px;}
+          @media print{body{padding:14px;}}
         </style>
       </head><body>
-        <h1>${team.name}</h1>
-        <p>${league.name}${team.category ? " · " + team.category.name : ""} · ${activePlayers.length} player${activePlayers.length !== 1 ? "s" : ""}</p>
-        <table>
-          <thead><tr><th>#</th><th></th><th>Name</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+
+        <!-- League header -->
+        <div style="display:flex;align-items:center;gap:20px;padding-bottom:14px;border-bottom:3px solid #16a34a;margin-bottom:14px;">
+          ${leagueLogo}
+          <div>
+            <div style="font-size:24px;font-weight:800;line-height:1.1;">${league.name}</div>
+            ${team.category ? `<div style="font-size:14px;color:#555;margin-top:5px;">${team.category.name}</div>` : ""}
+          </div>
+        </div>
+
+        <!-- Team header -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          ${teamLogo}
+          <div>
+            <div style="font-size:18px;font-weight:700;">${team.name}</div>
+            <div style="font-size:12px;color:#888;margin-top:3px;">${activePlayers.length} player${activePlayers.length !== 1 ? "s" : ""}</div>
+          </div>
+        </div>
+
+        <!-- Players: 2-column grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 28px;margin-bottom:20px;">
+          ${playerCards}
+        </div>
+
+        <!-- Coaching staff -->
+        ${coachingRow ? `<div style="border-top:2px solid #eee;padding-top:14px;display:flex;align-items:flex-start;gap:0;">${coachingRow}</div>` : ""}
+
       </body></html>`;
 
-      const w = window.open("", "_blank", "width=700,height=900");
+      const w = window.open("", "_blank", "width=750,height=1000");
       if (!w) return;
       w.document.write(html);
       w.document.close();
       w.focus();
-      setTimeout(() => { w.print(); }, 300);
+      setTimeout(() => { w.print(); }, 400);
     }
 
     return (
