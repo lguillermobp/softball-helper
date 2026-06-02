@@ -18,11 +18,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Link expired. Please contact your league admin." }, { status: 400 });
   }
 
-  const hashed = await bcrypt.hash(password, 12);
-  await prisma.$transaction([
-    prisma.user.update({ where: { email }, data: { password: hashed } }),
-    prisma.verificationToken.delete({ where: { token } }),
-  ]);
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "Account not found. Please contact your league admin." }, { status: 404 });
+  }
+
+  try {
+    const hashed = await bcrypt.hash(password, 12);
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { password: hashed } }),
+      prisma.verificationToken.delete({ where: { token } }),
+    ]);
+  } catch (err) {
+    console.error("[set-password] transaction failed:", err);
+    return NextResponse.json({ error: "Failed to save password. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }
