@@ -408,7 +408,7 @@ export function ManagerScorebook({
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            <InningHeaders showExtend={false} />
+            <InningHeaders showExtend={true} />
 
             {lineup.map(batter => (
               <div key={batter.playerId} className="flex items-center gap-1">
