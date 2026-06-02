@@ -327,12 +327,12 @@ export function ManagerScorebook({
         <div className="px-4 py-2 border-b flex items-center justify-between gap-2 flex-wrap" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
           <div className="flex items-center gap-2">
             <span style={{ ...hdr, color: "#fbbf24" }}>🏃 RUNS PER INNING</span>
-            {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap to add · double-tap to reset · ⊕ extends an inning</span>}
+            {canEdit && <span className="text-xs normal-case font-normal" style={{ color: "var(--sh-muted)" }}>tap to add · double-tap to reset</span>}
           </div>
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-max p-3 space-y-1">
-            <InningHeaders showExtend={true} />
+            <InningHeaders showExtend={false} />
 
             {/* Visitor row */}
             <div className="flex items-center gap-1">
