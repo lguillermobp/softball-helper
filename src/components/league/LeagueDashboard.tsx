@@ -25,7 +25,7 @@ import { flagUrl } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions" | "public-page";
+type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions" | "public-page" | "roster";
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
@@ -135,6 +135,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
   { key: "seasons",     icon: "📅" },
   { key: "categories",  icon: "🏷️" },
   { key: "teams",       icon: "👥" },
+  { key: "roster",      icon: "📄" },
   { key: "members",     icon: "🙋", adminOnly: true },
   { key: "fields",      icon: "🏟️" },
   { key: "conditions",  icon: "📋" },
@@ -153,6 +154,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const [memberDeleteConfirm, setMemberDeleteConfirm] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
+  const [rosterCategory, setRosterCategory] = useState<string>("");
   const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
 
   // ── Public page state ────────────────────────────────────────────────────────
@@ -1097,11 +1099,137 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     </div>
   );
 
+  // ── Roster section ───────────────────────────────────────────────────────────
+
+  const rosterTeams = teams
+    .filter((t) => t.isActive)
+    .filter((t) => isAdmin || t.manager?.id === currentUserId || t.assistant?.id === currentUserId)
+    .filter((t) => !rosterCategory || t.category?.id === rosterCategory);
+
+  const Roster = (
+    <div className="space-y-5">
+      {/* Header + controls */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-bold" style={head}>📄 Team Roster</h2>
+          <p className="text-xs mt-0.5" style={dim}>Active players per team · soft-removed players are excluded</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {categories.length > 0 && (
+            <select
+              value={rosterCategory}
+              onChange={(e) => setRosterCategory(e.target.value)}
+              className="text-xs rounded-lg border px-2.5 py-1.5 focus:outline-none"
+              style={{ borderColor: "var(--sh-border2)", background: "var(--sh-bg-card)", color: "var(--sh-text)" }}
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={() => window.print()}
+            className="text-xs px-3 py-1.5 rounded-lg border hover:opacity-70"
+            style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
+          >
+            🖨 Print
+          </button>
+        </div>
+      </div>
+
+      {rosterTeams.length === 0 ? (
+        <p className="text-sm" style={dim}>No teams found{rosterCategory ? " for this category" : ""}.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {rosterTeams.map((team) => (
+            <div key={team.id} className="rounded-2xl border overflow-hidden" style={card}>
+              {/* Team header */}
+              <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+                <TeamAvatar name={team.name} logoUrl={team.logoUrl} size={9} />
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate" style={head}>{team.name}</p>
+                  {team.category && (
+                    <p className="text-xs truncate" style={dim}>{team.category.name}</p>
+                  )}
+                </div>
+                <span className="ml-auto text-xs font-semibold rounded-full px-2 py-0.5 shrink-0"
+                  style={{ background: "var(--sh-bg-card)", border: "1px solid var(--sh-border2)", color: "var(--sh-muted)" }}>
+                  {team.players.length} {team.players.length === 1 ? "player" : "players"}
+                </span>
+              </div>
+
+              {/* Player list */}
+              {team.players.length === 0 ? (
+                <p className="px-4 py-3 text-xs" style={dim}>No players on this roster.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
+                      <th className="px-3 py-2 w-10 text-center text-xs font-semibold uppercase tracking-wider" style={dim}>#</th>
+                      <th className="px-2 py-2 w-10" style={dim} />
+                      <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {team.players.map((p, i) => {
+                      const photo = playerPhotos[p.id] ?? p.photoUrl;
+                      return (
+                        <tr key={p.id} style={{ borderBottom: i < team.players.length - 1 ? "1px solid var(--sh-border)" : "none" }}>
+                          <td className="px-3 py-2 text-center">
+                            {p.jerseyNumber
+                              ? <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.jerseyNumber}</span>
+                              : <span style={dim}>—</span>}
+                          </td>
+                          <td className="px-2 py-2">
+                            {photo ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={photo} alt={p.name} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid #2d5a2d" }} />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                                style={{ background: "#1a3d1a", color: "#4ade80", border: "2px solid #1e3a1e" }}>
+                                {p.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 font-medium" style={head}>
+                            <span className="flex items-center gap-1.5">
+                              {p.nationality && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={flagUrl(p.nationality)} alt={p.nationality}
+                                  className="w-5 shrink-0" style={{ height: "14px", objectFit: "cover", borderRadius: "2px" }} />
+                              )}
+                              {p.name}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          body > *:not(#__next) { display: none !important; }
+          nav, button, select { display: none !important; }
+          .print\\:hidden { display: none !important; }
+        }
+      `}</style>
+    </div>
+  );
+
   const CONTENT: Record<Section, React.ReactNode> = {
     overview:    Overview,
     seasons:     Seasons,
     categories:  Categories,
     teams:       Teams,
+    roster:      Roster,
     members:     Members,
     fields:      Fields,
     conditions: (
