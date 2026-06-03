@@ -55,10 +55,8 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-2xl">🥎</span>
-            <span className="text-xl font-black tracking-tight" style={{ color: "var(--sh-text)" }}>
-              Softball<span style={{ color: "var(--sh-primary)" }}>Helper</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Softball Helper" className="h-9 w-auto" />
           </div>
 
           {/* Country flags */}
@@ -261,10 +259,8 @@ export default function HomePage() {
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🥎</span>
-            <span className="font-black" style={{ color: "var(--sh-text)" }}>
-              Softball<span style={{ color: "var(--sh-primary)" }}>Helper</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Softball Helper" className="h-7 w-auto" />
           </div>
           <p className="text-sm" style={{ color: "var(--sh-text-faint)" }}>
             © {new Date().getFullYear()} SoftballHelper. {t.footer}
