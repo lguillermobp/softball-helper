@@ -196,6 +196,96 @@ export function SeasonDashboard({
     );
   }
 
+  // ── Grouped schedule: day → category ───────────────────────────────────────
+  const groupedDays = (() => {
+    const dayMap = new Map<string, { label: string; catMap: Map<string, { catName: string; catGames: Game[] }> }>();
+    for (const game of games) {
+      const d = new Date(game.scheduledAt);
+      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const dayLabel = d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      if (!dayMap.has(dayKey)) dayMap.set(dayKey, { label: dayLabel, catMap: new Map() });
+      const catKey  = game.categoryId ?? "__none__";
+      const catName = game.category?.name ?? "";
+      const day = dayMap.get(dayKey)!;
+      if (!day.catMap.has(catKey)) day.catMap.set(catKey, { catName, catGames: [] });
+      day.catMap.get(catKey)!.catGames.push(game);
+    }
+    return [...dayMap.entries()].map(([dayKey, { label, catMap }]) => ({
+      dayKey, label, catGroups: [...catMap.values()],
+    }));
+  })();
+
+  function printSchedule() {
+    const dayRows = groupedDays.map(({ label, catGroups }) => {
+      const catRows = catGroups.map(({ catName, catGames }) => {
+        const catHeader = catName
+          ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:5px 0 2px;margin-top:6px;">${catName}</div>`
+          : "";
+        const gameRows = catGames.map((game) => {
+          const d = new Date(game.scheduledAt);
+          const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const hGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
+          const aGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
+          const grp    = hGroup && hGroup === aGroup ? hGroup : null;
+          const score  = game.status === "COMPLETED"
+            ? `<strong style="color:#16a34a;">${game.homeScore ?? 0} – ${game.awayScore ?? 0}</strong>`
+            : `<span style="color:#999;">vs</span>`;
+          const badgeColor = game.status === "COMPLETED" ? ["#dcfce7","#15803d"]
+            : game.status === "CANCELLED"   ? ["#fee2e2","#dc2626"]
+            : game.status === "RESCHEDULED" ? ["#f3e8ff","#9333ea"]
+            : game.status === "IN_PROGRESS" ? ["#fef9c3","#ca8a04"]
+            : null;
+          const badge = badgeColor
+            ? `<span style="font-size:10px;padding:1px 7px;border-radius:99px;background:${badgeColor[0]};color:${badgeColor[1]};">${getStatusText(game.status)}</span>`
+            : "";
+          const meta = [game.field ? `🏟️ ${game.field.name}` : "", grp ? `Group ${grp}` : ""].filter(Boolean).join(" · ");
+          return `<tr>
+            <td style="padding:5px 8px;font-size:12px;color:#555;white-space:nowrap;vertical-align:top;">${time}</td>
+            <td style="padding:5px 8px;font-size:13px;vertical-align:top;">
+              <span style="font-weight:600;">${game.homeTeam.name}</span> ${score} <span style="font-weight:600;">${game.awayTeam.name}</span>
+              ${badge ? " " + badge : ""}
+            </td>
+            <td style="padding:5px 8px;font-size:11px;color:#888;vertical-align:top;">${meta}</td>
+          </tr>`;
+        }).join("");
+        return catHeader + `<table style="width:100%;border-collapse:collapse;">${gameRows}</table>`;
+      }).join("");
+      return `<div style="margin-bottom:18px;">
+        <div style="font-size:14px;font-weight:700;padding:7px 10px;background:#f0fdf4;border-left:4px solid #16a34a;margin-bottom:4px;">
+          📅 ${label}
+        </div>
+        ${catRows}
+      </div>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>${seasonName} — Schedule</title>
+      <style>
+        @page { size: letter portrait; margin: 16mm 14mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; color: #111; width: 178mm; padding: 16px 24px; }
+        @media print { body { padding: 0; } }
+        table tr:nth-child(even) { background: #f9fafb; }
+      </style>
+    </head><body>
+      <div style="padding-bottom:12px;border-bottom:3px solid #16a34a;margin-bottom:16px;">
+        <div style="font-size:22px;font-weight:800;">${seasonName}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;">
+          ${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}
+          · ${games.length} game${games.length !== 1 ? "s" : ""}
+        </div>
+      </div>
+      ${dayRows}
+    </body></html>`;
+
+    const w = window.open("", "_blank", "width=820,height=1060");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 400);
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Season info row ── */}
@@ -234,123 +324,159 @@ export function SeasonDashboard({
       {/* ── Schedule ── */}
       {tab === "schedule" && (
         <div>
+          {/* Schedule header: count + print */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs" style={dim}>{games.length} game{games.length !== 1 ? "s" : ""}</p>
+            {games.length > 0 && (
+              <button
+                onClick={printSchedule}
+                className="text-xs px-3 py-1.5 rounded-lg border hover:opacity-70"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+              >
+                🖨 Print schedule
+              </button>
+            )}
+          </div>
+
           {games.length === 0 ? (
             <div className="rounded-2xl border py-16 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
               {ts.schedule.none}{isAdmin && ts.schedule.noneAdmin}
             </div>
           ) : (
-            <div className="space-y-3">
-              {games.map((game) => {
-                const badge = {
-                  bg:    game.status === "COMPLETED"   ? "var(--sh-approved-bg)"
-                       : game.status === "IN_PROGRESS" ? "var(--sh-warn-bg)"
-                       : game.status === "CANCELLED"   ? "var(--sh-danger-bg)"
-                       : game.status === "RESCHEDULED" ? "var(--sh-purple-bg)"
-                       : "var(--sh-info-bg)",
-                  color: game.status === "COMPLETED"   ? "var(--sh-primary)"
-                       : game.status === "IN_PROGRESS" ? "var(--sh-warn)"
-                       : game.status === "CANCELLED"   ? "var(--sh-danger)"
-                       : game.status === "RESCHEDULED" ? "var(--sh-purple)"
-                       : "var(--sh-info)",
-                  text:  getStatusText(game.status),
-                };
-                const homeGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
-                const awayGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
-                const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
-                const date = new Date(game.scheduledAt);
-                return (
-                  <div key={game.id} className="rounded-xl border p-4" style={card}>
-                    {gameError[game.id] && (
-                      <p className="text-xs mb-2" style={{ color: "var(--sh-danger)" }}>{gameError[game.id]}</p>
-                    )}
-                    <div className="flex items-center justify-between gap-4">
-                      {/* Teams & score */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="text-right flex-1 flex items-center justify-end gap-2">
-                          <div>
-                            <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.homeTeam.name}</p>
-                            <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
-                              {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.home}
-                            </p>
-                          </div>
-                          <TeamAvatar name={game.homeTeam.name} logoUrl={game.homeTeam.logoUrl} size={8} />
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {game.status === "COMPLETED" ? (
-                            <span className="text-xl font-bold" style={{ color: "var(--sh-primary)" }}>
-                              {game.homeScore ?? 0} – {game.awayScore ?? 0}
-                            </span>
-                          ) : (
-                            <span className="text-sm font-semibold" style={dim}>vs</span>
-                          )}
-                        </div>
-                        <div className="flex-1 flex items-center gap-2">
-                          <TeamAvatar name={game.awayTeam.name} logoUrl={game.awayTeam.logoUrl} size={8} />
-                          <div>
-                            <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.awayTeam.name}</p>
-                            <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
-                              {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.away}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+            <div className="space-y-6">
+              {groupedDays.map(({ dayKey, label, catGroups }) => (
+                <div key={dayKey}>
+                  {/* Day header */}
+                  <div className="flex items-center gap-2 mb-3"
+                    style={{ borderLeft: "3px solid var(--sh-primary)", paddingLeft: "10px" }}>
+                    <span className="font-bold text-sm" style={{ color: "var(--sh-text)" }}>📅 {label}</span>
+                  </div>
 
-                      {/* Meta + actions */}
-                      <div className="text-right shrink-0 space-y-1">
-                        <div className="flex items-center gap-2 justify-end flex-wrap">
-                          {gameGroup && (
-                            <span
-                              className="text-xs font-semibold rounded-full px-2 py-0.5"
-                              style={{ background: "var(--sh-info-bg)", color: "var(--sh-info)" }}
-                            >
-                              {tg.groupStandings} {gameGroup}
-                            </span>
-                          )}
-                          <span
-                            className="text-xs font-semibold rounded-full px-2.5 py-0.5"
-                            style={{ background: badge.bg, color: badge.color }}
-                          >
-                            {badge.text}
-                          </span>
-                          {isAdmin && game.status === "SCHEDULED" && (
-                            <>
-                              <EditGameDialog slug={slug} game={game} teams={teams} categories={categories} fields={fields} />
-                              <RescheduleGameDialog slug={slug} game={game} teams={teams} categories={categories} fields={fields} />
-                              <button
-                                onClick={() => deleteGame(game.id)}
-                                className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
-                                style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
-                              >
-                                {ts.schedule.delete}
-                              </button>
-                            </>
-                          )}
-                          {(game.status === "SCHEDULED" || game.status === "IN_PROGRESS") && (
-                            <Link
-                              href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
-                              className="text-xs font-semibold px-3 py-1 rounded-lg transition-all hover:opacity-80"
-                              style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}
-                            >
-                              {ts.schedule.scoring}
-                            </Link>
-                          )}
-                        </div>
-                        <p className="text-xs" style={dim}>
-                          {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        {game.field    && <p className="text-xs" style={{ color: "var(--sh-primary)" }}>🏟️ {game.field.name}</p>}
-                        {game.category && <p className="text-xs" style={{ color: "var(--sh-info)" }}>{game.category.name}</p>}
-                        {game.rescheduledFrom && (
-                          <p className="text-xs" style={{ color: "var(--sh-purple)" }}>
-                            ↺ {ts.schedule.replacesGame}{" "}
-                            {new Date(game.rescheduledFrom.scheduledAt).toLocaleDateString()}
+                  <div className="space-y-4">
+                    {catGroups.map(({ catName, catGames }) => (
+                      <div key={catName || "__none__"}>
+                        {/* Category sub-header */}
+                        {catName && (
+                          <p className="text-xs font-semibold uppercase tracking-wider mb-2 ml-1"
+                            style={{ color: "var(--sh-info)" }}>
+                            {catName}
                           </p>
                         )}
+
+                        <div className="space-y-2">
+                          {catGames.map((game) => {
+                            const badge = {
+                              bg:    game.status === "COMPLETED"   ? "var(--sh-approved-bg)"
+                                   : game.status === "IN_PROGRESS" ? "var(--sh-warn-bg)"
+                                   : game.status === "CANCELLED"   ? "var(--sh-danger-bg)"
+                                   : game.status === "RESCHEDULED" ? "var(--sh-purple-bg)"
+                                   : "var(--sh-info-bg)",
+                              color: game.status === "COMPLETED"   ? "var(--sh-primary)"
+                                   : game.status === "IN_PROGRESS" ? "var(--sh-warn)"
+                                   : game.status === "CANCELLED"   ? "var(--sh-danger)"
+                                   : game.status === "RESCHEDULED" ? "var(--sh-purple)"
+                                   : "var(--sh-info)",
+                              text:  getStatusText(game.status),
+                            };
+                            const homeGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
+                            const awayGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
+                            const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
+                            const date = new Date(game.scheduledAt);
+                            return (
+                              <div key={game.id} className="rounded-xl border p-4" style={card}>
+                                {gameError[game.id] && (
+                                  <p className="text-xs mb-2" style={{ color: "var(--sh-danger)" }}>{gameError[game.id]}</p>
+                                )}
+                                <div className="flex items-center justify-between gap-4">
+                                  {/* Teams & score */}
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="text-right flex-1 flex items-center justify-end gap-2">
+                                      <div>
+                                        <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.homeTeam.name}</p>
+                                        <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
+                                          {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.home}
+                                        </p>
+                                      </div>
+                                      <TeamAvatar name={game.homeTeam.name} logoUrl={game.homeTeam.logoUrl} size={8} />
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {game.status === "COMPLETED" ? (
+                                        <span className="text-xl font-bold" style={{ color: "var(--sh-primary)" }}>
+                                          {game.homeScore ?? 0} – {game.awayScore ?? 0}
+                                        </span>
+                                      ) : (
+                                        <span className="text-sm font-semibold" style={dim}>vs</span>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 flex items-center gap-2">
+                                      <TeamAvatar name={game.awayTeam.name} logoUrl={game.awayTeam.logoUrl} size={8} />
+                                      <div>
+                                        <p className="font-bold truncate" style={{ color: "var(--sh-text)" }}>{game.awayTeam.name}</p>
+                                        <p className="text-xs" style={{ color: game.homeAwayTbd ? "var(--sh-warn)" : "var(--sh-primary)" }}>
+                                          {game.homeAwayTbd ? ts.schedule.tbd : ts.schedule.away}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Meta + actions */}
+                                  <div className="text-right shrink-0 space-y-1">
+                                    <div className="flex items-center gap-2 justify-end flex-wrap">
+                                      {gameGroup && (
+                                        <span className="text-xs font-semibold rounded-full px-2 py-0.5"
+                                          style={{ background: "var(--sh-info-bg)", color: "var(--sh-info)" }}>
+                                          {tg.groupStandings} {gameGroup}
+                                        </span>
+                                      )}
+                                      <span className="text-xs font-semibold rounded-full px-2.5 py-0.5"
+                                        style={{ background: badge.bg, color: badge.color }}>
+                                        {badge.text}
+                                      </span>
+                                      {isAdmin && game.status === "SCHEDULED" && (
+                                        <>
+                                          <EditGameDialog slug={slug} game={game} teams={teams} categories={categories} fields={fields} />
+                                          <RescheduleGameDialog slug={slug} game={game} teams={teams} categories={categories} fields={fields} />
+                                          <button
+                                            onClick={() => deleteGame(game.id)}
+                                            className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
+                                            style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
+                                          >
+                                            {ts.schedule.delete}
+                                          </button>
+                                        </>
+                                      )}
+                                      {(game.status === "SCHEDULED" || game.status === "IN_PROGRESS") && (
+                                        <Link
+                                          href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
+                                          className="text-xs font-semibold px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                                          style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}
+                                        >
+                                          {ts.schedule.scoring}
+                                        </Link>
+                                      )}
+                                    </div>
+                                    <p className="text-xs" style={dim}>
+                                      {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                    {game.field && <p className="text-xs" style={{ color: "var(--sh-primary)" }}>🏟️ {game.field.name}</p>}
+                                    {!catName && game.category && <p className="text-xs" style={{ color: "var(--sh-info)" }}>{game.category.name}</p>}
+                                    {game.rescheduledFrom && (
+                                      <p className="text-xs" style={{ color: "var(--sh-purple)" }}>
+                                        ↺ {ts.schedule.replacesGame}{" "}
+                                        {new Date(game.rescheduledFrom.scheduledAt).toLocaleDateString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
