@@ -70,7 +70,7 @@ export function RescheduleGameDialog({ slug, game, teams, categories, fields }: 
     if (willBePlayed) {
       payload.homeTeamId  = fd.get("homeTeamId");
       payload.awayTeamId  = fd.get("awayTeamId");
-      payload.scheduledAt = fd.get("scheduledAt");
+      payload.scheduledAt = new Date(fd.get("scheduledAt") as string).toISOString();
       payload.fieldId     = fd.get("fieldId") || null;
       payload.categoryId  = fd.get("categoryId") || null;
       payload.homeAwayTbd = homeAwayTbd;

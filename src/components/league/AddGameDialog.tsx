@@ -45,7 +45,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
         homeTeamId:  fd.get("homeTeamId"),
         awayTeamId:  fd.get("awayTeamId"),
         fieldId:     fd.get("fieldId") || null,
-        scheduledAt: fd.get("scheduledAt"),
+        scheduledAt: new Date(fd.get("scheduledAt") as string).toISOString(),
         homeAwayTbd,
       }),
     });

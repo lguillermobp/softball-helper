@@ -60,7 +60,7 @@ export function EditGameDialog({ slug, game, teams, categories, fields }: Props)
         awayTeamId:  fd.get("awayTeamId"),
         fieldId:     fd.get("fieldId") || null,
         categoryId:  fd.get("categoryId") || null,
-        scheduledAt: fd.get("scheduledAt"),
+        scheduledAt: new Date(fd.get("scheduledAt") as string).toISOString(),
         homeAwayTbd,
       }),
     });
