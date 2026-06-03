@@ -135,10 +135,14 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-                      {[d.title, d.location, d.plan, "Seasons", "Teams", "Players", d.status, ""].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
-                          style={{ color: "var(--sh-muted)" }}>{h}</th>
-                      ))}
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--sh-muted)" }}>{d.title}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>{d.location}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>{d.plan}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>Seasons</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>Teams</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>Players</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>{d.status}</th>
+                      <th className="px-4 py-3" />
                     </tr>
                   </thead>
                   <tbody>
@@ -156,19 +160,19 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
                               <span className="font-semibold" style={{ color: "var(--sh-text)" }}>{league.name}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3" style={{ color: "var(--sh-muted)" }}>
+                          <td className="px-4 py-3 hidden sm:table-cell" style={{ color: "var(--sh-muted)" }}>
                             {[league.city, league.state].filter(Boolean).join(", ") || "—"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 hidden sm:table-cell">
                             <span className="text-xs font-medium rounded-full px-2 py-0.5"
                               style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>
                               {league.plan.name}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-center font-semibold" style={{ color: "var(--sh-secondary)" }}>{league._count.seasons}</td>
-                          <td className="px-4 py-3 text-center font-semibold" style={{ color: "var(--sh-secondary)" }}>{league._count.teams}</td>
-                          <td className="px-4 py-3 text-center font-semibold" style={{ color: "var(--sh-secondary)" }}>{league._count.players}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-center font-semibold hidden sm:table-cell" style={{ color: "var(--sh-secondary)" }}>{league._count.seasons}</td>
+                          <td className="px-4 py-3 text-center font-semibold hidden sm:table-cell" style={{ color: "var(--sh-secondary)" }}>{league._count.teams}</td>
+                          <td className="px-4 py-3 text-center font-semibold hidden sm:table-cell" style={{ color: "var(--sh-secondary)" }}>{league._count.players}</td>
+                          <td className="px-4 py-3 hidden sm:table-cell">
                             <span className="flex items-center gap-1.5 text-xs font-medium">
                               <span className="w-1.5 h-1.5 rounded-full" style={{ background: dot.color }} />
                               <span style={{ color: dot.color }}>{dot.label}</span>
