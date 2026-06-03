@@ -556,7 +556,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
         {/* ── Header ── */}
         <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid #1e3a1e" }}>
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             {/* Left: logo + name + badges */}
             <div className="flex items-start gap-3 min-w-0">
               <TeamAvatar name={team.name} logoUrl={logoUrl} size={12} />
@@ -593,20 +593,20 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
             </div>
             </div>  {/* end logo+name flex */}
 
-            {/* Stats link — visible to all roles when team has a season */}
-            {team.seasonId && (
-              <Link
-                href={`/league/${slug}/season/${team.seasonId}/team/${team.id}/stats`}
-                className="text-xs font-semibold px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 shrink-0"
-                style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
-              >
-                📊 Stats
-              </Link>
-            )}
-
-            {/* Right: action buttons */}
+            {/* Right: stats link + action buttons */}
+            {(team.seasonId || isAdmin || isStaff) && (
+              <div className="flex items-center gap-1.5 flex-wrap sm:justify-end sm:shrink-0">
+                {team.seasonId && (
+                  <Link
+                    href={`/league/${slug}/season/${team.seasonId}/team/${team.id}/stats`}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80"
+                    style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
+                  >
+                    📊 Stats
+                  </Link>
+                )}
             {(isAdmin || isStaff) && (
-              <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
+              <>
                 <button
                   onClick={printRoster}
                   title="Print team roster"
@@ -663,27 +663,29 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                     )}
                   </>
                 )}
+              </>
+            )}
               </div>
             )}
           </div>
 
           {/* Staff row */}
           {(team.manager || team.assistant) && (
-            <div className="flex flex-wrap gap-x-6 gap-y-0.5 mt-2.5">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 mt-2.5">
               {team.manager && (
-                <p className="text-xs" style={dim}>
+                <p className="text-xs min-w-0" style={dim}>
                   <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>{tl.teams.managerLabel}</span>
                   {" · "}
                   <span style={head}>{team.manager.name ?? "—"}</span>
-                  <span className="ml-1" style={dim}>{team.manager.email}</span>
+                  <span className="ml-1 break-all" style={dim}>{team.manager.email}</span>
                 </p>
               )}
               {team.assistant && (
-                <p className="text-xs" style={dim}>
+                <p className="text-xs min-w-0" style={dim}>
                   <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>{tl.teams.assistantLabel}</span>
                   {" · "}
                   <span style={head}>{team.assistant.name ?? "—"}</span>
-                  <span className="ml-1" style={dim}>{team.assistant.email}</span>
+                  <span className="ml-1 break-all" style={dim}>{team.assistant.email}</span>
                 </p>
               )}
             </div>
