@@ -118,8 +118,10 @@ export function RegisterForm({ loggedInUser }: Props) {
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Softball Helper" className="h-16 w-auto" />
+            <span className="text-2xl">🥎</span>
+            <span className="text-2xl font-black text-white">
+              Softball<span className="text-green-400">Helper</span>
+            </span>
           </Link>
           {loggedInUser ? (
             <p className="text-sm text-white/40">

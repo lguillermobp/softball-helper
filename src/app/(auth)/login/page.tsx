@@ -51,8 +51,10 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Softball Helper" className="h-16 w-auto" />
+            <span className="text-2xl">🥎</span>
+            <span className="text-2xl font-black text-white">
+              Softball<span className="text-green-400">Helper</span>
+            </span>
           </Link>
           <p className="text-sm text-white/40">{l.pageTitle}</p>
         </div>

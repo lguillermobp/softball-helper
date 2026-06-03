@@ -201,9 +201,8 @@ export default async function LeaguePublicPage({ params }: PageProps) {
         )}
 
         {/* Footer */}
-        <footer style={{ borderTop: "1px solid #1a3a1a", paddingTop: 20, textAlign: "center", opacity: 0.6 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Softball Helper" style={{ height: 32, width: "auto", display: "inline-block" }} />
+        <footer style={{ borderTop: "1px solid #1a3a1a", paddingTop: 20, color: "#4ade80", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
+          Powered by Softball Helper
         </footer>
       </div>
     </div>
