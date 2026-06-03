@@ -231,7 +231,11 @@ export function SeasonDashboard({
           const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
           const hGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
           const aGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
-          const grp    = hGroup && hGroup === aGroup ? hGroup : null;
+          const grpLabel = hGroup && aGroup && hGroup === aGroup
+            ? `Group ${hGroup}`
+            : hGroup && aGroup
+            ? `Group ${hGroup} / ${aGroup}`
+            : hGroup ? `Group ${hGroup}` : aGroup ? `Group ${aGroup}` : null;
           const score  = game.status === "COMPLETED"
             ? `<strong style="color:#16a34a;">${game.homeScore ?? 0} – ${game.awayScore ?? 0}</strong>`
             : `<span style="color:#999;">vs</span>`;
@@ -243,7 +247,7 @@ export function SeasonDashboard({
           const badge = badgeColor
             ? `<span style="font-size:10px;padding:1px 7px;border-radius:99px;background:${badgeColor[0]};color:${badgeColor[1]};">${getStatusText(game.status)}</span>`
             : "";
-          const meta = [game.field ? `🏟️ ${game.field.name}` : "", grp ? `Group ${grp}` : ""].filter(Boolean).join(" · ");
+          const meta = grpLabel ?? "";
           const teamAvatar = (name: string, logoUrl?: string | null) =>
             logoUrl
               ? `<img src="${logoUrl}" style="width:18px;height:18px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-right:3px;" alt="" />`
