@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createVerificationToken } from "@/lib/email";
 
 const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "http://localhost:3001";
 
@@ -25,15 +24,20 @@ export async function GET(req: NextRequest) {
     data: { emailVerified: new Date() },
     select: { password: true },
   });
-  await prisma.verificationToken.delete({ where: { token } });
 
-  // Admin-created users have no password — send them to set one
   if (!user.password) {
-    const setToken = await createVerificationToken(email);
+    // User has no password yet (admin-created account).
+    // Do NOT consume the token here — email security scanners follow every link
+    // in emails before the user sees them, which would delete the token and leave
+    // the user unable to reach set-password. Instead keep the token alive and let
+    // set-password consume it when the user actually submits the form.
     return NextResponse.redirect(
-      `${APP_URL}/set-password?token=${setToken}&email=${encodeURIComponent(email)}`
+      `${APP_URL}/set-password?token=${token}&email=${encodeURIComponent(email)}`
     );
   }
 
+  // User already has a password (e.g. re-verification after email change).
+  // Token is no longer needed — consume it and send them to login.
+  await prisma.verificationToken.delete({ where: { token } });
   return NextResponse.redirect(`${APP_URL}/login?verified=1`);
 }
