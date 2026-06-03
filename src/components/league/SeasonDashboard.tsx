@@ -198,28 +198,31 @@ export function SeasonDashboard({
 
   // ── Grouped schedule: day → category ───────────────────────────────────────
   const groupedDays = (() => {
-    const dayMap = new Map<string, { label: string; catMap: Map<string, { catName: string; catGames: Game[] }> }>();
+    const dayMap = new Map<string, { label: string; grpMap: Map<string, { grpName: string; catGames: Game[] }> }>();
     for (const game of games) {
       const d = new Date(game.scheduledAt);
-      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const dayKey  = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const dayLabel = d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      if (!dayMap.has(dayKey)) dayMap.set(dayKey, { label: dayLabel, catMap: new Map() });
-      const catKey  = game.categoryId ?? "__none__";
-      const catName = game.category?.name ?? "";
+      if (!dayMap.has(dayKey)) dayMap.set(dayKey, { label: dayLabel, grpMap: new Map() });
+      const homeGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
+      const awayGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
+      const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
+      const grpKey  = gameGroup ?? "__none__";
+      const grpName = gameGroup ?? "";
       const day = dayMap.get(dayKey)!;
-      if (!day.catMap.has(catKey)) day.catMap.set(catKey, { catName, catGames: [] });
-      day.catMap.get(catKey)!.catGames.push(game);
+      if (!day.grpMap.has(grpKey)) day.grpMap.set(grpKey, { grpName, catGames: [] });
+      day.grpMap.get(grpKey)!.catGames.push(game);
     }
-    return [...dayMap.entries()].map(([dayKey, { label, catMap }]) => ({
-      dayKey, label, catGroups: [...catMap.values()],
+    return [...dayMap.entries()].map(([dayKey, { label, grpMap }]) => ({
+      dayKey, label, catGroups: [...grpMap.values()],
     }));
   })();
 
   function printSchedule() {
     const dayRows = groupedDays.map(({ label, catGroups }) => {
-      const catRows = catGroups.map(({ catName, catGames }) => {
-        const catHeader = catName
-          ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:5px 0 2px;margin-top:6px;">${catName}</div>`
+      const catRows = catGroups.map(({ grpName, catGames }) => {
+        const catHeader = grpName
+          ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:5px 0 2px;margin-top:6px;">${tg.groupStandings} ${grpName}</div>`
           : "";
         const gameRows = catGames.map((game) => {
           const d = new Date(game.scheduledAt);
@@ -353,13 +356,13 @@ export function SeasonDashboard({
                   </div>
 
                   <div className="space-y-4">
-                    {catGroups.map(({ catName, catGames }) => (
-                      <div key={catName || "__none__"}>
-                        {/* Category sub-header */}
-                        {catName && (
+                    {catGroups.map(({ grpName, catGames }) => (
+                      <div key={grpName || "__none__"}>
+                        {/* Group sub-header */}
+                        {grpName && (
                           <p className="text-xs font-semibold uppercase tracking-wider mb-2 ml-1"
                             style={{ color: "var(--sh-info)" }}>
-                            {catName}
+                            {tg.groupStandings} {grpName}
                           </p>
                         )}
 
@@ -459,7 +462,7 @@ export function SeasonDashboard({
                                       {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                     </p>
                                     {game.field && <p className="text-xs" style={{ color: "var(--sh-primary)" }}>🏟️ {game.field.name}</p>}
-                                    {!catName && game.category && <p className="text-xs" style={{ color: "var(--sh-info)" }}>{game.category.name}</p>}
+                                    {game.category && <p className="text-xs" style={{ color: "var(--sh-info)" }}>{game.category.name}</p>}
                                     {game.rescheduledFrom && (
                                       <p className="text-xs" style={{ color: "var(--sh-purple)" }}>
                                         ↺ {ts.schedule.replacesGame}{" "}
