@@ -9,7 +9,7 @@ import { AddGameDialog } from "@/components/league/AddGameDialog";
 import { RescheduleGameDialog } from "@/components/league/RescheduleGameDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
-interface Team { id: string; name: string; group: string | null }
+interface Team { id: string; name: string; group: string | null; logoUrl?: string | null }
 interface Category { id: string; name: string }
 interface Field    { id: string; name: string }
 interface Game {
@@ -56,6 +56,10 @@ interface Props {
   categories: Category[];
   fields: Field[];
   standings: Standing[];
+  leagueName: string;
+  leagueCity?: string | null;
+  leagueState?: string | null;
+  leagueLogoUrl?: string | null;
 }
 
 type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
@@ -63,6 +67,7 @@ type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
 export function SeasonDashboard({
   slug, seasonId, seasonName, startDate, endDate, seasonStatus,
   isAdmin, games, teams, categories, fields, standings,
+  leagueName, leagueCity, leagueState, leagueLogoUrl,
 }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -167,7 +172,7 @@ export function SeasonDashboard({
                 <td className="px-3 py-3 text-center font-bold" style={{ color: i === 0 ? "var(--sh-warn)" : "var(--sh-muted)" }}>{i + 1}</td>
                 <td className="px-3 py-3 font-semibold">
                   <div className="flex items-center gap-2">
-                    <TeamAvatar name={s.team.name} logoUrl={(s.team as any).logoUrl} size={6} />
+                    <TeamAvatar name={s.team.name} logoUrl={s.team.logoUrl} size={6} />
                     <span style={{ color: "var(--sh-text)" }}>{s.team.name}</span>
                   </div>
                 </td>
@@ -239,13 +244,19 @@ export function SeasonDashboard({
             ? `<span style="font-size:10px;padding:1px 7px;border-radius:99px;background:${badgeColor[0]};color:${badgeColor[1]};">${getStatusText(game.status)}</span>`
             : "";
           const meta = [game.field ? `🏟️ ${game.field.name}` : "", grp ? `Group ${grp}` : ""].filter(Boolean).join(" · ");
+          const teamAvatar = (name: string, logoUrl?: string | null) =>
+            logoUrl
+              ? `<img src="${logoUrl}" style="width:18px;height:18px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-right:3px;" alt="" />`
+              : `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:3px;background:#dcfce7;color:#15803d;font-size:9px;font-weight:700;vertical-align:middle;margin-right:3px;">${name.charAt(0)}</span>`;
           return `<tr>
-            <td style="padding:5px 8px;font-size:12px;color:#555;white-space:nowrap;vertical-align:top;">${time}</td>
-            <td style="padding:5px 8px;font-size:13px;vertical-align:top;">
-              <span style="font-weight:600;">${game.homeTeam.name}</span> ${score} <span style="font-weight:600;">${game.awayTeam.name}</span>
+            <td style="padding:5px 8px;font-size:12px;color:#555;white-space:nowrap;vertical-align:middle;">${time}</td>
+            <td style="padding:5px 8px;font-size:13px;vertical-align:middle;">
+              ${teamAvatar(game.homeTeam.name, game.homeTeam.logoUrl)}<span style="font-weight:600;">${game.homeTeam.name}</span>
+              ${score}
+              ${teamAvatar(game.awayTeam.name, game.awayTeam.logoUrl)}<span style="font-weight:600;">${game.awayTeam.name}</span>
               ${badge ? " " + badge : ""}
             </td>
-            <td style="padding:5px 8px;font-size:11px;color:#888;vertical-align:top;">${meta}</td>
+            <td style="padding:5px 8px;font-size:11px;color:#888;vertical-align:middle;">${meta}</td>
           </tr>`;
         }).join("");
         return catHeader + `<table style="width:100%;border-collapse:collapse;">${gameRows}</table>`;
@@ -258,8 +269,12 @@ export function SeasonDashboard({
       </div>`;
     }).join("");
 
+    const leagueLocation = [leagueCity, leagueState].filter(Boolean).join(", ");
+    const leagueLogoHtml = leagueLogoUrl
+      ? `<img src="${leagueLogoUrl}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;" alt="" />`
+      : "";
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>${seasonName} — Schedule</title>
+      <title>${leagueName} — ${seasonName} — Schedule</title>
       <style>
         @page { size: letter portrait; margin: 16mm 14mm; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -268,7 +283,14 @@ export function SeasonDashboard({
         table tr:nth-child(even) { background: #f9fafb; }
       </style>
     </head><body>
-      <div style="padding-bottom:12px;border-bottom:3px solid #16a34a;margin-bottom:16px;">
+      <div style="padding-bottom:14px;border-bottom:3px solid #16a34a;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          ${leagueLogoHtml}
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.05em;">${leagueName}</div>
+            ${leagueLocation ? `<div style="font-size:11px;color:#888;margin-top:2px;">📍 ${leagueLocation}</div>` : ""}
+          </div>
+        </div>
         <div style="font-size:22px;font-weight:800;">${seasonName}</div>
         <div style="font-size:13px;color:#555;margin-top:4px;">
           ${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}

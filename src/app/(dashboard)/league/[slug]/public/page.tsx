@@ -30,9 +30,10 @@ export default async function LeaguePublicPage({ params }: PageProps) {
   const hasSocial = Object.values(social).some(Boolean);
 
   // Standings from latest season
-  let standings: { name: string; gp: number; w: number; l: number; pts: number }[] = [];
+  let standings: { name: string; gp: number; w: number; l: number; pts: number; logoUrl: string | null }[] = [];
   const latestSeason = league.seasons[0];
   if (cfg.showStandings && latestSeason) {
+    const teamLogoMap = new Map(league.teams.map((t) => [t.id, t.logoUrl ?? null]));
     const games = await prisma.game.findMany({
       where: { seasonId: latestSeason.id, status: "COMPLETED" },
       select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true,
@@ -49,7 +50,10 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       else if (as_ > hs) { away.w++; away.pts += 2; home.l++; }
       else { home.t++; home.pts++; away.t++; away.pts++; }
     }
-    standings = [...map.values()].sort((a, b) => b.pts - a.pts).slice(0, 10);
+    standings = [...map.entries()]
+      .map(([id, s]) => ({ ...s, logoUrl: teamLogoMap.get(id) ?? null }))
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 10);
   }
 
   // Upcoming schedule
@@ -126,7 +130,19 @@ export default async function LeaguePublicPage({ params }: PageProps) {
                   {standings.map((s, i) => (
                     <tr key={s.name} style={{ borderBottom: "1px solid #111c11" }}>
                       <td style={{ padding: "10px 12px", textAlign: "center", color: i === 0 ? "#fbbf24" : "#4ade80", fontWeight: 700 }}>{i + 1}</td>
-                      <td style={{ padding: "10px 12px", color: "#f0fdf4", fontWeight: 600 }}>{s.name}</td>
+                      <td style={{ padding: "10px 12px", color: "#f0fdf4", fontWeight: 600 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {s.logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.logoUrl} alt={s.name} style={{ width: 26, height: 26, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 26, height: 26, borderRadius: 6, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
+                              {s.name.charAt(0)}
+                            </div>
+                          )}
+                          {s.name}
+                        </div>
+                      </td>
                       <td style={{ padding: "10px 12px", textAlign: "center", color: "#86efac" }}>{s.gp}</td>
                       <td style={{ padding: "10px 12px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>{s.w}</td>
                       <td style={{ padding: "10px 12px", textAlign: "center", color: "#f87171" }}>{s.l}</td>
