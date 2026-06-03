@@ -204,11 +204,8 @@ export function SeasonDashboard({
       const dayKey  = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const dayLabel = d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
       if (!dayMap.has(dayKey)) dayMap.set(dayKey, { label: dayLabel, grpMap: new Map() });
-      const homeGroup = teams.find((t) => t.id === game.homeTeamId)?.group;
-      const awayGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
-      const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
-      const grpKey  = gameGroup ?? "__none__";
-      const grpName = gameGroup ?? "";
+      const grpKey  = game.fieldId ?? "__none__";
+      const grpName = game.field?.name ?? "";
       const day = dayMap.get(dayKey)!;
       if (!day.grpMap.has(grpKey)) day.grpMap.set(grpKey, { grpName, catGames: [] });
       day.grpMap.get(grpKey)!.catGames.push(game);
@@ -222,7 +219,7 @@ export function SeasonDashboard({
     const dayRows = groupedDays.map(({ label, catGroups }) => {
       const catRows = catGroups.map(({ grpName, catGames }) => {
         const catHeader = grpName
-          ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:5px 0 2px;margin-top:6px;">${tg.groupStandings} ${grpName}</div>`
+          ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:5px 0 2px;margin-top:6px;">🏟️ ${grpName}</div>`
           : "";
         const gameRows = catGames.map((game) => {
           const d = new Date(game.scheduledAt);
@@ -358,11 +355,11 @@ export function SeasonDashboard({
                   <div className="space-y-4">
                     {catGroups.map(({ grpName, catGames }) => (
                       <div key={grpName || "__none__"}>
-                        {/* Group sub-header */}
+                        {/* Field sub-header */}
                         {grpName && (
                           <p className="text-xs font-semibold uppercase tracking-wider mb-2 ml-1"
-                            style={{ color: "var(--sh-info)" }}>
-                            {tg.groupStandings} {grpName}
+                            style={{ color: "var(--sh-primary)" }}>
+                            🏟️ {grpName}
                           </p>
                         )}
 
