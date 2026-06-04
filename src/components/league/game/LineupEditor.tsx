@@ -34,10 +34,19 @@ interface Props {
 }
 
 function initRows(players: Player[], entries: Props["initialEntries"]): LineupRow[] {
-  return players.map(p => {
-    const e = entries.find(x => x.playerId === p.id);
-    return { playerId: p.id, position: e?.position ?? "", battingOrder: e?.battingOrder ?? null };
-  });
+  return [...players]
+    .sort((a, b) => {
+      const na = parseInt(a.jerseyNumber ?? "", 10);
+      const nb = parseInt(b.jerseyNumber ?? "", 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      if (!isNaN(na)) return -1;
+      if (!isNaN(nb)) return  1;
+      return a.name.localeCompare(b.name);
+    })
+    .map(p => {
+      const e = entries.find(x => x.playerId === p.id);
+      return { playerId: p.id, position: e?.position ?? "", battingOrder: e?.battingOrder ?? null };
+    });
 }
 
 export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, players, initialEntries, canEdit }: Props) {
