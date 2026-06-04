@@ -139,6 +139,13 @@ export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, play
       return;
     }
     setSaved(true);
+    // Re-sort by batting order so the lineup reads top-to-bottom
+    setRows(prev => [...prev].sort((a, b) => {
+      if (a.battingOrder !== null && b.battingOrder !== null) return a.battingOrder - b.battingOrder;
+      if (a.battingOrder !== null) return -1;
+      if (b.battingOrder !== null) return  1;
+      return 0; // keep jersey-number order for unassigned players
+    }));
     router.refresh();
   }
 
