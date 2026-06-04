@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { SeasonDashboard } from "@/components/league/SeasonDashboard";
+import { computeOfficialBatting, computeOfficialPitching } from "@/lib/stats";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { SignOutButton } from "@/components/ui/sign-out-button";
@@ -94,6 +95,22 @@ export default async function SeasonPage({ params }: PageProps) {
       pct: s.gp === 0 ? ".000" : (s.w / s.gp).toFixed(3).replace(/^0/, ""),
     }));
 
+  // ── Official season stats from GameAtBat ────────────────────────────────
+  const seasonAtBats = await prisma.gameAtBat.findMany({
+    where: { game: { seasonId: id, status: "COMPLETED" } },
+    select: { batterId: true, pitcherId: true, outcome: true },
+  });
+
+  const seasonPlayers = league.teams.map(t => t).flatMap(() => []);
+  const allSeasonPlayers = await prisma.player.findMany({
+    where: { leagueId: league.id },
+    select: { id: true, name: true, jerseyNumber: true, photoUrl: true, nationality: true },
+  });
+
+  const officialBatting  = computeOfficialBatting(seasonAtBats, allSeasonPlayers);
+  const officialPitching = computeOfficialPitching(seasonAtBats, allSeasonPlayers);
+  void seasonPlayers;
+
   const serializedGames = games.map((g) => ({
     ...g,
     scheduledAt: g.scheduledAt.toISOString(),
@@ -173,6 +190,8 @@ export default async function SeasonPage({ params }: PageProps) {
           leagueCity={league.city}
           leagueState={league.state}
           leagueLogoUrl={league.logoUrl}
+          officialBatting={officialBatting}
+          officialPitching={officialPitching}
         />
       </main>
     </div>

@@ -69,6 +69,7 @@ export default async function GameScoringPage({ params }: PageProps) {
         include: { pitcher: { select: { id: true, name: true, jerseyNumber: true } } },
         orderBy: { createdAt: "asc" },
       },
+      substitutions: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!game) notFound();
@@ -153,6 +154,11 @@ export default async function GameScoringPage({ params }: PageProps) {
       inningStart: s.inningStart, isTopStart: s.isTopStart, outsAtStart: s.outsAtStart,
       inningEnd: s.inningEnd, isTopEnd: s.isTopEnd, outsAtEnd: s.outsAtEnd,
       pitcher: s.pitcher,
+    })),
+    substitutions: game.substitutions.map(s => ({
+      id: s.id, playerOutId: s.playerOutId, playerInId: s.playerInId,
+      battingOrderSpot: s.battingOrderSpot, isReEntry: s.isReEntry,
+      inningNumber: s.inningNumber, isTop: s.isTop,
     })),
   };
 

@@ -28,16 +28,23 @@ interface PitcherStint {
   pitcher: { id: string; name: string; jerseyNumber: string | null };
 }
 
+interface Substitution {
+  id: string; playerOutId: string; playerInId: string;
+  battingOrderSpot: number; isReEntry: boolean;
+  inningNumber: number; isTop: boolean;
+}
+
 interface Props {
   slug: string;
   gameId: string;
-  homeTeam: { id: string; name: string; logoUrl?: string | null };
-  awayTeam:  { id: string; name: string; logoUrl?: string | null };
+  homeTeam: { id: string; name: string; logoUrl?: string | null; players: Player[] };
+  awayTeam:  { id: string; name: string; logoUrl?: string | null; players: Player[] };
   homeLineup: LineupEntry[];
   awayLineup: LineupEntry[];
   initialAtBats: AtBat[];
   initialInnings: Inning[];
   initialPitcherStints: PitcherStint[];
+  initialSubstitutions?: Substitution[];
   canEdit: boolean;
 }
 
@@ -70,17 +77,31 @@ function isOut(outcome: string) { return outcome === "OUT" || outcome === "STRIK
 export function OfficialScorekeeper({
   slug, gameId, homeTeam, awayTeam,
   homeLineup, awayLineup,
-  initialAtBats, initialInnings, initialPitcherStints,
+  initialAtBats, initialInnings, initialPitcherStints, initialSubstitutions,
   canEdit,
 }: Props) {
   const [atBats,        setAtBats]        = useState<AtBat[]>(initialAtBats);
   const [innings,       setInnings]       = useState<Inning[]>(initialInnings);
   const [stints,        setStints]        = useState<PitcherStint[]>(initialPitcherStints);
+  const [subs,          setSubs]          = useState<Substitution[]>(initialSubstitutions ?? []);
+  // Active lineup reflects substitutions (maps battingOrderSpot → current playerId)
+  const [activeHome,    setActiveHome]    = useState<Map<number, string>>(
+    () => new Map(homeLineup.map(l => [l.battingOrder!, l.player.id]))
+  );
+  const [activeAway,    setActiveAway]    = useState<Map<number, string>>(
+    () => new Map(awayLineup.map(l => [l.battingOrder!, l.player.id]))
+  );
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState("");
 
   // End-of-half-inning prompt
   const [pendingRuns,   setPendingRuns]   = useState<number | null>(null);
+
+  // Substitution panel
+  const [showSubPanel,  setShowSubPanel]  = useState(false);
+  const [subSide,       setSubSide]       = useState<"home" | "away">("home");
+  const [subOutSpot,    setSubOutSpot]    = useState<number | null>(null);
+  const [subInId,       setSubInId]       = useState("");
 
   // Pitcher setup / change panel
   const [pitcherPanel,  setPitcherPanel]  = useState<"home" | "away" | null>(null);
@@ -98,8 +119,23 @@ export function OfficialScorekeeper({
   }, [innings]);
 
   // top of inning = away team bats; bottom = home team bats
-  const battingLineup  = currentInning.isTop ? awayLineup  : homeLineup;
   const pitchingIsHome = currentInning.isTop; // home pitches when away bats
+  const battingIsHome  = !currentInning.isTop;
+
+  // Build effective batting lineup (original + subs applied)
+  const effectiveBatting = useMemo(() => {
+    const base = battingIsHome ? homeLineup : awayLineup;
+    const active = battingIsHome ? activeHome : activeAway;
+    const allPlayers = battingIsHome
+      ? [...homeTeam.players, ...homeLineup.map(l => l.player)]
+      : [...awayTeam.players, ...awayLineup.map(l => l.player)];
+    const playerMap = new Map(allPlayers.map(p => [p.id, p]));
+    return base.map(entry => {
+      const curId = active.get(entry.battingOrder!) ?? entry.player.id;
+      const curPlayer = playerMap.get(curId) ?? entry.player;
+      return { ...entry, player: curPlayer };
+    });
+  }, [battingIsHome, homeLineup, awayLineup, activeHome, activeAway, homeTeam.players, awayTeam.players]);
 
   const currentHalfABs = atBats.filter(
     ab => ab.inningNumber === currentInning.number && ab.isTop === currentInning.isTop
@@ -108,12 +144,12 @@ export function OfficialScorekeeper({
 
   const activePitcher = stints.find(s => s.isHome === pitchingIsHome && s.outsAtEnd == null);
 
-  const currentBatterIdx = battingLineup.length > 0
-    ? currentHalfABs.length % battingLineup.length
+  const currentBatterIdx = effectiveBatting.length > 0
+    ? currentHalfABs.length % effectiveBatting.length
     : 0;
-  const currentBatter = battingLineup[currentBatterIdx];
-  const onDeckBatter  = battingLineup.length > 1
-    ? battingLineup[(currentBatterIdx + 1) % battingLineup.length]
+  const currentBatter = effectiveBatting[currentBatterIdx];
+  const onDeckBatter  = effectiveBatting.length > 1
+    ? effectiveBatting[(currentBatterIdx + 1) % effectiveBatting.length]
     : null;
 
   const needsPitchers = !stints.some(s => s.isHome === true)
@@ -244,6 +280,37 @@ export function OfficialScorekeeper({
     ]);
     setPitcherPanel(null);
     setSelectedPId("");
+  }
+
+  async function makeSubstitution(isHome: boolean, playerOutId: string, battingOrderSpot: number, playerInId: string) {
+    if (!canEdit || saving || !playerInId || !playerOutId) return;
+    setError("");
+    setSaving(true);
+    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/substitution`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playerOutId, playerInId, battingOrderSpot,
+        inningNumber: currentInning.number, isTop: currentInning.isTop,
+      }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const d = await res.json();
+      setError(d.error ?? "Substitution failed");
+      return;
+    }
+    const saved: Substitution = await res.json();
+    setSubs(prev => [...prev, saved]);
+    // Update active lineup map
+    if (isHome) {
+      setActiveHome(prev => new Map(prev).set(battingOrderSpot, playerInId));
+    } else {
+      setActiveAway(prev => new Map(prev).set(battingOrderSpot, playerInId));
+    }
+    setShowSubPanel(false);
+    setSubOutSpot(null);
+    setSubInId("");
   }
 
   // ── Styles ───────────────────────────────────────────────────────────────
@@ -455,6 +522,19 @@ export function OfficialScorekeeper({
                 >
                   ⚾ Change pitcher
                 </button>
+                <button
+                  onClick={() => {
+                    setSubSide(battingIsHome ? "home" : "away");
+                    setSubOutSpot(null);
+                    setSubInId("");
+                    setShowSubPanel(true);
+                  }}
+                  disabled={saving}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-opacity hover:opacity-70 disabled:opacity-30"
+                  style={{ borderColor: "var(--sh-border2)", color: "#f59e0b" }}
+                >
+                  ↔ Sub player
+                </button>
                 {pendingRuns === null && currentOuts === 3 && (
                   <button
                     onClick={() => setPendingRuns(0)}
@@ -477,7 +557,7 @@ export function OfficialScorekeeper({
               </h3>
               <div className="space-y-1.5">
                 {currentHalfABs.map((ab, idx) => {
-                  const batter = battingLineup[idx % battingLineup.length];
+                  const batter = effectiveBatting[idx % effectiveBatting.length];
                   return (
                     <div key={ab.id} className="flex items-center gap-2 text-sm">
                       <span style={{ color: "var(--sh-muted)", minWidth: 16, textAlign: "right" }}>{ab.sequence}.</span>
@@ -528,6 +608,93 @@ export function OfficialScorekeeper({
               </button>
               <button
                 onClick={() => { setPitcherPanel(null); setSelectedPId(""); }}
+                className="flex-1 py-2 rounded-xl text-sm border"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
+              >
+                Cancel
+              </button>
+            </div>
+            {error && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{error}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Substitution panel */}
+      {showSubPanel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-sm rounded-2xl border p-5 space-y-4" style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border)" }}>
+            <h2 className="text-base font-bold" style={{ color: "var(--sh-text)" }}>
+              ↔ Substitution — {subSide === "home" ? homeTeam.name : awayTeam.name}
+            </h2>
+
+            {/* Step 1: who leaves */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase" style={{ color: "var(--sh-muted)" }}>Player out (batting spot)</label>
+              <select
+                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+                value={subOutSpot ?? ""}
+                onChange={e => setSubOutSpot(Number(e.target.value) || null)}
+              >
+                <option value="">— Select batter leaving —</option>
+                {effectiveBatting.map(l => (
+                  <option key={l.player.id} value={l.battingOrder!}>
+                    #{l.battingOrder} {l.player.name}{l.player.jerseyNumber ? ` (#${l.player.jerseyNumber})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Step 2: who enters */}
+            {subOutSpot != null && (() => {
+              const battingTeamPlayers = subSide === "home" ? homeTeam.players : awayTeam.players;
+              const activePlayers = new Set([
+                ...(subSide === "home" ? activeHome : activeAway).values(),
+              ]);
+              const available = battingTeamPlayers.filter(p => !activePlayers.has(p.id));
+              const subbedOutIds = new Set(subs.filter(s => s.isTop !== (subSide === "home")).map(s => s.playerOutId));
+              const reEntryPlayers = battingTeamPlayers.filter(p => subbedOutIds.has(p.id) && !activePlayers.has(p.id));
+
+              return (
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase" style={{ color: "var(--sh-muted)" }}>Player in</label>
+                  <select
+                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                    style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+                    value={subInId}
+                    onChange={e => setSubInId(e.target.value)}
+                  >
+                    <option value="">— Select player entering —</option>
+                    {available.length > 0 && <optgroup label="Available">
+                      {available.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}{p.jerseyNumber ? ` #${p.jerseyNumber}` : ""}</option>
+                      ))}
+                    </optgroup>}
+                    {reEntryPlayers.length > 0 && <optgroup label="Re-entry">
+                      {reEntryPlayers.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}{p.jerseyNumber ? ` #${p.jerseyNumber}` : ""} ↩</option>
+                      ))}
+                    </optgroup>}
+                  </select>
+                </div>
+              );
+            })()}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const outEntry = effectiveBatting.find(l => l.battingOrder === subOutSpot);
+                  if (!outEntry || !subInId || subOutSpot == null) return;
+                  makeSubstitution(subSide === "home", outEntry.player.id, subOutSpot, subInId);
+                }}
+                disabled={saving || !subInId || subOutSpot == null}
+                className="flex-1 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg,#d97706,#b45309)", color: "#fff" }}
+              >
+                {saving ? "Saving…" : "Confirm sub"}
+              </button>
+              <button
+                onClick={() => { setShowSubPanel(false); setSubOutSpot(null); setSubInId(""); }}
                 className="flex-1 py-2 rounded-xl text-sm border"
                 style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
               >

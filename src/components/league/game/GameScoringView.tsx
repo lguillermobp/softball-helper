@@ -9,7 +9,8 @@ import { LineupEditor } from "./LineupEditor";
 import { ManagerScorebook } from "./ManagerScorebook";
 import { PlayerStatsTable } from "./PlayerStatsTable";
 import { OfficialScorekeeper } from "./OfficialScorekeeper";
-import { computeGameStats } from "@/lib/stats";
+import { OfficialStatsTable } from "./OfficialStatsTable";
+import { computeGameStats, computeOfficialBatting, computeOfficialPitching } from "@/lib/stats";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
 interface Player {
@@ -39,6 +40,11 @@ interface PitcherStint {
   inningEnd: number | null; isTopEnd: boolean | null; outsAtEnd: number | null;
   pitcher: { id: string; name: string; jerseyNumber: string | null };
 }
+interface Substitution {
+  id: string; playerOutId: string; playerInId: string;
+  battingOrderSpot: number; isReEntry: boolean;
+  inningNumber: number; isTop: boolean;
+}
 interface Game {
   id: string; status: string; scheduledAt: string;
   homeAwayTbd: boolean; homeScore: number | null; awayScore: number | null;
@@ -52,6 +58,7 @@ interface Game {
   atBats: AtBat[];
   innings: Inning[];
   pitcherStints: PitcherStint[];
+  substitutions: Substitution[];
 }
 interface FieldOption { id: string; name: string }
 interface UserOption { id: string; name: string | null; email: string }
@@ -86,7 +93,7 @@ interface Props {
   awayScorebook: ScoreBookData | null;
 }
 
-type Tab = "setup" | "home" | "away" | "official" | "home-book" | "away-book" | "home-stats" | "away-stats";
+type Tab = "setup" | "home" | "away" | "official" | "home-book" | "away-book" | "home-stats" | "away-stats" | "home-official-stats" | "away-official-stats";
 
 function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   const active = lineups.filter(l => l.isHome === isHome && l.position !== "B");
@@ -165,13 +172,19 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const showHomeScorebookTab = gameActive || (game.status === "SCHEDULED" && homeComplete);
   const showAwayScorebookTab = gameActive || (game.status === "SCHEDULED" && awayComplete);
 
-  const showOfficialTab = permissions.canScore && gameActive;
+  const showOfficialTab       = permissions.canScore && gameActive;
+  const hasOfficialAtBats     = game.atBats.length > 0;
+  const showOfficialStatsTab  = hasOfficialAtBats && gameActive;
 
   const tabs: { key: Tab; label: string; indicator?: boolean }[] = [
     { key: "setup", label: ts.setup, indicator: officialsComplete },
     { key: "home",  label: `${ts.homeLineup}`, indicator: homeComplete },
     { key: "away",  label: `${ts.awayLineup}`, indicator: awayComplete },
     ...(showOfficialTab ? [{ key: "official" as Tab, label: "⚾ Score" }] : []),
+    ...(showOfficialStatsTab ? [
+      { key: "home-official-stats" as Tab, label: `📋 ${game.homeTeam.name}` },
+      { key: "away-official-stats" as Tab, label: `📋 ${game.awayTeam.name}` },
+    ] : []),
     ...(showHomeScorebookTab ? [
       { key: "home-book"   as Tab, label: `📓 ${game.homeTeam.name}` },
       { key: "home-stats"  as Tab, label: `📊 ${game.homeTeam.name}` },
@@ -325,6 +338,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           initialAtBats={game.atBats}
           initialInnings={game.innings}
           initialPitcherStints={game.pitcherStints}
+          initialSubstitutions={game.substitutions}
           canEdit={game.status === "IN_PROGRESS" && permissions.canScore}
         />
       )}
@@ -427,6 +441,26 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           label="Game Stats"
         />
       )}
+
+      {tab === "home-official-stats" && showOfficialStatsTab && (() => {
+        const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
+        const homeAtBats = game.atBats.filter(ab => {
+          const isHomeBatter  = game.lineups.some(l => l.isHome  && l.player.id === ab.batterId);
+          const isHomePitcher = game.lineups.some(l => l.isHome  && l.player.id === ab.pitcherId);
+          return isHomeBatter || !isHomePitcher;
+        });
+        const homeBatting  = computeOfficialBatting(game.atBats.filter(ab => game.lineups.some(l => l.isHome && l.player.id === ab.batterId)), allPlayers);
+        const awayPitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l => !l.isHome && l.player.id === ab.pitcherId)), allPlayers);
+        void homeAtBats;
+        return <OfficialStatsTable batting={homeBatting} pitching={awayPitching} teamName={game.homeTeam.name} />;
+      })()}
+
+      {tab === "away-official-stats" && showOfficialStatsTab && (() => {
+        const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
+        const awayBatting  = computeOfficialBatting(game.atBats.filter(ab => game.lineups.some(l => !l.isHome && l.player.id === ab.batterId)), allPlayers);
+        const homePitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l => l.isHome  && l.player.id === ab.pitcherId)), allPlayers);
+        return <OfficialStatsTable batting={awayBatting} pitching={homePitching} teamName={game.awayTeam.name} />;
+      })()}
 
       {/* ── End Game Modal ── */}
       {showEndModal && (
