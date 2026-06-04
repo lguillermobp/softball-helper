@@ -61,6 +61,13 @@ export default async function GameScoringPage({ params }: PageProps) {
       },
       lineups: {
         include: { player: { select: { id: true, name: true, jerseyNumber: true, nationality: true, photoUrl: true } } },
+        orderBy: { battingOrder: "asc" },
+      },
+      atBats:  { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }, { sequence: "asc" }] },
+      innings: { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }] },
+      pitcherStints: {
+        include: { pitcher: { select: { id: true, name: true, jerseyNumber: true } } },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -92,6 +99,7 @@ export default async function GameScoringPage({ params }: PageProps) {
     (game.status === "IN_PROGRESS" && (isAdmin || isScorer));
   const canEditHomeScorebook = isAdmin || isHomeManager;
   const canEditAwayScorebook = isAdmin || isAwayManager;
+  const canScore = isAdmin || isScorer;
 
   // Load scorebooks
   const [homeScorebook, awayScorebook] = await Promise.all([
@@ -137,6 +145,14 @@ export default async function GameScoringPage({ params }: PageProps) {
     lineups: game.lineups.map(l => ({
       id: l.id, isHome: l.isHome, position: l.position, battingOrder: l.battingOrder,
       player: l.player,
+    })),
+    atBats: game.atBats,
+    innings: game.innings,
+    pitcherStints: game.pitcherStints.map(s => ({
+      id: s.id, isHome: s.isHome,
+      inningStart: s.inningStart, isTopStart: s.isTopStart, outsAtStart: s.outsAtStart,
+      inningEnd: s.inningEnd, isTopEnd: s.isTopEnd, outsAtEnd: s.outsAtEnd,
+      pitcher: s.pitcher,
     })),
   };
 
@@ -201,6 +217,7 @@ export default async function GameScoringPage({ params }: PageProps) {
             canSwapTeams,
             canEditHomeScorebook,
             canEditAwayScorebook,
+            canScore,
           }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           homeScorebook={(homeScorebook?.data ?? null) as any}

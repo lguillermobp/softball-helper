@@ -8,6 +8,7 @@ import { OfficialsSetup } from "./OfficialsSetup";
 import { LineupEditor } from "./LineupEditor";
 import { ManagerScorebook } from "./ManagerScorebook";
 import { PlayerStatsTable } from "./PlayerStatsTable";
+import { OfficialScorekeeper } from "./OfficialScorekeeper";
 import { computeGameStats } from "@/lib/stats";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 
@@ -25,6 +26,19 @@ interface LineupEntry {
   id: string; isHome: boolean; position: string; battingOrder: number | null;
   player: Player;
 }
+interface AtBat {
+  id: string; inningNumber: number; isTop: boolean;
+  batterId: string; pitcherId: string; outcome: string; sequence: number;
+}
+interface Inning {
+  id: string; inningNumber: number; isTop: boolean; runsScored: number; completed: boolean;
+}
+interface PitcherStint {
+  id: string; isHome: boolean;
+  inningStart: number; isTopStart: boolean; outsAtStart: number;
+  inningEnd: number | null; isTopEnd: boolean | null; outsAtEnd: number | null;
+  pitcher: { id: string; name: string; jerseyNumber: string | null };
+}
 interface Game {
   id: string; status: string; scheduledAt: string;
   homeAwayTbd: boolean; homeScore: number | null; awayScore: number | null;
@@ -35,6 +49,9 @@ interface Game {
   awayTeam: { id: string; name: string; logoUrl?: string | null; players: Player[] };
   officials: Official[];
   lineups: LineupEntry[];
+  atBats: AtBat[];
+  innings: Inning[];
+  pitcherStints: PitcherStint[];
 }
 interface FieldOption { id: string; name: string }
 interface UserOption { id: string; name: string | null; email: string }
@@ -46,6 +63,7 @@ interface Permissions {
   canSwapTeams: boolean;
   canEditHomeScorebook: boolean;
   canEditAwayScorebook: boolean;
+  canScore: boolean;
 }
 
 type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
@@ -68,7 +86,7 @@ interface Props {
   awayScorebook: ScoreBookData | null;
 }
 
-type Tab = "setup" | "home" | "away" | "home-book" | "away-book" | "home-stats" | "away-stats";
+type Tab = "setup" | "home" | "away" | "official" | "home-book" | "away-book" | "home-stats" | "away-stats";
 
 function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   const active = lineups.filter(l => l.isHome === isHome && l.position !== "B");
@@ -147,10 +165,13 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const showHomeScorebookTab = gameActive || (game.status === "SCHEDULED" && homeComplete);
   const showAwayScorebookTab = gameActive || (game.status === "SCHEDULED" && awayComplete);
 
+  const showOfficialTab = permissions.canScore && gameActive;
+
   const tabs: { key: Tab; label: string; indicator?: boolean }[] = [
     { key: "setup", label: ts.setup, indicator: officialsComplete },
     { key: "home",  label: `${ts.homeLineup}`, indicator: homeComplete },
     { key: "away",  label: `${ts.awayLineup}`, indicator: awayComplete },
+    ...(showOfficialTab ? [{ key: "official" as Tab, label: "⚾ Score" }] : []),
     ...(showHomeScorebookTab ? [
       { key: "home-book"   as Tab, label: `📓 ${game.homeTeam.name}` },
       { key: "home-stats"  as Tab, label: `📊 ${game.homeTeam.name}` },
@@ -293,6 +314,21 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
       </div>
 
       {/* Tab content */}
+      {tab === "official" && showOfficialTab && (
+        <OfficialScorekeeper
+          slug={slug}
+          gameId={game.id}
+          homeTeam={game.homeTeam}
+          awayTeam={game.awayTeam}
+          homeLineup={game.lineups.filter(l => l.isHome && l.battingOrder != null && l.position !== "B").sort((a, b) => a.battingOrder! - b.battingOrder!)}
+          awayLineup={game.lineups.filter(l => !l.isHome && l.battingOrder != null && l.position !== "B").sort((a, b) => a.battingOrder! - b.battingOrder!)}
+          initialAtBats={game.atBats}
+          initialInnings={game.innings}
+          initialPitcherStints={game.pitcherStints}
+          canEdit={game.status === "IN_PROGRESS" && permissions.canScore}
+        />
+      )}
+
       {tab === "setup" && (
         <OfficialsSetup
           slug={slug}
