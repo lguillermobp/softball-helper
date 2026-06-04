@@ -12,7 +12,7 @@ async function upsertStaff(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   leagueId: string,
   staff: StaffInput,
-  role: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT"
+  role: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT" | "TEAM_ASSISTANT_PLAYER"
 ) {
   let user = await tx.user.findUnique({ where: { email: staff.email } });
   const isNew = !user;
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, seasonId, categoryId, manager, assistant, managerRole } = await req.json();
+  const { name, seasonId, categoryId, manager, assistant, managerRole, assistantRole } = await req.json();
   if (!name)
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   if (!manager?.name || !manager?.email)
@@ -58,12 +58,14 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const resolvedManagerRole: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" =
     managerRole === "TEAM_MANAGER_PLAYER" ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
+  const resolvedAssistantRole: "TEAM_ASSISTANT" | "TEAM_ASSISTANT_PLAYER" =
+    assistantRole === "TEAM_ASSISTANT_PLAYER" ? "TEAM_ASSISTANT_PLAYER" : "TEAM_ASSISTANT";
 
   const { team, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
     const managerResult = await upsertStaff(tx, league.id, manager, resolvedManagerRole);
     const assistantResult =
       assistant?.name && assistant?.email
-        ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
+        ? await upsertStaff(tx, league.id, assistant, resolvedAssistantRole)
         : null;
 
     const team = await tx.team.create({

@@ -423,6 +423,13 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
       const managerRoleLabel = managerRecord?.role === "TEAM_MANAGER_PLAYER"
         ? "Manager-Player" : "Manager";
 
+      const assistantRecord = members.find(
+        (m) => m.user.id === team.assistant?.id &&
+          (m.role === "TEAM_ASSISTANT" || m.role === "TEAM_ASSISTANT_PLAYER")
+      );
+      const assistantRoleLabel = assistantRecord?.role === "TEAM_ASSISTANT_PLAYER"
+        ? "Assistant-Player" : "Assistant";
+
       const leagueLogo = leagueLogoUrl
         ? `<img src="${leagueLogoUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #ddd;flex-shrink:0;" />`
         : `<div style="width:80px;height:80px;border-radius:10px;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;flex-shrink:0;">${league.name.charAt(0)}</div>`;
@@ -451,7 +458,7 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
 
       const coachingRow = [
         team.manager   ? `<div><div class="coach-role">${managerRoleLabel}</div><div class="coach-name">${team.manager.name   ?? team.manager.email}</div></div>`   : "",
-        team.assistant ? `<div><div class="coach-role">Assistant</div><div class="coach-name">${team.assistant.name ?? team.assistant.email}</div></div>` : "",
+        team.assistant ? `<div><div class="coach-role">${assistantRoleLabel}</div><div class="coach-name">${team.assistant.name ?? team.assistant.email}</div></div>` : "",
       ].filter(Boolean).join(`<div class="divider"></div>`);
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -622,6 +629,8 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                       team={team}
                       managerRole={members.find(m => m.user.id === team.manager?.id &&
                         (m.role === "TEAM_MANAGER" || m.role === "TEAM_MANAGER_PLAYER"))?.role}
+                      assistantRole={members.find(m => m.user.id === team.assistant?.id &&
+                        (m.role === "TEAM_ASSISTANT" || m.role === "TEAM_ASSISTANT_PLAYER"))?.role}
                       seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
                       categories={categories.map((c) => ({ id: c.id, name: c.name }))}
                     />

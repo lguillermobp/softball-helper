@@ -14,7 +14,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT", "PLAYER"];
+const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT", "TEAM_ASSISTANT_PLAYER", "PLAYER"];
 
 export default async function LeaguePage({ params }: PageProps) {
   const { slug } = await params;

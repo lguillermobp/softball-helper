@@ -46,8 +46,9 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   const [error, setError] = useState("");
   const [hasAssistant, setHasAssistant] = useState(false);
   const [managerPlays, setManagerPlays] = useState(false);
+  const [assistantPlays, setAssistantPlays] = useState(false);
 
-  function handleClose() { setOpen(false); setHasAssistant(false); setManagerPlays(false); setError(""); }
+  function handleClose() { setOpen(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -73,6 +74,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
         email: fd.get("assistant-email"),
         phone: fd.get("assistant-phone") || undefined,
       };
+      body.assistantRole = assistantPlays ? "TEAM_ASSISTANT_PLAYER" : "TEAM_ASSISTANT";
     }
 
     const res = await fetch(`/api/leagues/${slug}/teams`, {
@@ -142,11 +144,22 @@ export function AddTeamDialog({ slug, seasons, categories }: {
           {hasAssistant ? (
             <div className="space-y-2">
               <StaffFields prefix="assistant" label="Assistant" />
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={assistantPlays}
+                  onChange={(e) => setAssistantPlays(e.target.checked)}
+                  className="w-4 h-4 rounded accent-indigo-500"
+                />
+                <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
+                  Assistant also plays (Assistant-player)
+                </span>
+              </label>
               <button
                 type="button"
                 className="text-xs underline"
                 style={{ color: "var(--sh-danger)" }}
-                onClick={() => setHasAssistant(false)}
+                onClick={() => { setHasAssistant(false); setAssistantPlays(false); }}
               >
                 Remove assistant
               </button>

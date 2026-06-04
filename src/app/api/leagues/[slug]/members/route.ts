@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (role === "PLAYER")
     return NextResponse.json({ error: "Players are added per team, not as members" }, { status: 400 });
 
-  if (role === "TEAM_MANAGER" || role === "TEAM_MANAGER_PLAYER" || role === "TEAM_ASSISTANT")
+  if (role === "TEAM_MANAGER" || role === "TEAM_MANAGER_PLAYER" || role === "TEAM_ASSISTANT" || role === "TEAM_ASSISTANT_PLAYER")
     return NextResponse.json({ error: "Team Manager and Team Assistant are assigned when creating or editing a team" }, { status: 400 });
 
   // Look up or create the user

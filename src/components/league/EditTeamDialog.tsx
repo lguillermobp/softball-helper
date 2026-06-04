@@ -22,6 +22,7 @@ interface Props {
     assistant: StaffMember | null;
   };
   managerRole?: string;
+  assistantRole?: string;
   seasons: Season[];
   categories: Category[];
 }
@@ -80,13 +81,14 @@ function StaffFields({
   );
 }
 
-export function EditTeamDialog({ slug, team, managerRole, seasons, categories }: Props) {
+export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons, categories }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasAssistant, setHasAssistant] = useState(!!team.assistant);
   const [managerPlays, setManagerPlays] = useState(managerRole === "TEAM_MANAGER_PLAYER");
+  const [assistantPlays, setAssistantPlays] = useState(assistantRole === "TEAM_ASSISTANT_PLAYER");
 
   function handleClose() { setOpen(false); setError(""); }
 
@@ -114,6 +116,7 @@ export function EditTeamDialog({ slug, team, managerRole, seasons, categories }:
         email: fd.get("assistant-email"),
         phone: fd.get("assistant-phone") || undefined,
       };
+      body.assistantRole = assistantPlays ? "TEAM_ASSISTANT_PLAYER" : "TEAM_ASSISTANT";
     }
 
     const res = await fetch(`/api/leagues/${slug}/teams/${team.id}`, {
@@ -201,11 +204,22 @@ export function EditTeamDialog({ slug, team, managerRole, seasons, categories }:
                   ? { name: team.assistant.name, email: team.assistant.email, phone: team.assistant.phone }
                   : undefined}
               />
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={assistantPlays}
+                  onChange={(e) => setAssistantPlays(e.target.checked)}
+                  className="w-4 h-4 rounded accent-indigo-500"
+                />
+                <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
+                  Assistant also plays (Assistant-player)
+                </span>
+              </label>
               <button
                 type="button"
                 className="text-xs underline"
                 style={{ color: "var(--sh-danger)" }}
-                onClick={() => setHasAssistant(false)}
+                onClick={() => { setHasAssistant(false); setAssistantPlays(false); }}
               >
                 Remove assistant
               </button>

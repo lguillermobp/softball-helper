@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       },
     });
 
-    const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT", "PLAYER"];
+    const ROLE_PRIORITY = ["LEAGUE_ADMIN", "UMPIRE", "SCOREKEEPER", "TEAM_MANAGER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT", "TEAM_ASSISTANT_PLAYER", "PLAYER"];
     const leagueMap = new Map<string, { role: string; league: { id: string; name: string; slug: string; city: string | null; state: string | null; _count: { seasons: number; teams: number } } }>();
     for (const ur of (userWithLeagues?.leagueRoles ?? [])) {
       const entry = {

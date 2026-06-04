@@ -34,8 +34,10 @@ function roleColor(r: string) {
   if (r === "LEAGUE_ADMIN")  return "bg-amber-400/20 text-amber-300 border-amber-400/30";
   if (r === "UMPIRE")        return "bg-blue-400/20 text-blue-300 border-blue-400/30";
   if (r === "SCOREKEEPER")   return "bg-purple-400/20 text-purple-300 border-purple-400/30";
-  if (r === "TEAM_MANAGER")         return "bg-cyan-400/20 text-cyan-300 border-cyan-400/30";
-  if (r === "TEAM_MANAGER_PLAYER")  return "bg-teal-400/20 text-teal-300 border-teal-400/30";
+  if (r === "TEAM_MANAGER")          return "bg-cyan-400/20 text-cyan-300 border-cyan-400/30";
+  if (r === "TEAM_MANAGER_PLAYER")   return "bg-teal-400/20 text-teal-300 border-teal-400/30";
+  if (r === "TEAM_ASSISTANT")        return "bg-sky-400/20 text-sky-300 border-sky-400/30";
+  if (r === "TEAM_ASSISTANT_PLAYER") return "bg-indigo-400/20 text-indigo-300 border-indigo-400/30";
   return "bg-green-400/20 text-green-300 border-green-400/30";
 }
 

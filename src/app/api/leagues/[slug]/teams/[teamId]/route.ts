@@ -23,7 +23,7 @@ async function upsertStaff(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   leagueId: string,
   staff: StaffInput,
-  role: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT"
+  role: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" | "TEAM_ASSISTANT" | "TEAM_ASSISTANT_PLAYER"
 ) {
   let user = await tx.user.findUnique({ where: { email: staff.email } });
   const isNew = !user;
@@ -95,13 +95,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const canEdit = admin || (isStaff && team.status === "PENDING");
   if (!canEdit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, seasonId, categoryId, manager, assistant, managerRole } = body;
+  const { name, seasonId, categoryId, manager, assistant, managerRole, assistantRole } = body;
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
   if (!manager?.name || !manager?.email)
     return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
   const resolvedManagerRole: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" =
     managerRole === "TEAM_MANAGER_PLAYER" ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
+  const resolvedAssistantRole: "TEAM_ASSISTANT" | "TEAM_ASSISTANT_PLAYER" =
+    assistantRole === "TEAM_ASSISTANT_PLAYER" ? "TEAM_ASSISTANT_PLAYER" : "TEAM_ASSISTANT";
 
   const oldManagerId = team.managerId;
   const oldAssistantId = team.assistantId;
@@ -110,7 +112,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const managerResult = await upsertStaff(tx, league.id, manager, resolvedManagerRole);
     const assistantResult =
       assistant?.name && assistant?.email
-        ? await upsertStaff(tx, league.id, assistant, "TEAM_ASSISTANT")
+        ? await upsertStaff(tx, league.id, assistant, resolvedAssistantRole)
         : null;
 
     const updated = await tx.team.update({
@@ -156,7 +158,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         where: { leagueId: league.id, id: { not: teamId }, OR: [{ managerId: oldAssistantId }, { assistantId: oldAssistantId }] },
       });
       if (!stillAssists) {
-        await tx.userLeagueRole.deleteMany({ where: { userId: oldAssistantId, leagueId: league.id, role: "TEAM_ASSISTANT" } });
+        await tx.userLeagueRole.deleteMany({ where: { userId: oldAssistantId, leagueId: league.id, role: { in: ["TEAM_ASSISTANT", "TEAM_ASSISTANT_PLAYER"] } } });
       }
     }
 
