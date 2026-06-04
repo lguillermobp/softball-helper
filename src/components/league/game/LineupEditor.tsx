@@ -34,7 +34,7 @@ interface Props {
 }
 
 function initRows(players: Player[], entries: Props["initialEntries"]): LineupRow[] {
-  return [...players]
+  const rows = [...players]
     .sort((a, b) => {
       const na = parseInt(a.jerseyNumber ?? "", 10);
       const nb = parseInt(b.jerseyNumber ?? "", 10);
@@ -47,6 +47,19 @@ function initRows(players: Player[], entries: Props["initialEntries"]): LineupRo
       const e = entries.find(x => x.playerId === p.id);
       return { playerId: p.id, position: e?.position ?? "", battingOrder: e?.battingOrder ?? null };
     });
+
+  // If the lineup already has batting orders saved, show them in that order
+  const hasSavedOrder = rows.some(r => r.battingOrder !== null);
+  if (hasSavedOrder) {
+    rows.sort((a, b) => {
+      if (a.battingOrder !== null && b.battingOrder !== null) return a.battingOrder - b.battingOrder;
+      if (a.battingOrder !== null) return -1;
+      if (b.battingOrder !== null) return  1;
+      return 0;
+    });
+  }
+
+  return rows;
 }
 
 export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, players, initialEntries, canEdit }: Props) {
