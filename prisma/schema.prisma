@@ -160,13 +160,15 @@ enum LeagueRole {
 // ─── Seasons ─────────────────────────────────────────────────────────────────
 
 model Season {
-  id        String       @id @default(cuid())
-  leagueId  String
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  status    SeasonStatus @default(UPCOMING)
-  createdAt DateTime     @default(now())
+  id             String       @id @default(cuid())
+  leagueId       String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  status         SeasonStatus @default(UPCOMING)
+  reEntryAllowed Boolean      @default(true)
+  reEntryLimit   Int          @default(1)
+  createdAt      DateTime     @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   teams  Team[]
@@ -267,6 +269,9 @@ model Game {
   status            GameStatus @default(SCHEDULED)
   homeScore         Int?
   awayScore         Int?
+  startedAt         DateTime?
+  lineupsLocked     Boolean    @default(false)
+  cancelReason      String?
   rescheduledFromId String?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
@@ -280,6 +285,10 @@ model Game {
   officials       GameOfficial[]
   lineups         GameLineup[]
   scorebooks      ManagerScorebook[]
+  atBats          GameAtBat[]
+  innings         GameInning[]
+  pitcherStints   GamePitcherStint[]
+  substitutions   GameSubstitution[]
   rescheduledFrom Game?     @relation("GameReschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
   rescheduledTo   Game[]    @relation("GameReschedule")
 
@@ -317,7 +326,12 @@ model Player {
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [userId], references: [id])
-  gameLineups GameLineup[]
+  gameLineups      GameLineup[]
+  atBatsAsBatter   GameAtBat[]        @relation("BatterAtBats")
+  atBatsAsPitcher  GameAtBat[]        @relation("PitcherAtBats")
+  pitcherStints    GamePitcherStint[]
+  substitutionsIn  GameSubstitution[] @relation("SubIn")
+  substitutionsOut GameSubstitution[] @relation("SubOut")
 
   @@unique([email, teamId])
   @@map("players")
@@ -349,6 +363,90 @@ model GameLineup {
 
   @@unique([gameId, playerId])
   @@map("game_lineups")
+}
+
+// ─── Official Scoring ────────────────────────────────────────────────────────
+
+enum AtBatOutcome {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  HOME_RUN
+  WALK
+  OUT
+  STRIKEOUT
+}
+
+model GameAtBat {
+  id           String       @id @default(cuid())
+  gameId       String
+  inningNumber Int
+  isTop        Boolean
+  batterId     String
+  pitcherId    String
+  outcome      AtBatOutcome
+  sequence     Int
+  createdAt    DateTime     @default(now())
+
+  game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  batter  Player @relation("BatterAtBats", fields: [batterId], references: [id])
+  pitcher Player @relation("PitcherAtBats", fields: [pitcherId], references: [id])
+
+  @@map("game_at_bats")
+}
+
+model GameInning {
+  id           String   @id @default(cuid())
+  gameId       String
+  inningNumber Int
+  isTop        Boolean
+  runsScored   Int      @default(0)
+  completed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, inningNumber, isTop])
+  @@map("game_innings")
+}
+
+model GamePitcherStint {
+  id          String   @id @default(cuid())
+  gameId      String
+  pitcherId   String
+  isHome      Boolean
+  inningStart Int
+  isTopStart  Boolean
+  outsAtStart Int      @default(0)
+  inningEnd   Int?
+  isTopEnd    Boolean?
+  outsAtEnd   Int?
+  createdAt   DateTime @default(now())
+
+  game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  pitcher Player @relation(fields: [pitcherId], references: [id])
+
+  @@map("game_pitcher_stints")
+}
+
+model GameSubstitution {
+  id               String   @id @default(cuid())
+  gameId           String
+  teamId           String
+  inningNumber     Int
+  isTop            Boolean
+  playerInId       String
+  playerOutId      String
+  battingOrderSpot Int
+  position         String?
+  isReEntry        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  game      Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerIn  Player @relation("SubIn",  fields: [playerInId],  references: [id])
+  playerOut Player @relation("SubOut", fields: [playerOutId], references: [id])
+
+  @@map("game_substitutions")
 }
 
 // ─── Season Conditions ────────────────────────────────────────────────────────

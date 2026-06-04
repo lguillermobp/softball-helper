@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { OfficialsSetup } from "./OfficialsSetup";
 import { LineupEditor } from "./LineupEditor";
@@ -87,6 +88,10 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const [tab, setTab] = useState<Tab>("setup");
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [endError, setEndError] = useState("");
 
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 
@@ -110,6 +115,26 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
     }
     router.refresh();
   }
+
+  async function handleEndGame(outcome: "official" | "cancelled") {
+    setEnding(true);
+    setEndError("");
+    const res = await fetch(`/api/leagues/${slug}/games/${game.id}/end`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outcome, cancelReason: cancelReason.trim() }),
+    });
+    setEnding(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setEndError(data.error ?? "Something went wrong");
+      return;
+    }
+    setShowEndModal(false);
+    router.refresh();
+  }
+
+  const canEnd = permissions.canStartGame && game.status === "IN_PROGRESS";
 
   const statusColor = game.status === "IN_PROGRESS" ? "var(--sh-warn)" :
                       game.status === "COMPLETED"    ? "var(--sh-muted)" : "var(--sh-primary)";
@@ -209,9 +234,39 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           )}
 
           {game.status === "IN_PROGRESS" && (
-            <div className="text-lg font-black" style={{ color: "var(--sh-warn)" }}>
-              ⚾ {ts.gameStarted}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black animate-pulse" style={{ color: "var(--sh-warn)" }}>● LIVE</span>
+                <Link
+                  href={`/game/${game.id}/live`}
+                  target="_blank"
+                  className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)" }}
+                >
+                  Public view ↗
+                </Link>
+              </div>
+              {canEnd && (
+                <button
+                  onClick={() => { setShowEndModal(true); setEndError(""); setCancelReason(""); }}
+                  className="text-xs px-3 py-1.5 rounded-lg border font-semibold transition-opacity hover:opacity-80"
+                  style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
+                >
+                  End Game
+                </button>
+              )}
             </div>
+          )}
+
+          {game.status === "COMPLETED" && (
+            <Link
+              href={`/game/${game.id}/live`}
+              target="_blank"
+              className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
+            >
+              Game summary ↗
+            </Link>
           )}
         </div>
       </div>
@@ -335,6 +390,56 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           teamName={game.awayTeam.name}
           label="Game Stats"
         />
+      )}
+
+      {/* ── End Game Modal ── */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-sm rounded-2xl border p-6 space-y-4" style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border)" }}>
+            <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>End Game</h2>
+            <p className="text-sm" style={{ color: "var(--sh-muted)" }}>How did this game end?</p>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => handleEndGame("official")}
+                disabled={ending}
+                className="w-full py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+              >
+                ✓ Official — game completed
+              </button>
+
+              <div className="space-y-1.5">
+                <textarea
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="Cancellation reason (required)…"
+                  rows={2}
+                  className="w-full rounded-lg border px-3 py-2 text-sm resize-none outline-none"
+                  style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}
+                />
+                <button
+                  onClick={() => handleEndGame("cancelled")}
+                  disabled={ending || !cancelReason.trim()}
+                  className="w-full py-2 rounded-xl font-semibold text-sm transition-all disabled:opacity-40"
+                  style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent", border: "1px solid" }}
+                >
+                  ✗ Cancel game
+                </button>
+              </div>
+            </div>
+
+            {endError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{endError}</p>}
+
+            <button
+              onClick={() => setShowEndModal(false)}
+              className="w-full text-sm py-1.5 rounded-lg transition-opacity hover:opacity-70"
+              style={{ color: "var(--sh-muted)" }}
+            >
+              Back
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

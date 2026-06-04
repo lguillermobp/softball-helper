@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const updated = await prisma.game.update({
     where: { id: gameId },
-    data: { status: "IN_PROGRESS" },
+    data: { status: "IN_PROGRESS", startedAt: new Date(), lineupsLocked: true },
     include: {
       homeTeam: { select: { id: true, name: true } },
       awayTeam: { select: { id: true, name: true } },
