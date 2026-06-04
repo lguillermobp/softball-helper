@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,8 @@ export function OfficialScorekeeper({
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState("");
 
+  const { isOnline, queueLength, syncing, syncError, clearSyncError, enqueue } = useOfflineQueue(gameId);
+
   // End-of-half-inning prompt
   const [pendingRuns,   setPendingRuns]   = useState<number | null>(null);
 
@@ -183,47 +186,49 @@ export function OfficialScorekeeper({
     const newOuts = currentOuts + (isOut(outcome) ? 1 : 0);
     if (newOuts >= 3) setPendingRuns(0);
 
-    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/at-bat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const result = await enqueue(
+      `/api/leagues/${slug}/games/${gameId}/at-bat`, "POST",
+      {
         outcome,
         batterId:     currentBatter.player.id,
         pitcherId:    activePitcher.pitcher.id,
         inningNumber: currentInning.number,
         isTop:        currentInning.isTop,
         sequence:     currentHalfABs.length + 1,
-      }),
-    });
+      },
+    );
     setSaving(false);
 
-    if (!res.ok) {
+    if (!result.ok) {
       setAtBats(prev => prev.filter(ab => ab.id !== tempId));
       setPendingRuns(null);
-      const d = await res.json();
-      setError(d.error ?? "Failed to record at-bat");
+      setError(result.error ?? "Failed to record at-bat");
       return;
     }
-    const saved: AtBat = await res.json();
-    setAtBats(prev => prev.map(ab => ab.id === tempId ? saved : ab));
+    if (!result.queued && result.data) {
+      const saved = result.data as AtBat;
+      setAtBats(prev => prev.map(ab => ab.id === tempId ? saved : ab));
+    }
   }
 
   async function undoLastAtBat() {
     if (!canEdit || saving || currentHalfABs.length === 0) return;
+    if (!isOnline) { setError("Cannot undo while offline"); return; }
     const last = [...currentHalfABs].sort((a, b) => b.sequence - a.sequence)[0];
-    setError("");
-    setSaving(true);
-    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/at-bat`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ atBatId: last.id }),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Failed to undo");
+    // Don't undo a queued (temp) at-bat via the server — remove it locally only
+    if (last.id.startsWith("tmp-")) {
+      setAtBats(prev => prev.filter(ab => ab.id !== last.id));
+      if (pendingRuns !== null) setPendingRuns(null);
       return;
     }
+    setError("");
+    setSaving(true);
+    const result = await enqueue(
+      `/api/leagues/${slug}/games/${gameId}/at-bat`, "DELETE",
+      { atBatId: last.id },
+    );
+    setSaving(false);
+    if (!result.ok) { setError(result.error ?? "Failed to undo"); return; }
     setAtBats(prev => prev.filter(ab => ab.id !== last.id));
     if (pendingRuns !== null) setPendingRuns(null);
   }
@@ -232,23 +237,27 @@ export function OfficialScorekeeper({
     if (!canEdit || saving) return;
     setError("");
     setSaving(true);
-    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/inning`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inningNumber: currentInning.number, isTop: currentInning.isTop, runsScored: runs }),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Failed to record inning");
-      return;
-    }
-    const saved: Inning = await res.json();
+    const body = { inningNumber: currentInning.number, isTop: currentInning.isTop, runsScored: runs };
+    // Optimistic update so UI advances immediately
+    const optimistic: Inning = { id: `tmp-inn-${Date.now()}`, ...body, completed: true };
     setInnings(prev => [
       ...prev.filter(i => !(i.inningNumber === currentInning.number && i.isTop === currentInning.isTop)),
-      saved,
+      optimistic,
     ]);
     setPendingRuns(null);
+    const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/inning`, "POST", body);
+    setSaving(false);
+    if (!result.ok) {
+      // Revert optimistic inning
+      setInnings(prev => prev.filter(i => i.id !== optimistic.id));
+      setPendingRuns(runs);
+      setError(result.error ?? "Failed to record inning");
+      return;
+    }
+    if (!result.queued && result.data) {
+      const saved = result.data as Inning;
+      setInnings(prev => prev.map(i => i.id === optimistic.id ? saved : i));
+    }
   }
 
   async function setPitcher(isHome: boolean, pitcherId: string) {
@@ -256,51 +265,52 @@ export function OfficialScorekeeper({
     setError("");
     setSaving(true);
     const outsNow = isHome === pitchingIsHome ? currentOuts : 0;
-    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/pitcher-change`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pitcherId,
-        isHome,
-        inningNumber: currentInning.number,
-        isTop: currentInning.isTop,
-        outsAtChange: outsNow,
-      }),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Failed to set pitcher");
-      return;
-    }
-    const saved: PitcherStint = await res.json();
+    const body = { pitcherId, isHome, inningNumber: currentInning.number, isTop: currentInning.isTop, outsAtChange: outsNow };
+    // Optimistic: close current stint + open new one locally
+    const newStint: PitcherStint = {
+      id: `tmp-stint-${Date.now()}`, isHome,
+      inningStart: currentInning.number, isTopStart: currentInning.isTop, outsAtStart: outsNow,
+      inningEnd: null, isTopEnd: null, outsAtEnd: null,
+      pitcher: { id: pitcherId, name: "...", jerseyNumber: null },
+    };
     setStints(prev => [
       ...prev.map(s => s.isHome === isHome && s.outsAtEnd == null ? { ...s, outsAtEnd: outsNow } : s),
-      saved,
+      newStint,
     ]);
     setPitcherPanel(null);
     setSelectedPId("");
+    const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/pitcher-change`, "POST", body);
+    setSaving(false);
+    if (!result.ok) {
+      // Revert optimistic stint
+      setStints(prev => prev.filter(s => s.id !== newStint.id).map(s =>
+        s.isHome === isHome && s.outsAtEnd === outsNow ? { ...s, outsAtEnd: null } : s
+      ));
+      setError(result.error ?? "Failed to set pitcher");
+      return;
+    }
+    if (!result.queued && result.data) {
+      const saved = result.data as PitcherStint;
+      setStints(prev => prev.map(s => s.id === newStint.id ? saved : s));
+    }
   }
 
   async function makeSubstitution(isHome: boolean, playerOutId: string, battingOrderSpot: number, playerInId: string) {
     if (!canEdit || saving || !playerInId || !playerOutId) return;
     setError("");
     setSaving(true);
-    const res = await fetch(`/api/leagues/${slug}/games/${gameId}/substitution`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        playerOutId, playerInId, battingOrderSpot,
-        inningNumber: currentInning.number, isTop: currentInning.isTop,
-      }),
-    });
+    const body = { playerOutId, playerInId, battingOrderSpot, inningNumber: currentInning.number, isTop: currentInning.isTop };
+    const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/substitution`, "POST", body);
     setSaving(false);
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Substitution failed");
+    if (!result.ok) {
+      setError(result.error ?? "Substitution failed");
       return;
     }
-    const saved: Substitution = await res.json();
+    const saved: Substitution = (result.data as Substitution) ?? {
+      id: `tmp-sub-${Date.now()}`, playerOutId, playerInId, battingOrderSpot,
+      isReEntry: subs.some(s => s.playerOutId === playerInId),
+      inningNumber: currentInning.number, isTop: currentInning.isTop,
+    };
     setSubs(prev => [...prev, saved]);
     // Update active lineup map
     if (isHome) {
@@ -380,6 +390,30 @@ export function OfficialScorekeeper({
 
   return (
     <div className="space-y-4">
+
+      {/* Connectivity indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="w-2 h-2 rounded-full" style={{
+            background: !isOnline ? "#f87171" : syncing ? "#f59e0b" : "#4ade80",
+          }} />
+          <span style={{ color: "var(--sh-muted)" }}>
+            {!isOnline
+              ? `Offline${queueLength > 0 ? ` · ${queueLength} action${queueLength !== 1 ? "s" : ""} queued` : ""}`
+              : syncing
+              ? `Syncing ${queueLength} action${queueLength !== 1 ? "s" : ""}…`
+              : queueLength > 0
+              ? `Online · ${queueLength} pending`
+              : "Online · All synced"}
+          </span>
+        </div>
+        {syncError && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: "var(--sh-danger)" }}>{syncError}</span>
+            <button onClick={clearSyncError} className="text-xs" style={{ color: "var(--sh-muted)" }}>✕</button>
+          </div>
+        )}
+      </div>
 
       {/* Score & inning header */}
       <div className="rounded-2xl border p-4" style={card}>
