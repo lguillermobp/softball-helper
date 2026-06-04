@@ -35,6 +35,7 @@ export default async function SeasonPage({ params }: PageProps) {
   if (!isMasterAdmin && !userRole) redirect("/dashboard");
 
   const isAdmin = isMasterAdmin || userRole?.role === "LEAGUE_ADMIN";
+  const canCreatePractice = isMasterAdmin || !!userRole;
 
   const season = await prisma.season.findFirst({ where: { id, leagueId: league.id } });
   if (!season) notFound();
@@ -60,7 +61,7 @@ export default async function SeasonPage({ params }: PageProps) {
   );
 
   for (const game of games) {
-    if (game.status !== "COMPLETED") continue;
+    if (game.status !== "COMPLETED" || game.isPractice) continue;
     const hs = game.homeScore ?? 0;
     const as_ = game.awayScore ?? 0;
 
@@ -95,9 +96,9 @@ export default async function SeasonPage({ params }: PageProps) {
       pct: s.gp === 0 ? ".000" : (s.w / s.gp).toFixed(3).replace(/^0/, ""),
     }));
 
-  // ── Official season stats from GameAtBat ────────────────────────────────
+  // ── Official season stats from GameAtBat (exclude practice) ─────────────
   const seasonAtBats = await prisma.gameAtBat.findMany({
-    where: { game: { seasonId: id, status: "COMPLETED" } },
+    where: { game: { seasonId: id, status: "COMPLETED", isPractice: false } },
     select: { batterId: true, pitcherId: true, outcome: true },
   });
 
@@ -192,6 +193,7 @@ export default async function SeasonPage({ params }: PageProps) {
           leagueLogoUrl={league.logoUrl}
           officialBatting={officialBatting}
           officialPitching={officialPitching}
+          canCreatePractice={canCreatePractice}
         />
       </main>
     </div>

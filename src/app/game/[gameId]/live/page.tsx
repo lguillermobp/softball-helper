@@ -101,7 +101,12 @@ export default async function GameLivePage({ params }: PageProps) {
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* Status badge */}
-        <div style={{ textAlign: "center" }}>
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          {game.isPractice && (
+            <span style={{ background: "#451a03", color: "#f59e0b", fontSize: 11, fontWeight: 700, padding: "3px 12px", borderRadius: 99, border: "1px solid #92400e" }}>
+              🎯 PRACTICE — results do not affect standings
+            </span>
+          )}
           {isLive && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#14532d", color: "#4ade80", fontSize: 12, fontWeight: 700, padding: "4px 14px", borderRadius: 99, border: "1px solid #16a34a" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />

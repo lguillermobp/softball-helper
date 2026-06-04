@@ -17,19 +17,21 @@ interface Props {
   teams: Team[];
   categories: Category[];
   fields: Field[];
+  isPracticeOnly?: boolean; // non-admins can only create practice games
 }
 
 const selectClass =
   "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
-export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Props) {
+export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPracticeOnly }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [homeAwayTbd, setHomeAwayTbd] = useState(false);
+  const [isPractice, setIsPractice] = useState(isPracticeOnly ?? false);
 
-  function handleClose() { setOpen(false); setHomeAwayTbd(false); setError(""); }
+  function handleClose() { setOpen(false); setHomeAwayTbd(false); setIsPractice(isPracticeOnly ?? false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,6 +49,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
         fieldId:     fd.get("fieldId") || null,
         scheduledAt: new Date(fd.get("scheduledAt") as string).toISOString(),
         homeAwayTbd,
+        isPractice,
       }),
     });
     setLoading(false);
@@ -62,11 +65,13 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
       <DialogTrigger asChild>
-        <Button size="sm">+ Add game</Button>
+        <Button size="sm" variant={isPracticeOnly ? "outline" : "default"}>
+          {isPracticeOnly ? "🎯 Practice game" : "+ Add game"}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule a Game</DialogTitle>
+          <DialogTitle>{isPractice ? "🎯 New Practice Game" : "Schedule a Game"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -122,10 +127,27 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields }: Pro
             </div>
           )}
 
+          {/* Practice toggle — only shown to admins */}
+          {!isPracticeOnly && (
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isPractice}
+                onChange={(e) => setIsPractice(e.target.checked)}
+                className="accent-amber-500 w-4 h-4"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>
+                🎯 Practice game — does not affect standings or stats
+              </span>
+            </label>
+          )}
+
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Schedule game"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving…" : isPractice ? "Create practice game" : "Schedule game"}
+            </Button>
           </div>
         </form>
       </DialogContent>

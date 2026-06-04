@@ -48,6 +48,7 @@ interface Substitution {
 interface Game {
   id: string; status: string; scheduledAt: string;
   homeAwayTbd: boolean; homeScore: number | null; awayScore: number | null;
+  isPractice: boolean;
   fieldId: string | null;
   field: { id: string; name: string } | null;
   category: { id: string; name: string } | null;
@@ -71,6 +72,7 @@ interface Permissions {
   canEditHomeScorebook: boolean;
   canEditAwayScorebook: boolean;
   canScore: boolean;
+  canReset: boolean;
 }
 
 type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
@@ -159,7 +161,17 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
     router.refresh();
   }
 
-  const canEnd = permissions.canStartGame && game.status === "IN_PROGRESS";
+  const canEnd   = permissions.canStartGame && game.status === "IN_PROGRESS";
+  const [resetting, setResetting] = useState(false);
+
+  async function handleReset() {
+    if (!permissions.canReset || resetting) return;
+    if (!confirm("Reset this practice game? All at-bats, innings, and scoring data will be cleared.")) return;
+    setResetting(true);
+    await fetch(`/api/leagues/${slug}/games/${game.id}/reset`, { method: "POST" });
+    setResetting(false);
+    router.refresh();
+  }
 
   const statusColor = game.status === "IN_PROGRESS" ? "var(--sh-warn)" :
                       game.status === "COMPLETED"    ? "var(--sh-muted)" : "var(--sh-primary)";
@@ -223,6 +235,11 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
               <span className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: "var(--sh-bg-card2)", color: statusColor }}>
                 {statusText}
               </span>
+              {game.isPractice && (
+                <span className="text-xs font-bold rounded-full px-2.5 py-0.5" style={{ background: "#451a03", color: "#f59e0b", border: "1px solid #92400e" }}>
+                  🎯 PRACTICE
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-2 flex-wrap text-sm" style={{ color: "var(--sh-muted)" }}>
               <span>📅 {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -293,14 +310,38 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           )}
 
           {game.status === "COMPLETED" && (
-            <Link
-              href={`/game/${game.id}/live`}
-              target="_blank"
-              className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
-              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/game/${game.id}/live`}
+                target="_blank"
+                className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
+              >
+                Game summary ↗
+              </Link>
+              {permissions.canReset && (
+                <button
+                  onClick={handleReset}
+                  disabled={resetting}
+                  className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-40"
+                  style={{ borderColor: "#92400e", color: "#f59e0b", background: "transparent" }}
+                >
+                  {resetting ? "Resetting…" : "↺ Reset practice"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Reset button for scheduled/in-progress practice games */}
+          {game.isPractice && game.status === "SCHEDULED" && permissions.canReset && (
+            <button
+              onClick={handleReset}
+              disabled={resetting}
+              className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ borderColor: "#92400e", color: "#f59e0b", background: "transparent" }}
             >
-              Game summary ↗
-            </Link>
+              {resetting ? "Resetting…" : "↺ Reset"}
+            </button>
           )}
         </div>
       </div>

@@ -44,10 +44,19 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const isMasterAdmin = (session.user as any).isMasterAdmin;
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const hasAnyRole = league.userRoles.length > 0;
 
-  const { seasonId, categoryId, homeTeamId, awayTeamId, fieldId, scheduledAt, homeAwayTbd } =
+  const { seasonId, categoryId, homeTeamId, awayTeamId, fieldId, scheduledAt, homeAwayTbd, isPractice } =
     await req.json();
+
+  // Practice games: any league member can create; regular games: admin only
+  if (isPractice) {
+    if (!isMasterAdmin && !hasAnyRole)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } else {
+    if (!isAdmin)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   if (!seasonId || !homeTeamId || !awayTeamId || !scheduledAt)
     return NextResponse.json(
@@ -68,6 +77,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       fieldId: fieldId || null,
       scheduledAt: new Date(scheduledAt),
       homeAwayTbd: homeAwayTbd === true,
+      isPractice:  isPractice  === true,
     },
     include: gameInclude,
   });

@@ -25,6 +25,7 @@ interface Game {
   status: string;
   homeScore: number | null;
   awayScore: number | null;
+  isPractice: boolean;
   homeTeam: { id: string; name: string; logoUrl?: string | null };
   awayTeam: { id: string; name: string; logoUrl?: string | null };
   category: { id: string; name: string } | null;
@@ -64,6 +65,7 @@ interface Props {
   leagueLogoUrl?: string | null;
   officialBatting: OfficialBatterStat[];
   officialPitching: OfficialPitcherStat[];
+  canCreatePractice: boolean;
 }
 
 type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
@@ -72,7 +74,7 @@ export function SeasonDashboard({
   slug, seasonId, seasonName, startDate, endDate, seasonStatus,
   isAdmin, games, teams, categories, fields, standings,
   leagueName, leagueCity, leagueState, leagueLogoUrl,
-  officialBatting, officialPitching,
+  officialBatting, officialPitching, canCreatePractice,
 }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -206,10 +208,14 @@ export function SeasonDashboard({
     );
   }
 
+  // ── Split regular vs practice games ────────────────────────────────────────
+  const regularGames  = games.filter(g => !g.isPractice);
+  const practiceGames = games.filter(g =>  g.isPractice);
+
   // ── Grouped schedule: day → category ───────────────────────────────────────
   const groupedDays = (() => {
     const dayMap = new Map<string, { label: string; grpMap: Map<string, { grpName: string; catGames: Game[] }> }>();
-    for (const game of games) {
+    for (const game of regularGames) {
       const d = new Date(game.scheduledAt);
       const dayKey  = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const dayLabel = d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -303,7 +309,7 @@ export function SeasonDashboard({
         <div style="font-size:22px;font-weight:800;">${seasonName}</div>
         <div style="font-size:13px;color:#555;margin-top:4px;">
           ${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}
-          · ${games.length} game${games.length !== 1 ? "s" : ""}
+          · ${regularGames.length} game${regularGames.length !== 1 ? "s" : ""}
         </div>
       </div>
       ${dayRows}
@@ -329,9 +335,14 @@ export function SeasonDashboard({
             <span style={{ color: sb.color }}>{sb.text}</span>
           </p>
         </div>
-        {isAdmin && (
-          <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} />
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} />
+          )}
+          {canCreatePractice && !isAdmin && (
+            <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} isPracticeOnly />
+          )}
+        </div>
       </div>
 
       {/* ── Tab bar ── */}
@@ -357,8 +368,8 @@ export function SeasonDashboard({
         <div>
           {/* Schedule header: count + print */}
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs" style={dim}>{games.length} game{games.length !== 1 ? "s" : ""}</p>
-            {games.length > 0 && (
+            <p className="text-xs" style={dim}>{regularGames.length} game{regularGames.length !== 1 ? "s" : ""}</p>
+            {regularGames.length > 0 && (
               <button
                 onClick={printSchedule}
                 className="text-xs px-3 py-1.5 rounded-lg border hover:opacity-70"
@@ -369,7 +380,7 @@ export function SeasonDashboard({
             )}
           </div>
 
-          {games.length === 0 ? (
+          {regularGames.length === 0 ? (
             <div className="rounded-2xl border py-16 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
               {ts.schedule.none}{isAdmin && ts.schedule.noneAdmin}
             </div>
@@ -510,6 +521,49 @@ export function SeasonDashboard({
               ))}
             </div>
           )}
+        {/* Practice games section */}
+        {practiceGames.length > 0 && (
+          <div className="mt-6 rounded-2xl border overflow-hidden" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+            <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: "var(--sh-border)" }}>
+              <span className="text-sm font-semibold" style={{ color: "#f59e0b" }}>🎯 Practice Games</span>
+              <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{practiceGames.length} session{practiceGames.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="divide-y" style={{ borderColor: "var(--sh-border)" }}>
+              {practiceGames.map(game => {
+                const date = new Date(game.scheduledAt);
+                const isActive = game.status === "IN_PROGRESS";
+                return (
+                  <div key={game.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap text-sm font-medium" style={{ color: "var(--sh-text)" }}>
+                        {isActive && <span className="text-xs font-bold animate-pulse" style={{ color: "#f59e0b" }}>● LIVE</span>}
+                        <span>{game.homeTeam.name}</span>
+                        <span style={{ color: "var(--sh-muted)" }}>vs</span>
+                        <span>{game.awayTeam.name}</span>
+                        {(game.status === "COMPLETED") && game.homeScore != null && (
+                          <span className="text-xs font-bold" style={{ color: "var(--sh-primary)" }}>
+                            {game.homeScore} – {game.awayScore}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
+                        {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {game.field && ` · 🏟️ ${game.field.name}`}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 transition-all hover:opacity-80"
+                      style={{ background: "#451a03", color: "#f59e0b", border: "1px solid #92400e" }}
+                    >
+                      {isActive ? "Live →" : "Open →"}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         </div>
       )}
 

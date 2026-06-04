@@ -89,18 +89,23 @@ export default async function GameScoringPage({ params }: PageProps) {
 
   const isHomeManager = game.homeTeam.managerId === userId || game.homeTeam.assistantId === userId;
   const isAwayManager = game.awayTeam.managerId === userId || game.awayTeam.assistantId === userId;
-  const canEditOfficials = isAdmin || isUmpire;
-  const canStartGame     = isAdmin || isUmpire;
-  const canSwapTeams     = isAdmin || isUmpire || isScorer;
+  const hasAnyRole    = !!league.userRoles[0];
+
+  // Practice games: relax all permissions to any league member
+  const isPractice = game.isPractice;
+  const canEditOfficials = isAdmin || isUmpire || isPractice && hasAnyRole;
+  const canStartGame     = isAdmin || isUmpire || isPractice && hasAnyRole;
+  const canSwapTeams     = isAdmin || isUmpire || isScorer || isPractice && hasAnyRole;
   const canEditHomeLineup =
-    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager)) ||
-    (game.status === "IN_PROGRESS" && (isAdmin || isScorer));
+    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager || isPractice && hasAnyRole)) ||
+    (game.status === "IN_PROGRESS" && (isAdmin || isScorer || isPractice && hasAnyRole));
   const canEditAwayLineup =
-    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager)) ||
-    (game.status === "IN_PROGRESS" && (isAdmin || isScorer));
-  const canEditHomeScorebook = isAdmin || isHomeManager;
-  const canEditAwayScorebook = isAdmin || isAwayManager;
-  const canScore = isAdmin || isScorer;
+    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager || isPractice && hasAnyRole)) ||
+    (game.status === "IN_PROGRESS" && (isAdmin || isScorer || isPractice && hasAnyRole));
+  const canEditHomeScorebook = isAdmin || isHomeManager || isPractice && hasAnyRole;
+  const canEditAwayScorebook = isAdmin || isAwayManager || isPractice && hasAnyRole;
+  const canScore  = isAdmin || isScorer || isPractice && hasAnyRole;
+  const canReset  = isPractice && hasAnyRole;
 
   // Load scorebooks
   const [homeScorebook, awayScorebook] = await Promise.all([
@@ -120,6 +125,7 @@ export default async function GameScoringPage({ params }: PageProps) {
     homeAwayTbd: game.homeAwayTbd,
     homeScore: game.homeScore,
     awayScore: game.awayScore,
+    isPractice: game.isPractice,
     fieldId: game.fieldId,
     field: game.field,
     category: game.category,
@@ -224,6 +230,7 @@ export default async function GameScoringPage({ params }: PageProps) {
             canEditHomeScorebook,
             canEditAwayScorebook,
             canScore,
+            canReset,
           }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           homeScorebook={(homeScorebook?.data ?? null) as any}
