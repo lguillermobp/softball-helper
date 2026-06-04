@@ -391,9 +391,10 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
     const [resending,     setResending]     = useState<string | null>(null);
     const [sentId,        setSentId]        = useState<string | null>(null);
     const [logoUrl,       setLogoUrl]       = useState<string | null>(team.logoUrl);
-    const [removingId,    setRemovingId]    = useState<string | null>(null);
-    const [removedIds,    setRemovedIds]    = useState<Set<string>>(new Set());
-    const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
+    const [removingId,      setRemovingId]      = useState<string | null>(null);
+    const [removedIds,      setRemovedIds]      = useState<Set<string>>(new Set());
+    const [settingAsstId,   setSettingAsstId]   = useState<string | null>(null);
+    const [enlargedPhoto,   setEnlargedPhoto]   = useState<{ url: string; name: string } | null>(null);
 
     async function resendInvite(playerId: string) {
       setResending(playerId);
@@ -411,6 +412,18 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
       const res = await fetch(`/api/leagues/${slug}/players/${playerId}`, { method: "DELETE" });
       setRemovingId(null);
       if (res.ok) setRemovedIds((prev) => new Set(prev).add(playerId));
+    }
+
+    async function setAssistant(playerId: string) {
+      if (settingAsstId) return;
+      setSettingAsstId(playerId);
+      await fetch(`/api/leagues/${slug}/teams/${team.id}/set-assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId }),
+      });
+      setSettingAsstId(null);
+      router.refresh();
     }
 
     function printRoster() {
@@ -908,6 +921,23 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                             >
                               {resending === p.id ? "Sending…" : sentId === p.id ? "✓ Sent" : "Resend invite"}
                             </button>
+                          )}
+                          {(isAdmin || isManager) && p.userId !== team.manager?.id && (
+                            p.userId === team.assistant?.id ? (
+                              <span className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)", opacity: 0.5 }}>
+                                Asst.
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setAssistant(p.id)}
+                                disabled={!p.userId || settingAsstId === p.id}
+                                title={!p.userId ? "Player needs a linked account first" : "Set as assistant"}
+                                className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
+                                style={{ borderColor: "var(--sh-border2)", color: "#818cf8", background: "transparent" }}
+                              >
+                                {settingAsstId === p.id ? "…" : "Set Asst."}
+                              </button>
+                            )
                           )}
                           {canRemovePlayer && (
                             <button
