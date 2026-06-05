@@ -92,6 +92,21 @@ export async function POST(req: NextRequest, { params }: Params) {
       },
     });
 
+    // Automatically add the assistant as a player when their role is playing
+    if (assistantResult && resolvedAssistantRole === "TEAM_ASSISTANT_PLAYER") {
+      await tx.player.upsert({
+        where: { email_teamId: { email: assistant.email, teamId: team.id } },
+        update: { name: assistant.name, userId: assistantResult.user.id },
+        create: {
+          name: assistant.name,
+          email: assistant.email,
+          teamId: team.id,
+          leagueId: league.id,
+          userId: assistantResult.user.id,
+        },
+      });
+    }
+
     return { team, managerResult, assistantResult };
   });
 
