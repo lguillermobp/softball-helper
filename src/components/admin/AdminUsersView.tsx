@@ -7,7 +7,7 @@ import { UserAuditDialog } from "./UserAuditDialog";
 
 export interface AdminUser {
   id: string; name: string | null; email: string; phone: string | null;
-  emailVerified: string | null; isMasterAdmin: boolean; isActive: boolean;
+  emailVerified: string | null; isMasterAdmin: boolean; isSupportTechnician: boolean; isActive: boolean;
   createdAt: string; _count: { leagueRoles: number };
 }
 
@@ -38,6 +38,20 @@ export function AdminUsersView({ initialUsers }: Props) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !user.isActive }),
+    });
+    if (res.ok) {
+      const updated: AdminUser = await res.json();
+      setUsers((prev) => prev.map((u) => u.id === user.id ? updated : u));
+    }
+    setToggling(null);
+  }
+
+  async function toggleTechnician(user: AdminUser) {
+    setToggling(user.id);
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isSupportTechnician: !user.isSupportTechnician }),
     });
     if (res.ok) {
       const updated: AdminUser = await res.json();
@@ -95,6 +109,12 @@ export function AdminUsersView({ initialUsers }: Props) {
                             ★
                           </span>
                         )}
+                        {user.isSupportTechnician && (
+                          <span className="text-xs font-bold rounded-full px-2 py-0.5 border ml-1"
+                            style={{ background: "#164e63", color: "#67e8f9", borderColor: "#0e7490" }}>
+                            🎫
+                          </span>
+                        )}
                       </div>
                     </td>
                     {/* Phone */}
@@ -137,16 +157,28 @@ export function AdminUsersView({ initialUsers }: Props) {
                           userEmail={user.email}
                         />
                         {!user.isMasterAdmin && (
-                          <button
-                            onClick={() => toggleActive(user)}
-                            disabled={toggling === user.id}
-                            className="text-xs px-2 py-1 rounded-md border hover:opacity-80 disabled:opacity-50"
-                            style={user.isActive
-                              ? { borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }
-                              : { borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
-                          >
-                            {toggling === user.id ? "…" : user.isActive ? "Deactivate" : "Activate"}
-                          </button>
+                          <>
+                            <button
+                              onClick={() => toggleTechnician(user)}
+                              disabled={toggling === user.id}
+                              className="text-xs px-2 py-1 rounded-md border hover:opacity-80 disabled:opacity-50"
+                              style={user.isSupportTechnician
+                                ? { borderColor: "#0e7490", color: "#67e8f9", background: "transparent" }
+                                : { borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
+                            >
+                              {toggling === user.id ? "…" : user.isSupportTechnician ? "Remove Tech" : "Make Tech"}
+                            </button>
+                            <button
+                              onClick={() => toggleActive(user)}
+                              disabled={toggling === user.id}
+                              className="text-xs px-2 py-1 rounded-md border hover:opacity-80 disabled:opacity-50"
+                              style={user.isActive
+                                ? { borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }
+                                : { borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
+                            >
+                              {toggling === user.id ? "…" : user.isActive ? "Deactivate" : "Activate"}
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

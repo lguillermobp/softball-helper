@@ -27,11 +27,11 @@ export default async function AdminUsersPage() {
     const [usersRes, countRes, rolesRes] = await Promise.all([
       pool.query(`
         SELECT id, name, email, phone,
-               "emailVerified", "isMasterAdmin",
+               "emailVerified", "isMasterAdmin", "isSupportTechnician",
                COALESCE("isActive", true) AS "isActive",
                "createdAt"
         FROM users
-        ORDER BY "isMasterAdmin" DESC, "createdAt" DESC
+        ORDER BY "isMasterAdmin" DESC, "isSupportTechnician" DESC, "createdAt" DESC
       `),
       pool.query(`SELECT COUNT(*) AS total FROM users`),
       pool.query(`SELECT "userId", COUNT(*) AS cnt FROM user_league_roles GROUP BY "userId"`),
@@ -49,8 +49,9 @@ export default async function AdminUsersPage() {
       email:         u.email,
       phone:         u.phone,
       emailVerified: u.emailVerified ? new Date(u.emailVerified).toISOString() : null,
-      isMasterAdmin: u.isMasterAdmin,
-      isActive:      u.isActive ?? true,
+      isMasterAdmin:        u.isMasterAdmin,
+      isSupportTechnician:  u.isSupportTechnician ?? false,
+      isActive:             u.isActive ?? true,
       createdAt:     new Date(u.createdAt).toISOString(),
       _count:        { leagueRoles: countMap.get(u.id) ?? 0 },
     }));

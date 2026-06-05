@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const { userId } = await params;
   const body = await req.json();
-  const { name, phone, email, isActive } = body;
+  const { name, phone, email, isActive, isSupportTechnician } = body;
 
   const dbUrl = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL ||
     process.env.DATABASE_PUBLIC_URL || process.env.POSTGRES_URL || "";
@@ -39,11 +39,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const sets: string[] = [];
     const vals: any[]    = [];
     let idx = 1;
-    if (name     !== undefined) { sets.push(`name = $${idx++}`);            vals.push(name); }
-    if (phone    !== undefined) { sets.push(`phone = $${idx++}`);           vals.push(phone); }
-    if (email    !== undefined) { sets.push(`email = $${idx++}`);           vals.push(email); }
-    if (emailChanged)           { sets.push(`"emailVerified" = NULL`); }
-    if (isActive !== undefined) { sets.push(`"isActive" = $${idx++}`);      vals.push(isActive); }
+    if (name                !== undefined) { sets.push(`name = $${idx++}`);                     vals.push(name); }
+    if (phone               !== undefined) { sets.push(`phone = $${idx++}`);                    vals.push(phone); }
+    if (email               !== undefined) { sets.push(`email = $${idx++}`);                    vals.push(email); }
+    if (emailChanged)                      { sets.push(`"emailVerified" = NULL`); }
+    if (isActive            !== undefined) { sets.push(`"isActive" = $${idx++}`);               vals.push(isActive); }
+    if (isSupportTechnician !== undefined) { sets.push(`"isSupportTechnician" = $${idx++}`);    vals.push(isSupportTechnician); }
 
     if (sets.length > 0) {
       vals.push(userId);
@@ -52,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const { rows } = await pool.query(
       `SELECT u.id, u.name, u.email, u.phone,
-              u."emailVerified", u."isMasterAdmin",
+              u."emailVerified", u."isMasterAdmin", u."isSupportTechnician",
               COALESCE(u."isActive", true) AS "isActive",
               u."createdAt",
               COUNT(r.id)::int AS "leagueRoles"
@@ -67,6 +68,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       id: u.id, name: u.name, email: u.email, phone: u.phone,
       emailVerified: u.emailVerified ? new Date(u.emailVerified).toISOString() : null,
       isMasterAdmin: u.isMasterAdmin,
+      isSupportTechnician: u.isSupportTechnician ?? false,
       isActive: u.isActive ?? true,
       createdAt: new Date(u.createdAt).toISOString(),
       _count: { leagueRoles: u.leagueRoles },

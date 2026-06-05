@@ -328,6 +328,21 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const isAdmin = isMasterAdmin || role === "LEAGUE_ADMIN";
 
+  // Load technician info for master admin
+  const [technicianData, availableTechnicians] = isMasterAdmin
+    ? await Promise.all([
+        prisma.league.findUnique({
+          where: { slug },
+          select: { technician: { select: { id: true, name: true, email: true } } },
+        }).then(l => l?.technician ?? null),
+        prisma.user.findMany({
+          where: { OR: [{ isSupportTechnician: true }, { isMasterAdmin: true }], isActive: true },
+          select: { id: true, name: true, email: true },
+          orderBy: { name: "asc" },
+        }),
+      ])
+    : [null, []];
+
   const categories = fullLeague.categories.map((c) => ({ id: c.id, name: c.name, description: c.description }));
 
   const teams = fullLeague.teams.map((t) => ({
@@ -379,7 +394,10 @@ export default async function LeaguePage({ params }: PageProps) {
         <LeagueDashboard
           slug={slug}
           isAdmin={isAdmin}
+          isMasterAdmin={isMasterAdmin}
           currentUserId={sessionUser.id!}
+          technician={technicianData}
+          availableTechnicians={availableTechnicians}
           league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, logoUrl: fullLeague.logoUrl ?? null, plan: { name: league.plan.name } }}
           seasons={seasons}
           categories={categories}

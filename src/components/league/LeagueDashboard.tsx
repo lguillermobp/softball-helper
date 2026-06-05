@@ -91,11 +91,16 @@ interface Condition {
   createdBy: { id: string; name: string | null; email: string };
 }
 
+interface TechnicianOption { id: string; name: string | null; email: string }
+
 interface Props {
   slug: string;
   isAdmin: boolean;
+  isMasterAdmin?: boolean;
   currentUserId: string;
   league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; plan: { name: string } };
+  technician?: TechnicianOption | null;
+  availableTechnicians?: TechnicianOption[];
   seasons: Season[];
   categories: Category[];
   teams: Team[];
@@ -143,7 +148,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons, categories, teams, members, fields, conditions, publicPage: initialPublicPage }: Props) {
+export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const tl = t.league;
@@ -154,6 +159,23 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
   const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
   const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
+  const [technician, setTechnician]       = useState<TechnicianOption | null>(initialTechnician ?? null);
+  const [selectedTechId, setSelectedTechId] = useState(initialTechnician?.id ?? "");
+  const [savingTech, setSavingTech]       = useState(false);
+
+  async function saveTechnician() {
+    setSavingTech(true);
+    const res = await fetch(`/api/leagues/${slug}/set-technician`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ technicianId: selectedTechId || null }),
+    });
+    setSavingTech(false);
+    if (res.ok) {
+      const { technician: t } = await res.json();
+      setTechnician(t ?? null);
+    }
+  }
 
   // ── Public page state ────────────────────────────────────────────────────────
   const [pp, setPp] = useState<PublicPageConfig>(initialPublicPage ?? {
@@ -305,6 +327,41 @@ export function LeagueDashboard({ slug, isAdmin, currentUserId, league, seasons,
                 currentLogoUrl={leagueLogoUrl}
                 onUpdated={(url) => setLeagueLogoUrl(url)}
               />
+            </div>
+          )}
+          {isMasterAdmin && (
+            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>🎫 Support Technician</p>
+              {technician ? (
+                <p className="text-sm mb-2" style={{ color: "var(--sh-primary)" }}>
+                  {technician.name ?? technician.email}
+                </p>
+              ) : (
+                <p className="text-xs mb-2" style={{ color: "var(--sh-muted)" }}>None assigned</p>
+              )}
+              {availableTechnicians.length > 0 && (
+                <div className="flex gap-2">
+                  <select
+                    value={selectedTechId}
+                    onChange={e => setSelectedTechId(e.target.value)}
+                    className="flex-1 px-2 py-1 rounded-lg border text-xs focus:outline-none"
+                    style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                  >
+                    <option value="">— None —</option>
+                    {availableTechnicians.map(t => (
+                      <option key={t.id} value={t.id}>{t.name ?? t.email}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={saveTechnician}
+                    disabled={savingTech || selectedTechId === (technician?.id ?? "")}
+                    className="text-xs px-3 py-1 rounded-lg font-semibold disabled:opacity-40"
+                    style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+                  >
+                    {savingTech ? "…" : "Save"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

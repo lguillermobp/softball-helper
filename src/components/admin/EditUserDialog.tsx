@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface AdminUser {
   id: string; name: string | null; email: string; phone: string | null;
-  emailVerified: string | null; isMasterAdmin: boolean; isActive: boolean;
+  emailVerified: string | null; isMasterAdmin: boolean; isSupportTechnician: boolean; isActive: boolean;
   createdAt: string; _count: { leagueRoles: number };
 }
 
