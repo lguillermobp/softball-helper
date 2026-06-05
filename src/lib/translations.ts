@@ -9,7 +9,7 @@ export const translations = {
 
   // ── English ────────────────────────────────────────────────────────────────
   en: {
-    nav:      { signin: "Sign in", getStarted: "Get started" },
+    nav:      { signin: "Sign in", getStarted: "Get started", contactUs: "Contact Us" },
     hero: {
       badge: "Multi-league softball management",
       headline1: "Step up to the", headline2: "plate.",
@@ -35,6 +35,20 @@ export const translations = {
       items: [{ icon: "👤", label: "Create account" }, { icon: "🏟️", label: "Set up league" }, { icon: "📋", label: "Add teams" }, { icon: "⚾", label: "Play ball!" }],
     },
     cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Softball Helper to run their seasons.", button: "Create your league" },
+    contact: {
+      sectionTitle: "Get in touch",
+      sectionSubtitle: "Have a question or want to bring SoftballHelper to your league? We'd love to hear from you.",
+      name: "Your name", namePlaceholder: "Jane Smith",
+      email: "Your email", emailPlaceholder: "jane@example.com",
+      subject: "Subject",
+      subjects: ["General Question", "Feature Request", "Partnership / Sales", "Other"],
+      message: "Message", messagePlaceholder: "Tell us more…",
+      send: "Send message", sending: "Sending…",
+      successTitle: "Message sent!",
+      successMsg: "We'll get back to you within 24–48 hours.",
+      errorMsg: "Something went wrong. Please try again.",
+      directEmail: "Or email us directly at",
+    },
     footer: "Built for the love of the game.",
     login: {
       pageTitle: "Sign in to your account", title: "Welcome back", subtitle: "Enter your credentials to continue",
@@ -230,7 +244,7 @@ export const translations = {
 
   // ── Español ────────────────────────────────────────────────────────────────
   es: {
-    nav:      { signin: "Iniciar sesión", getStarted: "Comenzar" },
+    nav:      { signin: "Iniciar sesión", getStarted: "Comenzar", contactUs: "Contáctanos" },
     hero: {
       badge: "Gestión de ligas de sóftbol",
       headline1: "Sube al", headline2: "plato.",
@@ -256,6 +270,20 @@ export const translations = {
       items: [{ icon: "👤", label: "Crear cuenta" }, { icon: "🏟️", label: "Configurar liga" }, { icon: "📋", label: "Agregar equipos" }, { icon: "⚾", label: "¡A jugar!" }],
     },
     cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.", button: "Crea tu liga" },
+    contact: {
+      sectionTitle: "Contáctanos",
+      sectionSubtitle: "¿Tienes una pregunta o quieres llevar SoftballHelper a tu liga? Nos encantaría saber de ti.",
+      name: "Tu nombre", namePlaceholder: "Juan Pérez",
+      email: "Tu correo", emailPlaceholder: "juan@ejemplo.com",
+      subject: "Asunto",
+      subjects: ["Consulta general", "Solicitud de función", "Alianza / Ventas", "Otro"],
+      message: "Mensaje", messagePlaceholder: "Cuéntanos más…",
+      send: "Enviar mensaje", sending: "Enviando…",
+      successTitle: "¡Mensaje enviado!",
+      successMsg: "Te responderemos en 24–48 horas.",
+      errorMsg: "Algo salió mal. Por favor intenta de nuevo.",
+      directEmail: "O escríbenos directamente a",
+    },
     footer: "Hecho por amor al juego.",
     login: {
       pageTitle: "Iniciar sesión en tu cuenta", title: "Bienvenido de vuelta", subtitle: "Ingresa tus credenciales para continuar",
@@ -451,7 +479,7 @@ export const translations = {
 
   // ── 日本語 ─────────────────────────────────────────────────────────────────
   ja: {
-    nav:      { signin: "サインイン", getStarted: "始める" },
+    nav:      { signin: "サインイン", getStarted: "始める", contactUs: "お問い合わせ" },
     hero: {
       badge: "マルチリーグ ソフトボール管理",
       headline1: "打席に", headline2: "立とう。",
@@ -477,6 +505,20 @@ export const translations = {
       items: [{ icon: "👤", label: "アカウント作成" }, { icon: "🏟️", label: "リーグ設定" }, { icon: "📋", label: "チーム追加" }, { icon: "⚾", label: "プレイボール！" }],
     },
     cta:    { title: "プレイする準備はできた？", subtitle: "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成" },
+    contact: {
+      sectionTitle: "お問い合わせ",
+      sectionSubtitle: "ご質問やリーグへの導入をご検討の方は、ぜひご連絡ください。",
+      name: "お名前", namePlaceholder: "山田 太郎",
+      email: "メールアドレス", emailPlaceholder: "taro@example.com",
+      subject: "件名",
+      subjects: ["一般的なご質問", "機能リクエスト", "パートナーシップ / 販売", "その他"],
+      message: "メッセージ", messagePlaceholder: "詳しくお聞かせください…",
+      send: "メッセージを送る", sending: "送信中…",
+      successTitle: "送信完了！",
+      successMsg: "24〜48時間以内にご返信いたします。",
+      errorMsg: "エラーが発生しました。もう一度お試しください。",
+      directEmail: "または直接メールでご連絡ください",
+    },
     footer: "野球への愛から生まれた。",
     login: {
       pageTitle: "アカウントにサインイン", title: "おかえりなさい", subtitle: "認証情報を入力して続けてください",

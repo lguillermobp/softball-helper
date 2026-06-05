@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/ui/language-selector";
@@ -40,6 +40,98 @@ const FLAGS = [
   { code: "co", name: "Colombia" },
   { code: "jp", name: "Japón" },
 ];
+
+function ContactSection() {
+  const { t } = useLanguage();
+  const tc = t.contact;
+
+  const [form, setForm]       = useState({ name: "", email: "", subject: "", message: "" });
+  const [status, setStatus]   = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      setStatus(res.ok ? "success" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "10px 14px", borderRadius: "10px", fontSize: "14px",
+    border: "1px solid var(--sh-border-dim)", background: "var(--sh-section-bg)",
+    color: "var(--sh-text)", outline: "none",
+  };
+
+  return (
+    <section id="contact" className="border-t py-20" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-hero-bg)" }}>
+      <div className="mx-auto max-w-2xl px-4">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: "var(--sh-text)" }}>{tc.sectionTitle}</h2>
+          <p className="max-w-md mx-auto" style={{ color: "var(--sh-text-muted)" }}>{tc.sectionSubtitle}</p>
+        </div>
+
+        {status === "success" ? (
+          <div className="text-center py-12 rounded-2xl border" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-section-bg)" }}>
+            <div className="text-5xl mb-4">🥎</div>
+            <h3 className="text-xl font-black mb-2" style={{ color: "var(--sh-primary)" }}>{tc.successTitle}</h3>
+            <p style={{ color: "var(--sh-text-muted)" }}>{tc.successMsg}</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="rounded-2xl border p-8 space-y-5" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-section-bg)" }}>
+            <div className="grid sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>{tc.name}</label>
+                <input required style={inputStyle} placeholder={tc.namePlaceholder} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>{tc.email}</label>
+                <input required type="email" style={inputStyle} placeholder={tc.emailPlaceholder} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>{tc.subject}</label>
+              <select required style={inputStyle} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
+                <option value="">—</option>
+                {tc.subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>{tc.message}</label>
+              <textarea required rows={5} style={{ ...inputStyle, resize: "vertical" }} placeholder={tc.messagePlaceholder} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+            </div>
+
+            {status === "error" && (
+              <p className="text-sm font-medium" style={{ color: "var(--sh-danger, #ef4444)" }}>{tc.errorMsg}</p>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs" style={{ color: "var(--sh-text-faint)" }}>
+                {tc.directEmail}{" "}
+                <a href="mailto:lguillermobp@gmail.com" className="underline" style={{ color: "var(--sh-primary)" }}>lguillermobp@gmail.com</a>
+              </p>
+              <Button
+                type="submit"
+                disabled={status === "sending"}
+                className="w-full sm:w-auto px-8 py-3 font-black bg-green-500 hover:bg-green-400 text-black rounded-full transition-all hover:scale-105 disabled:opacity-60 disabled:scale-100"
+              >
+                {status === "sending" ? tc.sending : tc.send}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -85,6 +177,13 @@ export default function HomePage() {
 
           {/* Auth + Controls */}
           <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="#contact"
+              className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+              style={{ color: "var(--sh-text-dim)" }}
+            >
+              {t.nav.contactUs}
+            </a>
             <Link href="/login">
               <Button
                 variant="ghost"
@@ -257,6 +356,9 @@ export default function HomePage() {
         </Link>
       </section>
 
+      {/* ── Contact ─────────────────────────────────────────────────── */}
+      <ContactSection />
+
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -266,9 +368,14 @@ export default function HomePage() {
               Softball<span style={{ color: "var(--sh-primary)" }}>Helper</span>
             </span>
           </div>
-          <p className="text-sm" style={{ color: "var(--sh-text-faint)" }}>
-            © {new Date().getFullYear()} SoftballHelper. {t.footer}
-          </p>
+          <div className="flex items-center gap-4">
+            <a href="#contact" className="text-sm hover:underline" style={{ color: "var(--sh-text-faint)" }}>
+              {t.nav.contactUs}
+            </a>
+            <p className="text-sm" style={{ color: "var(--sh-text-faint)" }}>
+              © {new Date().getFullYear()} SoftballHelper. {t.footer}
+            </p>
+          </div>
         </div>
       </footer>
     </div>
