@@ -22,6 +22,11 @@ interface LineupRow {
   battingOrder: number | null;
 }
 
+interface OfficialUser {
+  role: string;
+  user: { name: string | null; email: string };
+}
+
 interface Props {
   slug: string;
   gameId: string;
@@ -31,6 +36,12 @@ interface Props {
   players: Player[];
   initialEntries: { playerId: string; position: string; battingOrder: number | null }[];
   canEdit: boolean;
+  leagueName?: string;
+  leagueLogoUrl?: string | null;
+  categoryName?: string | null;
+  officials?: OfficialUser[];
+  field?: { name: string } | null;
+  gameDate?: string;
 }
 
 function initRows(players: Player[], entries: Props["initialEntries"]): LineupRow[] {
@@ -62,7 +73,7 @@ function initRows(players: Player[], entries: Props["initialEntries"]): LineupRo
   return rows;
 }
 
-export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, players, initialEntries, canEdit }: Props) {
+export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, players, initialEntries, canEdit, leagueName, leagueLogoUrl, categoryName, officials, field, gameDate }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const ts = t.scoring;
@@ -292,6 +303,18 @@ export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, play
          </div>`
       : "";
 
+    const umpireNames = (officials ?? []).filter(o => o.role === "UMPIRE").map(o => o.user.name ?? o.user.email).join(", ") || "—";
+    const scorerName  = (officials ?? []).find(o => o.role === "SCOREKEEPER")?.user.name ?? (officials ?? []).find(o => o.role === "SCOREKEEPER")?.user.email ?? "—";
+    const fieldName   = field?.name ?? "—";
+    const gameDateStr = gameDate ? new Date(gameDate).toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
+
+    const leagueLogoEl = leagueLogoUrl
+      ? `<img src="${leagueLogoUrl}" style="height:44px;width:44px;object-fit:contain;border-radius:6px;" />`
+      : "";
+    const teamLogoEl = teamLogoUrl
+      ? `<img src="${teamLogoUrl}" style="height:38px;width:38px;object-fit:contain;border-radius:50%;border:2px solid #d1fae5;" />`
+      : "";
+
     const html = `<!DOCTYPE html><html><head>
 <meta charset="utf-8"><title>${teamName} — Lineup Card</title>
 <style>
@@ -304,15 +327,34 @@ export function LineupEditor({ slug, gameId, isHome, teamName, teamLogoUrl, play
 </style>
 </head><body>
 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 8px;border-bottom:3px solid #16a34a;margin-bottom:10px;">
-  <div>
-    <div style="font-size:20px;font-weight:900;">${teamName}</div>
-    <div style="font-size:11px;color:#6b7280;margin-top:1px;">${isHome ? "🏠 Home" : "✈️ Away"} · Lineup Card</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    ${leagueLogoEl}
+    <div>
+      ${leagueName ? `<div style="font-size:13px;font-weight:800;color:#16a34a;line-height:1.2;">${leagueName}</div>` : ""}
+      ${categoryName ? `<div style="font-size:10px;color:#6b7280;">${categoryName}</div>` : ""}
+      ${gameDateStr ? `<div style="font-size:10px;color:#9ca3af;">${gameDateStr}</div>` : ""}
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    ${teamLogoEl}
+    <div>
+      <div style="font-size:20px;font-weight:900;">${teamName}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:1px;">${isHome ? "🏠 Home" : "✈️ Away"} · Lineup Card</div>
+    </div>
   </div>
   <button class="no-print" onclick="window.print()" style="padding:6px 18px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Print</button>
 </div>
 ${warning}
 <div class="grid">
-  <div><div class="label">Batting Order</div>${battingHtml}</div>
+  <div>
+    <div class="label">Batting Order</div>${battingHtml}
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;">
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;margin-bottom:6px;">Game Info</div>
+      <div style="font-size:10px;color:#374151;margin-bottom:3px;"><span style="font-weight:700;color:#6b7280;">Field:</span> ${fieldName}</div>
+      <div style="font-size:10px;color:#374151;margin-bottom:3px;"><span style="font-weight:700;color:#6b7280;">Umpire(s):</span> ${umpireNames}</div>
+      <div style="font-size:10px;color:#374151;"><span style="font-weight:700;color:#6b7280;">Scorekeeper:</span> ${scorerName}</div>
+    </div>
+  </div>
   <div>${fieldSvg}</div>
   <div><div class="label">Bench</div>${benchHtml}</div>
 </div>

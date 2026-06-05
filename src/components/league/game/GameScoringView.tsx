@@ -93,6 +93,8 @@ interface Props {
   permissions: Permissions;
   homeScorebook: ScoreBookData | null;
   awayScorebook: ScoreBookData | null;
+  leagueName?: string;
+  leagueLogoUrl?: string | null;
 }
 
 type Tab = "setup" | "home" | "away" | "official" | "home-book" | "away-book" | "home-stats" | "away-stats" | "home-official-stats" | "away-official-stats";
@@ -108,7 +110,7 @@ function isLineupComplete(lineups: LineupEntry[], isHome: boolean): boolean {
   return true;
 }
 
-export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, scorerOptions, permissions, homeScorebook, awayScorebook }: Props) {
+export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, scorerOptions, permissions, homeScorebook, awayScorebook, leagueName, leagueLogoUrl }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const ts = t.scoring;
@@ -418,6 +420,12 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
             battingOrder: l.battingOrder,
           }))}
           canEdit={permissions.canEditHomeLineup}
+          leagueName={leagueName}
+          leagueLogoUrl={leagueLogoUrl}
+          categoryName={game.category?.name}
+          officials={game.officials}
+          field={game.field}
+          gameDate={game.scheduledAt}
         />
       )}
 
@@ -436,6 +444,12 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
             battingOrder: l.battingOrder,
           }))}
           canEdit={permissions.canEditAwayLineup}
+          leagueName={leagueName}
+          leagueLogoUrl={leagueLogoUrl}
+          categoryName={game.category?.name}
+          officials={game.officials}
+          field={game.field}
+          gameDate={game.scheduledAt}
         />
       )}
 

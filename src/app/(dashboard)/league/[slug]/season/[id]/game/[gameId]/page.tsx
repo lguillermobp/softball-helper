@@ -221,6 +221,8 @@ export default async function GameScoringPage({ params }: PageProps) {
           fields={fields}
           umpireOptions={umpireOptions}
           scorerOptions={scorerOptions}
+          leagueName={league.name}
+          leagueLogoUrl={league.logoUrl ?? null}
           permissions={{
             canEditOfficials,
             canStartGame,
