@@ -45,6 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             name: user.name,
             isMasterAdmin: user.isMasterAdmin,
+            isSupportTechnician: user.isSupportTechnician,
           };
         } catch (err) {
           console.error("[auth] authorize error:", err);
@@ -58,6 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.isMasterAdmin = (user as any).isMasterAdmin;
+        token.isSupportTechnician = (user as any).isSupportTechnician;
       }
       return token;
     },
@@ -65,6 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         (session.user as any).isMasterAdmin = token.isMasterAdmin;
+        (session.user as any).isSupportTechnician = token.isSupportTechnician;
       }
       return session;
     },

@@ -205,3 +205,90 @@ export async function sendMemberInviteEmail(
     `,
   });
 }
+
+// ─── Support ticket emails ────────────────────────────────────────────────────
+
+function ticketCard(title: string, body: string, meta: Record<string, string>, ticketUrl: string, actionLabel: string) {
+  const rows = Object.entries(meta).map(
+    ([k, v]) => `<tr><td style="color:#4ade80;font-weight:600;padding:5px 0;width:110px;vertical-align:top;">${k}</td><td style="color:#f0fdf4;padding:5px 0;">${v}</td></tr>`
+  ).join("");
+  return `
+    <div style="font-family:sans-serif;max-width:540px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
+      <h1 style="color:#4ade80;font-size:20px;margin-bottom:4px;">${title}</h1>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+      <div style="background:#1a3320;border-radius:8px;padding:16px;margin-bottom:20px;">
+        <p style="color:#4ade80;font-weight:600;margin-bottom:8px;font-size:13px;">Message</p>
+        <p style="color:#f0fdf4;white-space:pre-wrap;line-height:1.6;">${body.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+      </div>
+      <a href="${ticketUrl}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">${actionLabel}</a>
+    </div>`;
+}
+
+export async function sendNewTicketToAssignee(opts: {
+  toEmail: string; toName: string | null;
+  ticketId: string; title: string; body: string;
+  category: string; leagueName: string | null;
+  creatorName: string; creatorEmail: string;
+}) {
+  const url = `${APP_URL}/support/tickets/${opts.ticketId}`;
+  await getResend().emails.send({
+    from: FROM,
+    to: opts.toEmail,
+    subject: `[SoftballHelper Support] New ticket: ${opts.title}`,
+    html: ticketCard(
+      `New support ticket assigned to you`,
+      opts.body,
+      {
+        "From":     `${opts.creatorName} (${opts.creatorEmail})`,
+        "Category": opts.category,
+        ...(opts.leagueName ? { "League": opts.leagueName } : {}),
+      },
+      url,
+      "View ticket"
+    ),
+  });
+}
+
+export async function sendNewTicketToLeagueAdmin(opts: {
+  toEmail: string; toName: string | null;
+  ticketId: string; title: string; body: string;
+  leagueName: string; creatorName: string; creatorEmail: string;
+}) {
+  const url = `${APP_URL}/support/tickets/${opts.ticketId}`;
+  await getResend().emails.send({
+    from: FROM,
+    to: opts.toEmail,
+    replyTo: opts.creatorEmail,
+    subject: `[SoftballHelper] League issue reported: ${opts.title}`,
+    html: ticketCard(
+      `A league issue has been reported`,
+      opts.body,
+      {
+        "From":   `${opts.creatorName} (${opts.creatorEmail})`,
+        "League": opts.leagueName,
+      },
+      url,
+      "View ticket"
+    ),
+  });
+}
+
+export async function sendTicketReplyNotification(opts: {
+  toEmail: string;
+  ticketId: string; ticketTitle: string;
+  replyAuthorName: string; replyBody: string;
+}) {
+  const url = `${APP_URL}/support/tickets/${opts.ticketId}`;
+  await getResend().emails.send({
+    from: FROM,
+    to: opts.toEmail,
+    subject: `[SoftballHelper Support] New reply on: ${opts.ticketTitle}`,
+    html: ticketCard(
+      `New reply on your ticket`,
+      opts.replyBody,
+      { "From": opts.replyAuthorName, "Ticket": opts.ticketTitle },
+      url,
+      "View thread"
+    ),
+  });
+}

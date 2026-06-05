@@ -25,6 +25,7 @@ interface LeagueRole {
 
 interface Props {
   isMasterAdmin: boolean;
+  isSupportTechnician?: boolean;
   userName: string | null | undefined;
   allLeagues: LeagueSummary[];
   leagueRoles: LeagueRole[];
@@ -41,7 +42,7 @@ function roleColor(r: string) {
   return "bg-green-400/20 text-green-300 border-green-400/30";
 }
 
-export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles }: Props) {
+export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, allLeagues, leagueRoles }: Props) {
   const { t } = useLanguage();
   const d = t.dashboard;
 
@@ -97,6 +98,11 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <Link href="/support"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+                  🎫 Support
+                </Link>
                 <Link href="/admin/users"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
                   style={{ borderColor: "var(--sh-purple-border)", color: "var(--sh-purple)", background: "var(--sh-purple-bg)" }}>
@@ -200,7 +206,7 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
         {/* ══ Regular User ══ */}
         {!isMasterAdmin && (
           <>
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>{d.title}</h1>
                 <p className="text-sm mt-1" style={{ color: "var(--sh-primary)" }}>
@@ -209,12 +215,28 @@ export function DashboardView({ isMasterAdmin, userName, allLeagues, leagueRoles
                     : `${leagueRoles.length > 1 ? `${d.title} (${leagueRoles.length})` : leagueRoles[0]?.league.name}`}
                 </p>
               </div>
-              <Link href="/register">
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
-                  style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
-                  <span>+</span> {d.newLeague}
-                </button>
-              </Link>
+              <div className="flex items-center gap-2">
+                {isSupportTechnician && (
+                  <Link href="/support"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+                    🎫 Support
+                  </Link>
+                )}
+                {!isSupportTechnician && (
+                  <Link href="/support/tickets"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+                    🎫 My Tickets
+                  </Link>
+                )}
+                <Link href="/register">
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
+                    style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
+                    <span>+</span> {d.newLeague}
+                  </button>
+                </Link>
+              </div>
             </div>
 
             {leagueRoles.length === 0 ? (

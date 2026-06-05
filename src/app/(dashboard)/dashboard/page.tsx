@@ -7,7 +7,8 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isMasterAdmin = (session.user as any).isMasterAdmin as boolean;
+  const isMasterAdmin        = (session.user as any).isMasterAdmin as boolean;
+  const isSupportTechnician  = (session.user as any).isSupportTechnician as boolean;
 
   if (isMasterAdmin) {
     try {
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
       return (
         <DashboardView
           isMasterAdmin
+          isSupportTechnician={isSupportTechnician}
           userName={session.user.name}
           allLeagues={allLeagues.map((l) => ({
             id: l.id, name: l.name, slug: l.slug,
@@ -68,6 +70,7 @@ export default async function DashboardPage() {
     return (
       <DashboardView
         isMasterAdmin={false}
+        isSupportTechnician={isSupportTechnician}
         userName={session.user.name}
         allLeagues={[]}
         leagueRoles={Array.from(leagueMap.values())}

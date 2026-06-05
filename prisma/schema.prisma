@@ -15,20 +15,25 @@ model User {
   password      String?
   emailVerified DateTime?
   image         String?
-  isMasterAdmin Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  phone         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isMasterAdmin        Boolean   @default(false)
+  isSupportTechnician  Boolean   @default(false)
+  isActive             Boolean   @default(true)
+  phone                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  leagueRoles   UserLeagueRole[]
-  players       Player[]
-  managedTeams  Team[]        @relation("TeamManager")
-  assistedTeams Team[]        @relation("TeamAssistant")
-  officialRoles GameOfficial[]
-  conditions    Condition[]   @relation("ConditionAuthor")
+  accounts             Account[]
+  sessions             Session[]
+  leagueRoles          UserLeagueRole[]
+  players              Player[]
+  managedTeams         Team[]           @relation("TeamManager")
+  assistedTeams        Team[]           @relation("TeamAssistant")
+  officialRoles        GameOfficial[]
+  conditions           Condition[]      @relation("ConditionAuthor")
+  technicianLeagues    League[]         @relation("LeagueTechnician")
+  createdTickets       Ticket[]         @relation("TicketCreator")
+  assignedTickets      Ticket[]         @relation("TicketAssignee")
+  ticketMessages       TicketMessage[]
 
   @@map("users")
 }
@@ -109,6 +114,9 @@ model League {
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
+  technicianId         String?
+  technician           User?            @relation("LeagueTechnician", fields: [technicianId], references: [id])
+
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]
   seasons     Season[]
@@ -119,6 +127,7 @@ model League {
   fields      Field[]
   conditions  Condition[]
   publicPage  LeaguePublicPage?
+  tickets     Ticket[]
 
   @@map("leagues")
 }
@@ -544,4 +553,56 @@ model AuditLog {
   @@index([leagueId])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+// ─── Support Tickets ──────────────────────────────────────────────────────────
+
+enum TicketCategory {
+  LEAGUE_ISSUE
+  SYSTEM_ISSUE
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Ticket {
+  id           String         @id @default(cuid())
+  title        String
+  body         String         @db.Text
+  category     TicketCategory
+  status       TicketStatus   @default(OPEN)
+  leagueId     String?
+  createdById  String
+  assignedToId String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  league     League?         @relation(fields: [leagueId], references: [id], onDelete: SetNull)
+  createdBy  User            @relation("TicketCreator",  fields: [createdById],  references: [id])
+  assignedTo User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  messages   TicketMessage[]
+
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([leagueId])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
 }
