@@ -7,13 +7,19 @@ import { useLanguage } from "@/context/language-context";
 import { EditGameDialog } from "@/components/league/EditGameDialog";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
 import { RescheduleGameDialog } from "@/components/league/RescheduleGameDialog";
+import { ScheduleGeneratorDialog } from "@/components/league/ScheduleGeneratorDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 import { flagUrl } from "@/lib/countries";
 import type { OfficialBatterStat, OfficialPitcherStat } from "@/lib/stats";
 
 interface Team { id: string; name: string; group: string | null; logoUrl?: string | null }
 interface Category { id: string; name: string }
-interface Field    { id: string; name: string }
+interface Field {
+  id: string; name: string;
+  slotStartTime: string | null; slotDurationMins: number;
+  slotsMonday: number; slotsTuesday: number; slotsWednesday: number;
+  slotsThursday: number; slotsFriday: number; slotsSaturday: number; slotsSunday: number;
+}
 interface Game {
   id: string;
   homeTeamId: string;
@@ -30,7 +36,7 @@ interface Game {
   homeTeam: { id: string; name: string; logoUrl?: string | null };
   awayTeam: { id: string; name: string; logoUrl?: string | null };
   category: { id: string; name: string } | null;
-  field: Field | null;
+  field: { id: string; name: string } | null;
   rescheduledFromId: string | null;
   rescheduledFrom: { id: string; scheduledAt: string } | null;
 }
@@ -414,7 +420,18 @@ ${body}
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} />
+            <>
+              <ScheduleGeneratorDialog
+                slug={slug}
+                seasonId={seasonId}
+                seasonName={seasonName}
+                seasonStart={startDate}
+                seasonEnd={endDate}
+                fields={fields}
+                teamCount={teams.length}
+              />
+              <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} />
+            </>
           )}
           {canCreatePractice && !isAdmin && (
             <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} isPracticeOnly />

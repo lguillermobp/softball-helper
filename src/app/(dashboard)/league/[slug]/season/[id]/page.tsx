@@ -120,7 +120,13 @@ export default async function SeasonPage({ params }: PageProps) {
       : null,
   }));
 
-  const serializedFields = league.fields.map((f) => ({ id: f.id, name: f.name }));
+  const serializedFields = league.fields.map((f) => ({
+    id: f.id, name: f.name,
+    slotStartTime: f.slotStartTime ?? null,
+    slotDurationMins: f.slotDurationMins,
+    slotsMonday: f.slotsMonday, slotsTuesday: f.slotsTuesday, slotsWednesday: f.slotsWednesday,
+    slotsThursday: f.slotsThursday, slotsFriday: f.slotsFriday, slotsSaturday: f.slotsSaturday, slotsSunday: f.slotsSunday,
+  }));
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>

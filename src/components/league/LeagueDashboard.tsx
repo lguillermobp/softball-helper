@@ -83,7 +83,12 @@ function ResetPasswordButton({ slug, userId, tl }: { slug: string; userId: strin
     </button>
   );
 }
-interface Field { id: string; name: string; types: string[] }
+interface Field {
+  id: string; name: string; types: string[];
+  slotStartTime?: string | null; slotDurationMins?: number;
+  slotsMonday?: number; slotsTuesday?: number; slotsWednesday?: number;
+  slotsThursday?: number; slotsFriday?: number; slotsSaturday?: number; slotsSunday?: number;
+}
 interface Condition {
   id: string; title: string; content: string | null;
   fileUrl: string | null; fileName: string | null; fileType: string | null;

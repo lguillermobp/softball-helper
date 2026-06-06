@@ -373,7 +373,13 @@ export default async function LeaguePage({ params }: PageProps) {
     },
   }));
 
-  const fields = fullLeague.fields.map((f) => ({ id: f.id, name: f.name, types: f.types as string[] }));
+  const fields = fullLeague.fields.map((f) => ({
+    id: f.id, name: f.name, types: f.types as string[],
+    slotStartTime: f.slotStartTime ?? null,
+    slotDurationMins: f.slotDurationMins,
+    slotsMonday: f.slotsMonday, slotsTuesday: f.slotsTuesday, slotsWednesday: f.slotsWednesday,
+    slotsThursday: f.slotsThursday, slotsFriday: f.slotsFriday, slotsSaturday: f.slotsSaturday, slotsSunday: f.slotsSunday,
+  }));
 
   const rawConditions = await prisma.condition.findMany({
     where: { leagueId: league.id },

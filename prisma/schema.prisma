@@ -240,11 +240,20 @@ model Team {
 // ─── Fields ──────────────────────────────────────────────────────────────────
 
 model Field {
-  id        String      @id @default(cuid())
-  leagueId  String
-  name      String
-  types     FieldType[]
-  createdAt DateTime    @default(now())
+  id               String      @id @default(cuid())
+  leagueId         String
+  name             String
+  types            FieldType[]
+  slotStartTime    String?
+  slotDurationMins Int         @default(90)
+  slotsMonday      Int         @default(0)
+  slotsTuesday     Int         @default(0)
+  slotsWednesday   Int         @default(0)
+  slotsThursday    Int         @default(0)
+  slotsFriday      Int         @default(0)
+  slotsSaturday    Int         @default(0)
+  slotsSunday      Int         @default(0)
+  createdAt        DateTime    @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   games  Game[]
