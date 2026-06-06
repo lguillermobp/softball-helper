@@ -154,6 +154,7 @@ export default async function DashboardPage() {
         id: g.id,
         scheduledAt: g.scheduledAt.toISOString(),
         status: g.status,
+        isPractice: g.isPractice,
         homeScore: g.homeScore,
         awayScore: g.awayScore,
         homeTeam: g.homeTeam,

@@ -6,6 +6,7 @@ export interface ScheduleGame {
   id: string;
   scheduledAt: string;
   status: string;
+  isPractice: boolean;
   homeScore: number | null;
   awayScore: number | null;
   homeTeam: { id: string; name: string; logoUrl: string | null };
@@ -53,14 +54,17 @@ function TeamLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
 }
 
 function GameCard({ game }: { game: ScheduleGame }) {
-  const st   = STATUS_STYLE[game.status] ?? STATUS_STYLE.SCHEDULED;
-  const date = new Date(game.scheduledAt);
-  const isPast = game.status === "COMPLETED" || game.status === "CANCELLED";
+  const st      = STATUS_STYLE[game.status] ?? STATUS_STYLE.SCHEDULED;
+  const date    = new Date(game.scheduledAt);
+  const isPast  = game.status === "COMPLETED" || game.status === "CANCELLED";
   const myTeam  = game.myTeamIsHome === true ? game.homeTeam : game.myTeamIsHome === false ? game.awayTeam : null;
   const oppTeam = game.myTeamIsHome === true ? game.awayTeam : game.myTeamIsHome === false ? game.homeTeam : null;
+  const href    = `/league/${game.league.slug}/season/${game.season.id}/game/${game.id}`;
 
   return (
-    <div className="rounded-2xl border p-4 space-y-3" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+    <Link href={href} className="block group">
+    <div className="rounded-2xl border p-4 space-y-3 transition-all group-hover:shadow-md group-hover:scale-[1.005]"
+      style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
       {/* Meta row */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
@@ -70,6 +74,12 @@ function GameCard({ game }: { game: ScheduleGame }) {
           </span>
           <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{game.season.name}</span>
           {game.category && <span className="text-xs" style={{ color: "var(--sh-muted)" }}>· {game.category}</span>}
+          {game.isPractice && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{ color: "#a78bfa", background: "#1a1a3d" }}>
+              Practice
+            </span>
+          )}
         </div>
         <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
           style={{ color: st.color, background: st.bg }}>
@@ -130,6 +140,7 @@ function GameCard({ game }: { game: ScheduleGame }) {
         </span>
       </div>
     </div>
+    </Link>
   );
 }
 
