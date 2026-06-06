@@ -57,6 +57,7 @@ function buildEmail(opts: {
   }[];
   seasonName?: string;
   conditions?: { title: string; content: string | null }[];
+  weekLabel?: string;
 }): string {
   const greeting = opts.recipientName ? `Hi ${opts.recipientName},` : "Hi,";
 
@@ -81,7 +82,7 @@ function buildEmail(opts: {
       return [d, g.opponent, homeAway, g.field ?? "—", score, statusLabel];
     });
     sections += section(
-      `📅 Schedule${opts.seasonName ? ` — ${opts.seasonName}` : ""}`,
+      `📅 Schedule${opts.seasonName ? ` — ${opts.seasonName}` : ""}${opts.weekLabel ? ` · ${opts.weekLabel}` : ""}`,
       opts.games.length === 0
         ? `<p style="color:#6b7280;font-size:13px;">No games scheduled yet.</p>`
         : table(["Date", "Opponent", "H/A", "Field", "Score", "Status"], rows)
@@ -147,13 +148,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { recipients, includeRoster, includeConditions, includeSchedule, seasonId }
+  const { recipients, includeRoster, includeConditions, includeSchedule, seasonId, weekStart, weekEnd }
     : {
         recipients: RecipientInput[];
         includeRoster: boolean;
         includeConditions: boolean;
         includeSchedule: boolean;
         seasonId: string | null;
+        weekStart: string | null;
+        weekEnd: string | null;
       } = await req.json();
 
   if (!recipients?.length)
@@ -187,7 +190,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   // Load games for the season if needed
   const allGames = includeSchedule && seasonId
     ? await prisma.game.findMany({
-        where: { seasonId },
+        where: {
+          seasonId,
+          ...(weekStart && weekEnd ? {
+            scheduledAt: {
+              gte: new Date(weekStart + "T00:00:00"),
+              lte: new Date(weekEnd   + "T23:59:59"),
+            },
+          } : {}),
+        },
         orderBy: { scheduledAt: "asc" },
         select: {
           id: true, scheduledAt: true, status: true,
@@ -233,6 +244,10 @@ export async function POST(req: NextRequest, { params }: Params) {
           })
       : undefined;
 
+    const weekLabel = weekStart && weekEnd
+      ? `Week of ${new Date(weekStart + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}–${new Date(weekEnd + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+      : undefined;
+
     const html = buildEmail({
       leagueName:    league.name,
       recipientName: r.name,
@@ -240,6 +255,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       roster,
       games,
       seasonName:    season?.name,
+      weekLabel,
       conditions:    conditions ?? undefined,
     });
 

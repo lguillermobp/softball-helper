@@ -27,6 +27,17 @@ interface Props {
   hasConditions: boolean;
 }
 
+function toDateStr(d: Date) { return d.toISOString().slice(0, 10); }
+
+function weekOf(anchor: Date) {
+  const d = new Date(anchor); d.setHours(12, 0, 0, 0);
+  const day = d.getDay();
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d); mon.setDate(d.getDate() + diffToMon);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return { mon: toDateStr(mon), sun: toDateStr(sun) };
+}
+
 export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) {
   const [open, setOpen]           = useState(false);
   const [sending, setSending]     = useState(false);
@@ -38,6 +49,8 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
   const [inclConditions, setInclConditions] = useState(hasConditions);
   const [inclSchedule,   setInclSchedule]   = useState(seasons.length > 0);
   const [seasonId,       setSeasonId]       = useState(seasons[0]?.id ?? "");
+  const [scheduleRange,  setScheduleRange]  = useState<"full" | "week">("full");
+  const [weekStart,      setWeekStart]      = useState("");
 
   // Build deduplicated recipient list from all teams
   const allRecipients = useMemo<Recipient[]>(() => {
@@ -91,6 +104,9 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
       email: r.email, name: r.name, teamName: r.teamName,
     }));
 
+    const week = inclSchedule && scheduleRange === "week" && weekStart
+      ? weekOf(new Date(weekStart + "T12:00:00"))
+      : null;
     const res = await fetch(`/api/leagues/${slug}/broadcast`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,6 +116,8 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
         includeConditions: inclConditions,
         includeSchedule:   inclSchedule,
         seasonId:          inclSchedule ? seasonId : null,
+        weekStart:         week?.mon ?? null,
+        weekEnd:           week?.sun ?? null,
       }),
     });
 
@@ -234,7 +252,7 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
                     </div>
                   </label>
                   {inclSchedule && seasons.length > 0 && (
-                    <div className="mt-2 ml-7">
+                    <div className="mt-2 ml-7 space-y-2">
                       <select
                         value={seasonId}
                         onChange={(e) => setSeasonId(e.target.value)}
@@ -245,6 +263,51 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
+
+                      {/* Week filter */}
+                      <div className="flex gap-2">
+                        {(["full", "week"] as const).map(opt => (
+                          <label key={opt} className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                            style={{ color: scheduleRange === opt ? "var(--sh-primary)" : "var(--sh-muted)" }}>
+                            <input type="radio" name="schedRange" value={opt} checked={scheduleRange === opt}
+                              onChange={() => setScheduleRange(opt)} className="accent-green-500" />
+                            {opt === "full" ? "Full season" : "Specific week"}
+                          </label>
+                        ))}
+                      </div>
+
+                      {scheduleRange === "week" && (
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap gap-1.5">
+                            {[{ label: "This week", offset: 0 }, { label: "Next week", offset: 1 }].map(({ label, offset }) => {
+                              const anchor = new Date(); anchor.setDate(anchor.getDate() + offset * 7);
+                              const { mon } = weekOf(anchor);
+                              return (
+                                <button key={label} type="button" onClick={() => setWeekStart(mon)}
+                                  className="text-xs px-2.5 py-1 rounded-lg border font-semibold"
+                                  style={{
+                                    borderColor: weekStart === mon ? "var(--sh-primary)" : "var(--sh-border2)",
+                                    color: weekStart === mon ? "#fff" : "var(--sh-secondary)",
+                                    background: weekStart === mon ? "var(--sh-primary)" : "transparent",
+                                  }}>
+                                  {label}
+                                </button>
+                              );
+                            })}
+                            <input type="date"
+                              className="text-xs rounded-lg border px-2 py-1 outline-none focus:ring-1 focus:ring-green-500"
+                              style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                              onChange={e => { if (e.target.value) setWeekStart(weekOf(new Date(e.target.value + "T12:00:00")).mon); }}
+                            />
+                          </div>
+                          {weekStart && (
+                            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                              {(() => { const { mon, sun } = weekOf(new Date(weekStart + "T12:00:00"));
+                                return `${new Date(mon + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} – ${new Date(sun + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`; })()}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
