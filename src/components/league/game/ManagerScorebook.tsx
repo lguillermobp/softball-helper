@@ -4,8 +4,8 @@ import { useState, useRef, useCallback } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR" | "DP" | "TP";
-const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "1B", "2B", "3B", "HR", "DP", "TP"];
+type OffenseResult = "" | "OUT" | "K" | "DP" | "TP" | "BB" | "1B" | "2B" | "3B" | "HR";
+const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "DP", "TP", "BB", "1B", "2B", "3B", "HR"];
 
 // How many outs each result contributes to the inning total
 const OUT_WEIGHT: Partial<Record<OffenseResult, number>> = { OUT: 1, K: 1, DP: 2, TP: 3 };
@@ -48,6 +48,7 @@ const RESULT_STYLE: Record<OffenseResult, { bg: string; color: string; label: st
   "HR":  { bg: "#78350f",     color: "#fcd34d",           label: "HR"  },
   "DP":  { bg: "#6b1a1a",     color: "#fca5a5",           label: "DP"  },
   "TP":  { bg: "#881337",     color: "#fda4af",           label: "TP"  },
+  "BB":  { bg: "#164e63",     color: "#67e8f9",           label: "BB"  },
 };
 
 // ── Inning-key helpers ────────────────────────────────────────────────────────
@@ -147,6 +148,18 @@ export function ManagerScorebook({
       const updated: ScoreBookData = {
         ...prev,
         offense: { ...prev.offense, [key]: { ...prev.offense[key], [order]: next } },
+      };
+      scheduleAutosave(updated);
+      return updated;
+    });
+  }
+
+  function resetOffense(key: string, order: number) {
+    if (!canEdit) return;
+    setData(prev => {
+      const updated: ScoreBookData = {
+        ...prev,
+        offense: { ...prev.offense, [key]: { ...prev.offense[key], [order]: "" } },
       };
       scheduleAutosave(updated);
       return updated;
@@ -314,7 +327,7 @@ export function ManagerScorebook({
           </div>
           <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
             {canEdit
-              ? "Manager's own record — independent from the official league scoring. Auto-saves."
+              ? "Manager's own record. Tap to cycle · double-tap to clear. Auto-saves."
               : "Manager's own record — independent from the official league scoring."}
           </p>
         </div>
@@ -446,10 +459,11 @@ export function ManagerScorebook({
                   return (
                     <button key={key}
                       onClick={() => cycleOffense(key, batter.battingOrder)}
+                      onDoubleClick={canEdit ? (e) => { e.preventDefault(); resetOffense(key, batter.battingOrder); } : undefined}
                       disabled={!canEdit}
                       className={cell}
                       style={{ background: s.bg, color: s.color, border: "1px solid var(--sh-border)", cursor: canEdit ? "pointer" : "default" }}
-                      title={canEdit ? "Tap to cycle result" : undefined}>
+                      title={canEdit ? "Tap to cycle · double-tap to clear" : undefined}>
                       {s.label}
                     </button>
                   );
