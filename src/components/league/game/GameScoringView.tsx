@@ -75,7 +75,7 @@ interface Permissions {
   canReset: boolean;
 }
 
-type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
+type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR" | "DP" | "TP";
 interface ScoreBookData {
   offense:   Record<string, Record<string, OffenseResult>>;
   defense:   Record<string, { outs: number; k: number }>;

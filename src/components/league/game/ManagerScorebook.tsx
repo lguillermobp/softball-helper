@@ -4,8 +4,11 @@ import { useState, useRef, useCallback } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR";
-const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "1B", "2B", "3B", "HR"];
+type OffenseResult = "" | "OUT" | "K" | "1B" | "2B" | "3B" | "HR" | "DP" | "TP";
+const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "1B", "2B", "3B", "HR", "DP", "TP"];
+
+// How many outs each result contributes to the inning total
+const OUT_WEIGHT: Partial<Record<OffenseResult, number>> = { OUT: 1, K: 1, DP: 2, TP: 3 };
 
 interface ScoreBookData {
   offense:    Record<string, Record<string, OffenseResult>>; // [inningKey][battingOrder]
@@ -43,6 +46,8 @@ const RESULT_STYLE: Record<OffenseResult, { bg: string; color: string; label: st
   "2B":  { bg: "#1e3a5f",     color: "#93c5fd",           label: "2B"  },
   "3B":  { bg: "#1a1a3d",     color: "#a78bfa",           label: "3B"  },
   "HR":  { bg: "#78350f",     color: "#fcd34d",           label: "HR"  },
+  "DP":  { bg: "#6b1a1a",     color: "#fca5a5",           label: "DP"  },
+  "TP":  { bg: "#881337",     color: "#fda4af",           label: "TP"  },
 };
 
 // ── Inning-key helpers ────────────────────────────────────────────────────────
@@ -230,7 +235,7 @@ export function ManagerScorebook({
     const cells = Object.values(data.offense[key] ?? {}) as OffenseResult[];
     return {
       hits: cells.filter(r => r === "1B" || r === "2B" || r === "3B" || r === "HR").length,
-      outs: cells.filter(r => r === "OUT" || r === "K").length,
+      outs: cells.reduce((sum, r) => sum + (OUT_WEIGHT[r] ?? 0), 0),
     };
   }
 
@@ -461,11 +466,20 @@ export function ManagerScorebook({
               </div>
               {offenseKeys.map(key => {
                 const t = inningTotals(key);
+                const overLimit = t.outs > 3;
                 return (
-                  <div key={key} className={col} style={{ fontSize: "11px", color: "var(--sh-muted)", lineHeight: 1.4 }}>
+                  <div key={key} className={col}
+                    style={{
+                      fontSize: "11px", lineHeight: 1.4,
+                      borderRadius: "6px",
+                      background: overLimit ? "#450a0a" : "transparent",
+                      outline: overLimit ? "1px solid #f87171" : "none",
+                    }}>
                     <span style={{ color: "#4ade80" }}>{t.hits}H</span>
                     <br />
-                    <span style={{ color: "#f87171" }}>{t.outs}O</span>
+                    <span style={{ color: overLimit ? "#fbbf24" : "#f87171", fontWeight: overLimit ? 900 : 700 }}>
+                      {t.outs}O{overLimit ? "⚠" : ""}
+                    </span>
                   </div>
                 );
               })}
