@@ -124,6 +124,67 @@ const head  = { color: "var(--sh-text)" };
 
 function roleLabel(r: string) { return r.replace(/_/g, " "); }
 
+function AssignManagerInline({ slug, teamId }: { slug: string; teamId: string }) {
+  const router = useRouter();
+  const [open, setOpen]       = React.useState(false);
+  const [saving, setSaving]   = React.useState(false);
+  const [error, setError]     = React.useState("");
+  const [plays, setPlays]     = React.useState(false);
+  const [name, setName]       = React.useState("");
+  const [email, setEmail]     = React.useState("");
+  const [phone, setPhone]     = React.useState("");
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setError("");
+    const res = await fetch(`/api/leagues/${slug}/teams/${teamId}/set-manager`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone: phone || null, managerRole: plays ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER" }),
+    });
+    setSaving(false);
+    if (!res.ok) { const d = await res.json(); setError(d.error ?? "Failed"); return; }
+    setOpen(false); router.refresh();
+  }
+
+  const inputCls = "rounded-lg border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500";
+  const inputStyle = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" };
+
+  if (!open) return (
+    <button onClick={() => setOpen(true)} className="text-xs underline" style={{ color: "var(--sh-primary)" }}>
+      + Assign manager
+    </button>
+  );
+
+  return (
+    <form onSubmit={handleSave} className="mt-1 space-y-2 w-full">
+      <p className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>Assign manager</p>
+      <div className="flex flex-wrap gap-2">
+        <input required value={name} onChange={e => setName(e.target.value)} placeholder="Full name" className={inputCls} style={inputStyle} />
+        <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={inputCls} style={inputStyle} />
+        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" className={inputCls} style={inputStyle} />
+      </div>
+      <label className="flex items-center gap-1.5 cursor-pointer select-none">
+        <input type="checkbox" checked={plays} onChange={e => setPlays(e.target.checked)} className="accent-green-500 w-3.5 h-3.5" />
+        <span className="text-xs" style={{ color: "var(--sh-secondary)" }}>Also plays (Manager-player)</span>
+      </label>
+      {error && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving}
+          className="text-xs px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button type="button" onClick={() => { setOpen(false); setError(""); }}
+          className="text-xs px-3 py-1.5 rounded-lg border"
+          style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)" }}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function seasonBadge(s: string) {
   if (s === "ACTIVE")    return { bg: "#14532d", color: "#4ade80", text: "Active" };
   if (s === "COMPLETED") return { bg: "#1f2937", color: "#9ca3af", text: "Completed" };
@@ -754,26 +815,26 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
           </div>
 
           {/* Staff row */}
-          {(team.manager || team.assistant) && (
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 mt-2.5">
-              {team.manager && (
-                <p className="text-xs min-w-0" style={dim}>
-                  <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>{tl.teams.managerLabel}</span>
-                  {" · "}
-                  <span style={head}>{team.manager.name ?? "—"}</span>
-                  <span className="ml-1 break-all" style={dim}>{team.manager.email}</span>
-                </p>
-              )}
-              {team.assistant && (
-                <p className="text-xs min-w-0" style={dim}>
-                  <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>{tl.teams.assistantLabel}</span>
-                  {" · "}
-                  <span style={head}>{team.assistant.name ?? "—"}</span>
-                  <span className="ml-1 break-all" style={dim}>{team.assistant.email}</span>
-                </p>
-              )}
-            </div>
-          )}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 mt-2.5">
+            {team.manager ? (
+              <p className="text-xs min-w-0" style={dim}>
+                <span className="font-semibold" style={{ color: "var(--sh-primary)" }}>{tl.teams.managerLabel}</span>
+                {" · "}
+                <span style={head}>{team.manager.name ?? "—"}</span>
+                <span className="ml-1 break-all" style={dim}>{team.manager.email}</span>
+              </p>
+            ) : isAdmin && (
+              <AssignManagerInline slug={slug} teamId={team.id} />
+            )}
+            {team.assistant && (
+              <p className="text-xs min-w-0" style={dim}>
+                <span className="font-semibold" style={{ color: "var(--sh-secondary)" }}>{tl.teams.assistantLabel}</span>
+                {" · "}
+                <span style={head}>{team.assistant.name ?? "—"}</span>
+                <span className="ml-1 break-all" style={dim}>{team.assistant.email}</span>
+              </p>
+            )}
+          </div>
 
           {/* Logo upload — visible to managers and admins */}
           {canEdit && (

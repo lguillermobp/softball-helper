@@ -44,11 +44,12 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hasAssistant, setHasAssistant] = useState(false);
-  const [managerPlays, setManagerPlays] = useState(false);
+  const [hasManager,    setHasManager]    = useState(false);
+  const [hasAssistant,  setHasAssistant]  = useState(false);
+  const [managerPlays,  setManagerPlays]  = useState(false);
   const [assistantPlays, setAssistantPlays] = useState(false);
 
-  function handleClose() { setOpen(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); }
+  function handleClose() { setOpen(false); setHasManager(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,13 +61,12 @@ export function AddTeamDialog({ slug, seasons, categories }: {
       name: fd.get("name"),
       seasonId: fd.get("seasonId") || undefined,
       categoryId: fd.get("categoryId") || undefined,
-      manager: {
-        name: fd.get("manager-name"),
-        email: fd.get("manager-email"),
-        phone: fd.get("manager-phone") || undefined,
-      },
-      managerRole: managerPlays ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER",
     };
+
+    if (hasManager) {
+      body.manager     = { name: fd.get("manager-name"), email: fd.get("manager-email"), phone: fd.get("manager-phone") || undefined };
+      body.managerRole = managerPlays ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
+    }
 
     if (hasAssistant) {
       body.assistant = {
@@ -127,19 +127,25 @@ export function AddTeamDialog({ slug, seasons, categories }: {
             </div>
           )}
 
-          <StaffFields prefix="manager" label="Manager" required />
-
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={managerPlays}
-              onChange={(e) => setManagerPlays(e.target.checked)}
-              className="w-4 h-4 rounded accent-green-500"
-            />
-            <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
-              Manager also plays (Manager-player)
-            </span>
-          </label>
+          {hasManager ? (
+            <div className="space-y-3">
+              <StaffFields prefix="manager" label="Manager" />
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={managerPlays} onChange={e => setManagerPlays(e.target.checked)}
+                  className="w-4 h-4 rounded accent-green-500" />
+                <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>Manager also plays (Manager-player)</span>
+              </label>
+              <button type="button" className="text-xs underline" style={{ color: "var(--sh-danger)" }}
+                onClick={() => { setHasManager(false); setManagerPlays(false); }}>
+                Remove manager
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="text-sm underline" style={{ color: "var(--sh-primary)" }}
+              onClick={() => setHasManager(true)}>
+              + Add manager (optional)
+            </button>
+          )}
 
           {hasAssistant ? (
             <div className="space-y-2">

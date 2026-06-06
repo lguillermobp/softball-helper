@@ -53,8 +53,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { name, seasonId, categoryId, manager, assistant, managerRole, assistantRole } = await req.json();
   if (!name)
     return NextResponse.json({ error: "name is required" }, { status: 400 });
-  if (!manager?.name || !manager?.email)
-    return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
   const resolvedManagerRole: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" =
     managerRole === "TEAM_MANAGER_PLAYER" ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
@@ -62,7 +60,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     assistantRole === "TEAM_ASSISTANT_PLAYER" ? "TEAM_ASSISTANT_PLAYER" : "TEAM_ASSISTANT";
 
   const { team, managerResult, assistantResult } = await prisma.$transaction(async (tx) => {
-    const managerResult = await upsertStaff(tx, league.id, manager, resolvedManagerRole);
+    const managerResult = manager?.name && manager?.email
+      ? await upsertStaff(tx, league.id, manager, resolvedManagerRole)
+      : null;
     const assistantResult =
       assistant?.name && assistant?.email
         ? await upsertStaff(tx, league.id, assistant, resolvedAssistantRole)
@@ -74,23 +74,25 @@ export async function POST(req: NextRequest, { params }: Params) {
         name,
         seasonId: seasonId || null,
         categoryId: categoryId || null,
-        managerId: managerResult.user.id,
+        managerId: managerResult?.user.id ?? null,
         assistantId: assistantResult?.user.id ?? null,
       },
     });
 
     // Automatically add the manager as a player on their team
-    await tx.player.upsert({
-      where: { email_teamId: { email: manager.email, teamId: team.id } },
-      update: { name: manager.name, userId: managerResult.user.id },
-      create: {
-        name: manager.name,
-        email: manager.email,
-        teamId: team.id,
-        leagueId: league.id,
-        userId: managerResult.user.id,
-      },
-    });
+    if (managerResult) {
+      await tx.player.upsert({
+        where: { email_teamId: { email: manager.email, teamId: team.id } },
+        update: { name: manager.name, userId: managerResult.user.id },
+        create: {
+          name: manager.name,
+          email: manager.email,
+          teamId: team.id,
+          leagueId: league.id,
+          userId: managerResult.user.id,
+        },
+      });
+    }
 
     // Automatically add the assistant as a player when their role is playing
     if (assistantResult && resolvedAssistantRole === "TEAM_ASSISTANT_PLAYER") {
@@ -111,18 +113,20 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
 
   // Fire-and-forget emails
-  if (managerResult.isNew) {
-    sendStaffInviteEmail(manager.email, manager.name, league.name, "TEAM_MANAGER").catch(
-      (e) => console.error("[TEAMS] manager invite failed:", e)
-    );
-  } else if (!managerResult.wasVerified) {
-    sendMemberInviteEmail(manager.email, league.name, "TEAM_MANAGER").catch(
-      (e) => console.error("[TEAMS] manager verify failed:", e)
-    );
-  } else {
-    sendRoleNotificationEmail(manager.email, managerResult.user.name, league.name, "team manager").catch(
-      (e) => console.error("[TEAMS] manager notification failed:", e)
-    );
+  if (managerResult) {
+    if (managerResult.isNew) {
+      sendStaffInviteEmail(manager.email, manager.name, league.name, "TEAM_MANAGER").catch(
+        (e) => console.error("[TEAMS] manager invite failed:", e)
+      );
+    } else if (!managerResult.wasVerified) {
+      sendMemberInviteEmail(manager.email, league.name, "TEAM_MANAGER").catch(
+        (e) => console.error("[TEAMS] manager verify failed:", e)
+      );
+    } else {
+      sendRoleNotificationEmail(manager.email, managerResult.user.name, league.name, "team manager").catch(
+        (e) => console.error("[TEAMS] manager notification failed:", e)
+      );
+    }
   }
 
   if (assistantResult) {
