@@ -143,6 +143,81 @@ export function SeasonDashboard({
     }
   }
 
+  function printStandings() {
+    const logoEl = leagueLogoUrl
+      ? `<img src="${leagueLogoUrl}" style="height:48px;width:48px;object-fit:contain;border-radius:6px;" />`
+      : "";
+
+    function tableHtml(rows: Standing[], groupLabel?: string) {
+      const header = groupLabel
+        ? `<h3 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin:18px 0 6px;">${groupLabel}</h3>`
+        : "";
+      const trs = rows.map((s, i) => `
+        <tr style="border-bottom:1px solid #e5e7eb;">
+          <td style="padding:7px 10px;font-weight:700;color:${i === 0 ? "#ca8a04" : "#6b7280"};text-align:center;">${i + 1}</td>
+          <td style="padding:7px 10px;font-weight:600;color:#111;">${s.team.name}</td>
+          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.gp}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:700;color:#16a34a;">${s.w}</td>
+          <td style="padding:7px 10px;text-align:center;color:#ef4444;">${s.l}</td>
+          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.t}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:700;color:#111;">${s.pts}</td>
+          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.rf}</td>
+          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.ra}</td>
+          <td style="padding:7px 10px;text-align:center;color:#0284c7;">${s.pct}</td>
+        </tr>`).join("");
+      return `${header}
+        <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:13px;">
+          <thead>
+            <tr style="background:#f9fafb;border-bottom:2px solid #16a34a;">
+              ${["#","Team","GP","W","L","T","Pts","RF","RA","Pct"].map(h =>
+                `<th style="padding:8px 10px;text-align:${h === "Team" ? "left" : "center"};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">${h}</th>`
+              ).join("")}
+            </tr>
+          </thead>
+          <tbody>${trs}</tbody>
+        </table>`;
+    }
+
+    const body = hasGroups
+      ? groupKeys.map(g => {
+          const rows = standings.filter(s => (s.team.group ?? "") === g);
+          const label = g ? `Group ${g}` : "Ungrouped";
+          return tableHtml(rows, label);
+        }).join("")
+      : tableHtml(standings);
+
+    const html = `<!DOCTYPE html><html><head>
+<meta charset="utf-8"><title>${leagueName} — ${seasonName} Standings</title>
+<style>
+  @page{size:letter portrait;margin:12mm 14mm;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,sans-serif;color:#111;background:#fff;}
+  @media print{.no-print{display:none!important;}body{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}
+</style>
+</head><body>
+<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #16a34a;margin-bottom:16px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    ${logoEl}
+    <div>
+      <div style="font-size:20px;font-weight:900;color:#111;">${leagueName}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:2px;">${seasonName} — Standings</div>
+    </div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:11px;color:#9ca3af;">${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</div>
+    <button class="no-print" onclick="window.print()" style="margin-top:6px;padding:5px 16px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print</button>
+  </div>
+</div>
+${body}
+</body></html>`;
+
+    const w = window.open("", "_blank", "width=820,height=700");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  }
+
   const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
     { key: "schedule",  label: ts.tabs.schedule },
     { key: "standings", label: ts.tabs.standings },
@@ -572,6 +647,17 @@ export function SeasonDashboard({
       {/* ── Standings ── */}
       {tab === "standings" && (
         <div className="space-y-6">
+          {standings.length > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={printStandings}
+                className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+              >
+                🖨 Print standings
+              </button>
+            </div>
+          )}
           {standings.length === 0 ? (
             <div className="rounded-2xl border py-16 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
               {ts.standings.none}
