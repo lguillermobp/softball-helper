@@ -276,6 +276,7 @@ model Game {
   scheduledAt       DateTime
   homeAwayTbd       Boolean    @default(false)
   status            GameStatus @default(SCHEDULED)
+  hasStats          Boolean    @default(true)
   homeScore         Int?
   awayScore         Int?
   startedAt         DateTime?

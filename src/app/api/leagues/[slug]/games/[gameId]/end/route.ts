@@ -52,6 +52,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id: gameId },
     data: {
       status: "COMPLETED",
+      hasStats: true,
       homeScore: homeRuns,
       awayScore: awayRuns,
     },

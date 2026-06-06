@@ -23,6 +23,7 @@ interface Game {
   scheduledAt: string;
   homeAwayTbd: boolean;
   status: string;
+  hasStats: boolean;
   homeScore: number | null;
   awayScore: number | null;
   isPractice: boolean;
@@ -95,8 +96,8 @@ export function SeasonDashboard({
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
   const dim  = { color: "var(--sh-muted)" };
 
-  function getStatusText(status: string) {
-    if (status === "COMPLETED")   return "Final";
+  function getStatusText(status: string, hasStats?: boolean) {
+    if (status === "COMPLETED")   return hasStats === false ? "Final – no stats" : "Final";
     if (status === "IN_PROGRESS") return "Live";
     if (status === "CANCELLED")   return "Cancelled";
     if (status === "RESCHEDULED") return ts.schedule.rescheduledBadge;
@@ -250,13 +251,14 @@ export function SeasonDashboard({
           const score  = game.status === "COMPLETED"
             ? `<strong style="color:#16a34a;">${game.homeScore ?? 0} – ${game.awayScore ?? 0}</strong>`
             : `<span style="color:#999;">vs</span>`;
-          const badgeColor = game.status === "COMPLETED" ? ["#dcfce7","#15803d"]
+          const badgeColor = game.status === "COMPLETED" && !game.hasStats ? ["#fef3c7","#b45309"]
+            : game.status === "COMPLETED"   ? ["#dcfce7","#15803d"]
             : game.status === "CANCELLED"   ? ["#fee2e2","#dc2626"]
             : game.status === "RESCHEDULED" ? ["#f3e8ff","#9333ea"]
             : game.status === "IN_PROGRESS" ? ["#fef9c3","#ca8a04"]
             : null;
           const badge = badgeColor
-            ? `<span style="font-size:10px;padding:1px 7px;border-radius:99px;background:${badgeColor[0]};color:${badgeColor[1]};">${getStatusText(game.status)}</span>`
+            ? `<span style="font-size:10px;padding:1px 7px;border-radius:99px;background:${badgeColor[0]};color:${badgeColor[1]};">${getStatusText(game.status, game.hasStats)}</span>`
             : "";
           const meta = grpLabel ?? "";
           const teamAvatar = (name: string, logoUrl?: string | null) =>

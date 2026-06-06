@@ -121,6 +121,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   const serializedGame = {
     id: game.id,
     status: game.status,
+    hasStats: game.hasStats,
     scheduledAt: game.scheduledAt.toISOString(),
     homeAwayTbd: game.homeAwayTbd,
     homeScore: game.homeScore,

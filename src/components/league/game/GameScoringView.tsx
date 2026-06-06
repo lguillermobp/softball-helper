@@ -47,6 +47,7 @@ interface Substitution {
 }
 interface Game {
   id: string; status: string; scheduledAt: string;
+  hasStats: boolean;
   homeAwayTbd: boolean; homeScore: number | null; awayScore: number | null;
   isPractice: boolean;
   fieldId: string | null;
@@ -122,6 +123,15 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const [cancelReason, setCancelReason] = useState("");
   const [endError, setEndError] = useState("");
 
+  const [showRecordResult, setShowRecordResult] = useState(false);
+  const [recordHome, setRecordHome]             = useState("");
+  const [recordAway, setRecordAway]             = useState("");
+  const [recording, setRecording]               = useState(false);
+  const [recordError, setRecordError]           = useState("");
+  const [reopening, setReopening]               = useState(false);
+
+  const isResultOnly = game.status === "COMPLETED" && !game.hasStats;
+
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 
   const umpires = game.officials.filter(o => o.role === "UMPIRE");
@@ -161,6 +171,30 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
     }
     setShowEndModal(false);
     router.refresh();
+  }
+
+  async function handleRecordResult() {
+    const h = parseInt(recordHome, 10);
+    const a = parseInt(recordAway, 10);
+    if (isNaN(h) || isNaN(a) || h < 0 || a < 0) { setRecordError("Enter valid scores"); return; }
+    setRecording(true); setRecordError("");
+    const res = await fetch(`/api/leagues/${slug}/games/${game.id}/record-result`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ homeScore: h, awayScore: a }),
+    });
+    setRecording(false);
+    if (!res.ok) { const d = await res.json(); setRecordError(d.error ?? "Failed"); return; }
+    setShowRecordResult(false);
+    router.refresh();
+  }
+
+  async function handleReopen() {
+    if (!confirm("Reopen this game for full statistics entry? It will move back to In Progress.")) return;
+    setReopening(true);
+    const res = await fetch(`/api/leagues/${slug}/games/${game.id}/reopen`, { method: "POST" });
+    setReopening(false);
+    if (res.ok) router.refresh();
   }
 
   const canEnd   = permissions.canStartGame && game.status === "IN_PROGRESS";
@@ -250,10 +284,38 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
             </div>
           </div>
 
+          {/* Result-only status banner */}
+          {isResultOnly && (
+            <div className="flex flex-col items-end gap-2">
+              <div className="rounded-xl border px-4 py-2 text-sm font-semibold text-right"
+                style={{ borderColor: "var(--sh-warn-border, #b45309)", background: "var(--sh-warn-bg, #451a03)", color: "#fbbf24" }}>
+                Finished without statistics
+              </div>
+              {permissions.canStartGame && (
+                <button
+                  onClick={handleReopen}
+                  disabled={reopening}
+                  className="text-xs px-3 py-1.5 rounded-lg border font-semibold disabled:opacity-50"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}
+                >
+                  {reopening ? "Reopening…" : "Upgrade to full scoring"}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Start Game */}
           {game.status === "SCHEDULED" && permissions.canStartGame && (
-            <div className="flex flex-col items-end gap-1">
-              <button
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowRecordResult(true); setRecordError(""); setRecordHome(""); setRecordAway(""); }}
+                  className="text-xs px-3 py-1.5 rounded-lg border font-semibold"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                >
+                  Record Result
+                </button>
+                <button
                 onClick={handleStartGame}
                 disabled={!canStart || starting}
                 className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -265,6 +327,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
               >
                 {starting ? "Starting…" : ts.startGame}
               </button>
+              </div>
               {startError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{startError}</p>}
               {!canStart && (
                 <div className="text-xs text-right space-y-0.5" style={{ color: "var(--sh-muted)" }}>
@@ -563,6 +626,69 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
             >
               Back
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Record Result Modal ── */}
+      {showRecordResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-sm rounded-2xl border p-6 space-y-5" style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border)" }}>
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>Record Result</h2>
+              <p className="text-xs mt-1" style={{ color: "var(--sh-muted)" }}>
+                Records the final score without at-bat statistics. The game will be marked as <strong>Finished without statistics</strong>.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                  {game.homeTeam.name} (Home)
+                </label>
+                <input
+                  type="number" min={0} max={99}
+                  value={recordHome}
+                  onChange={e => setRecordHome(e.target.value)}
+                  className="w-full text-center text-2xl font-black rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                  {game.awayTeam.name} (Away)
+                </label>
+                <input
+                  type="number" min={0} max={99}
+                  value={recordAway}
+                  onChange={e => setRecordAway(e.target.value)}
+                  className="w-full text-center text-2xl font-black rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {recordError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{recordError}</p>}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRecordResult(false)}
+                className="flex-1 text-sm py-2 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: "var(--sh-muted)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRecordResult}
+                disabled={recording || recordHome === "" || recordAway === ""}
+                className="flex-1 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+              >
+                {recording ? "Saving…" : "Confirm Result"}
+              </button>
+            </div>
           </div>
         </div>
       )}
