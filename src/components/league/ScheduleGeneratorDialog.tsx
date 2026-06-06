@@ -37,6 +37,20 @@ function fieldWeeklySlots(f: FieldSlot) {
   return f.slotsMonday + f.slotsTuesday + f.slotsWednesday + f.slotsThursday + f.slotsFriday + f.slotsSaturday + f.slotsSunday;
 }
 
+function toDateStr(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function weekOf(anchor: Date): { mon: string; sun: string } {
+  const d = new Date(anchor);
+  d.setHours(12, 0, 0, 0);
+  const day = d.getDay(); // 0=Sun
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d); mon.setDate(d.getDate() + diffToMon);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return { mon: toDateStr(mon), sun: toDateStr(sun) };
+}
+
 export function ScheduleGeneratorDialog({ slug, seasonId, seasonName, seasonStart, seasonEnd, fields, teamCount }: Props) {
   const router = useRouter();
   const [open, setOpen]       = useState(false);
@@ -139,6 +153,63 @@ export function ScheduleGeneratorDialog({ slug, seasonId, seasonName, seasonStar
               {/* ── Step 1: Config ── */}
               {step === 1 && (
                 <>
+                  {/* Week quick-select */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                      Quick select — single week
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {[
+                        { label: "This week",  offset: 0 },
+                        { label: "Next week",  offset: 1 },
+                        { label: "In 2 weeks", offset: 2 },
+                      ].map(({ label, offset }) => {
+                        const anchor = new Date();
+                        anchor.setDate(anchor.getDate() + offset * 7);
+                        const { mon, sun } = weekOf(anchor);
+                        const active = startDate === mon && endDate === sun;
+                        return (
+                          <button key={label} type="button"
+                            onClick={() => { setStart(mon); setEnd(sun); }}
+                            className="text-xs px-3 py-1.5 rounded-lg border font-semibold transition-colors"
+                            style={{
+                              borderColor: active ? "var(--sh-primary)" : "var(--sh-border2)",
+                              color: active ? "#fff" : "var(--sh-secondary)",
+                              background: active ? "var(--sh-primary)" : "transparent",
+                            }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: "var(--sh-muted)" }}>or pick:</span>
+                        <input
+                          type="date"
+                          className="text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500"
+                          style={inputStyle}
+                          onChange={e => {
+                            if (!e.target.value) return;
+                            const { mon, sun } = weekOf(new Date(e.target.value + "T12:00:00"));
+                            setStart(mon); setEnd(sun);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {startDate && endDate && (
+                      <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                        {new Date(startDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                        {" – "}
+                        {new Date(endDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1" style={{ background: "var(--sh-border)" }} />
+                    <span className="text-xs" style={{ color: "var(--sh-muted)" }}>or custom range</span>
+                    <div className="h-px flex-1" style={{ background: "var(--sh-border)" }} />
+                  </div>
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>Start date</label>
