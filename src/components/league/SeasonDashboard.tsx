@@ -523,6 +523,17 @@ ${body}
                                 {gameError[game.id] && (
                                   <p className="text-xs mb-2" style={{ color: "var(--sh-danger)" }}>{gameError[game.id]}</p>
                                 )}
+                                {/* Time + field */}
+                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                  <span className="text-xs font-semibold" style={{ color: "var(--sh-secondary)" }}>
+                                    🕐 {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                  {game.field && (
+                                    <span className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                                      🏟️ {game.field.name}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center justify-between gap-4">
                                   {/* Teams & score */}
                                   <div className="flex items-center gap-3 flex-1 min-w-0">
