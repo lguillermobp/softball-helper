@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 import { ChangePasswordButton } from "@/components/ui/change-password-button";
+import { DashboardSchedule, type ScheduleGame, type StatRow } from "./DashboardSchedule";
 
 interface LeagueSummary {
   id: string; name: string; slug: string;
@@ -29,6 +31,9 @@ interface Props {
   userName: string | null | undefined;
   allLeagues: LeagueSummary[];
   leagueRoles: LeagueRole[];
+  scheduleGames?: ScheduleGame[];
+  stats?: StatRow[];
+  hasPlayingRole?: boolean;
 }
 
 function roleColor(r: string) {
@@ -42,9 +47,12 @@ function roleColor(r: string) {
   return "bg-green-400/20 text-green-300 border-green-400/30";
 }
 
-export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, allLeagues, leagueRoles }: Props) {
+type UserTab = "leagues" | "schedule";
+
+export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, allLeagues, leagueRoles, scheduleGames = [], stats = [], hasPlayingRole = false }: Props) {
   const { t } = useLanguage();
   const d = t.dashboard;
+  const [userTab, setUserTab] = useState<UserTab>("leagues");
 
   function statusInfo(s: string) {
     if (s === "ACTIVE")    return { color: "#4ade80", label: d.active };
@@ -206,7 +214,7 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
         {/* ══ Regular User ══ */}
         {!isMasterAdmin && (
           <>
-            <div className="mb-8 flex items-center justify-between flex-wrap gap-3">
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>{d.title}</h1>
                 <p className="text-sm mt-1" style={{ color: "var(--sh-primary)" }}>
@@ -239,7 +247,34 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
               </div>
             </div>
 
-            {leagueRoles.length === 0 ? (
+            {/* Tabs — only for users with schedule data */}
+            {scheduleGames.length > 0 && (
+              <div className="flex gap-1 mb-6 border-b" style={{ borderColor: "var(--sh-border)" }}>
+                {(["leagues", "schedule"] as UserTab[]).map(tab => {
+                  const labels: Record<UserTab, string> = { leagues: "My Leagues", schedule: "Schedule & Stats" };
+                  const active = userTab === tab;
+                  return (
+                    <button key={tab} onClick={() => setUserTab(tab)}
+                      className="px-4 py-2 text-sm font-semibold transition-colors relative"
+                      style={{ color: active ? "var(--sh-primary)" : "var(--sh-muted)", background: "transparent", border: "none" }}>
+                      {labels[tab]}
+                      {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t" style={{ background: "var(--sh-primary)" }} />}
+                      {tab === "schedule" && scheduleGames.some(g => g.status === "IN_PROGRESS") && (
+                        <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Schedule tab */}
+            {userTab === "schedule" && (
+              <DashboardSchedule games={scheduleGames} stats={stats} hasPlayingRole={hasPlayingRole} />
+            )}
+
+            {/* Leagues tab */}
+            {(userTab === "leagues" || scheduleGames.length === 0) && (leagueRoles.length === 0 ? (
               <div className="rounded-2xl border text-center py-20 px-6"
                 style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
                 <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
@@ -299,7 +334,7 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
                   </Link>
                 ))}
               </div>
-            )}
+            ))}
           </>
         )}
       </main>
