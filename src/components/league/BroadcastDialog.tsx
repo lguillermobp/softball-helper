@@ -159,25 +159,29 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
                   No managers or assistants found. Add staff to your teams first.
                 </p>
               ) : (
-                <div className="rounded-xl border overflow-hidden divide-y" style={{ borderColor: "var(--sh-border)" }}>
+                <div className="rounded-xl border overflow-hidden grid grid-cols-2" style={{ borderColor: "var(--sh-border)" }}>
                   {allRecipients.map((r) => (
-                    <label key={r.key} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:opacity-80"
-                      style={{ background: selected.has(r.key) ? "var(--sh-approved-bg)" : "var(--sh-bg-card)" }}>
+                    <label key={r.key}
+                      title={r.email}
+                      className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:opacity-80 border-b"
+                      style={{
+                        background: selected.has(r.key) ? "var(--sh-approved-bg)" : "var(--sh-bg-card)",
+                        borderColor: "var(--sh-border)",
+                      }}>
                       <input
                         type="checkbox"
                         checked={selected.has(r.key)}
                         onChange={() => toggle(r.key)}
                         className="accent-green-500 w-4 h-4 shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "var(--sh-text)" }}>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate" style={{ color: "var(--sh-text)" }}>
                           {r.name ?? r.email}
                         </p>
                         <p className="text-xs truncate" style={{ color: "var(--sh-muted)" }}>
                           {r.teamName} · {r.role}
                         </p>
                       </div>
-                      <span className="text-xs shrink-0" style={{ color: "var(--sh-muted)" }}>{r.email}</span>
                     </label>
                   ))}
                 </div>
