@@ -94,7 +94,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   // Practice games: relax all permissions to any league member
   const isPractice = game.isPractice;
   const canEditOfficials = isAdmin || isUmpire || isPractice && hasAnyRole;
-  const canStartGame     = isAdmin || isUmpire || isPractice && hasAnyRole;
+  const canStartGame     = isAdmin || isUmpire || isScorer || isPractice && hasAnyRole;
   const canSwapTeams     = isAdmin || isUmpire || isScorer || isPractice && hasAnyRole;
   const canEditHomeLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager || isPractice && hasAnyRole)) ||
