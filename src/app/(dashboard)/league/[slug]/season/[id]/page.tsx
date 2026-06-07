@@ -78,10 +78,10 @@ export default async function SeasonPage({ params }: PageProps) {
     away.rf += as_; away.ra += hs;
 
     if (hs > as_) {
-      home.w++; home.pts += 2;
+      home.w++; home.pts += 3;
       away.l++;
     } else if (as_ > hs) {
-      away.w++; away.pts += 2;
+      away.w++; away.pts += 3;
       home.l++;
     } else {
       home.t++; home.pts += 1;
