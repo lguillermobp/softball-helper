@@ -105,7 +105,8 @@ export default async function GameScoringPage({ params }: PageProps) {
   const canEditHomeScorebook = isAdmin || isHomeManager || isPractice && hasAnyRole;
   const canEditAwayScorebook = isAdmin || isAwayManager || isPractice && hasAnyRole;
   const canScore  = isAdmin || isScorer || isPractice && hasAnyRole;
-  const canReset  = isPractice && hasAnyRole;
+  const canReset       = isPractice && hasAnyRole;
+  const canEditResult  = isAdmin;
 
   // Load scorebooks
   const [homeScorebook, awayScorebook] = await Promise.all([
@@ -234,6 +235,7 @@ export default async function GameScoringPage({ params }: PageProps) {
             canEditAwayScorebook,
             canScore,
             canReset,
+            canEditResult,
           }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           homeScorebook={(homeScorebook?.data ?? null) as any}

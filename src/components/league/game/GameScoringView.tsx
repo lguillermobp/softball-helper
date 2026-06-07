@@ -74,6 +74,7 @@ interface Permissions {
   canEditAwayScorebook: boolean;
   canScore: boolean;
   canReset: boolean;
+  canEditResult: boolean;
 }
 
 type OffenseResult = "" | "OUT" | "K" | "DP" | "TP" | "BB" | "1B" | "2B" | "3B" | "HR";
@@ -129,6 +130,12 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const [recording, setRecording]               = useState(false);
   const [recordError, setRecordError]           = useState("");
   const [reopening, setReopening]               = useState(false);
+
+  const [showEditResult, setShowEditResult]     = useState(false);
+  const [editHome, setEditHome]                 = useState("");
+  const [editAway, setEditAway]                 = useState("");
+  const [editing, setEditing]                   = useState(false);
+  const [editError, setEditError]               = useState("");
 
   const isResultOnly = game.status === "COMPLETED" && !game.hasStats;
 
@@ -195,6 +202,29 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
     const res = await fetch(`/api/leagues/${slug}/games/${game.id}/reopen`, { method: "POST" });
     setReopening(false);
     if (res.ok) router.refresh();
+  }
+
+  function openEditResult() {
+    setEditHome(game.homeScore !== null ? String(game.homeScore) : "");
+    setEditAway(game.awayScore !== null ? String(game.awayScore) : "");
+    setEditError("");
+    setShowEditResult(true);
+  }
+
+  async function handleEditResult() {
+    const h = parseInt(editHome, 10);
+    const a = parseInt(editAway, 10);
+    if (isNaN(h) || isNaN(a) || h < 0 || a < 0) { setEditError("Enter valid scores"); return; }
+    setEditing(true); setEditError("");
+    const res = await fetch(`/api/leagues/${slug}/games/${game.id}/edit-result`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ homeScore: h, awayScore: a }),
+    });
+    setEditing(false);
+    if (!res.ok) { const d = await res.json(); setEditError(d.error ?? "Failed"); return; }
+    setShowEditResult(false);
+    router.refresh();
   }
 
   const canEnd   = permissions.canStartGame && game.status === "IN_PROGRESS";
@@ -384,6 +414,15 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
               >
                 Game summary ↗
               </Link>
+              {permissions.canEditResult && (
+                <button
+                  onClick={openEditResult}
+                  className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                >
+                  ✏️ Edit result
+                </button>
+              )}
               {permissions.canReset && (
                 <button
                   onClick={handleReset}
@@ -687,6 +726,69 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
                 style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
               >
                 {recording ? "Saving…" : "Confirm Result"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Result Modal ── */}
+      {showEditResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-sm rounded-2xl border p-6 space-y-5" style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border)" }}>
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>Edit Result</h2>
+              <p className="text-xs mt-1" style={{ color: "var(--sh-muted)" }}>
+                Correct the final score for this game. Statistics are not affected.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                  {game.homeTeam.name} (Home)
+                </label>
+                <input
+                  type="number" min={0} max={99}
+                  value={editHome}
+                  onChange={e => setEditHome(e.target.value)}
+                  className="w-full text-center text-2xl font-black rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                  {game.awayTeam.name} (Away)
+                </label>
+                <input
+                  type="number" min={0} max={99}
+                  value={editAway}
+                  onChange={e => setEditAway(e.target.value)}
+                  className="w-full text-center text-2xl font-black rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {editError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{editError}</p>}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEditResult(false)}
+                className="flex-1 text-sm py-2 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: "var(--sh-muted)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditResult}
+                disabled={editing || editHome === "" || editAway === ""}
+                className="flex-1 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg,#2563eb,#1d4ed8)", color: "#fff" }}
+              >
+                {editing ? "Saving…" : "Save Result"}
               </button>
             </div>
           </div>
