@@ -608,6 +608,15 @@ ${body}
                                           {ts.schedule.scoring}
                                         </Link>
                                       )}
+                                      {game.status === "COMPLETED" && (
+                                        <Link
+                                          href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
+                                          className="text-xs font-semibold px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                                          style={{ background: "var(--sh-bg-card2)", color: "var(--sh-muted)", border: "1px solid var(--sh-border2)" }}
+                                        >
+                                          {isAdmin ? "View / Edit" : "View"}
+                                        </Link>
+                                      )}
                                     </div>
                                     <p className="text-xs" style={dim}>
                                       {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
