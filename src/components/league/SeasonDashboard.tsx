@@ -309,7 +309,14 @@ ${body}
       day.grpMap.get(grpKey)!.catGames.push(game);
     }
     return [...dayMap.entries()].map(([dayKey, { label, grpMap }]) => ({
-      dayKey, label, catGroups: [...grpMap.values()],
+      dayKey,
+      label,
+      catGroups: [...grpMap.values()].sort((a, b) => {
+        // No-field bucket always last
+        if (!a.grpName && b.grpName) return 1;
+        if (a.grpName && !b.grpName) return -1;
+        return a.grpName.localeCompare(b.grpName, undefined, { numeric: true, sensitivity: "base" });
+      }),
     }));
   })();
 
