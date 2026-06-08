@@ -30,8 +30,9 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPra
   const [error, setError] = useState("");
   const [homeAwayTbd, setHomeAwayTbd] = useState(false);
   const [isPractice, setIsPractice] = useState(isPracticeOnly ?? false);
+  const [isTwin, setIsTwin] = useState(false);
 
-  function handleClose() { setOpen(false); setHomeAwayTbd(false); setIsPractice(isPracticeOnly ?? false); setError(""); }
+  function handleClose() { setOpen(false); setHomeAwayTbd(false); setIsPractice(isPracticeOnly ?? false); setIsTwin(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,6 +51,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPra
         scheduledAt: new Date(fd.get("scheduledAt") as string).toISOString(),
         homeAwayTbd,
         isPractice,
+        isTwin: isTwin && !isPractice,
       }),
     });
     setLoading(false);
@@ -133,7 +135,7 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPra
               <input
                 type="checkbox"
                 checked={isPractice}
-                onChange={(e) => setIsPractice(e.target.checked)}
+                onChange={(e) => { setIsPractice(e.target.checked); if (e.target.checked) setIsTwin(false); }}
                 className="accent-amber-500 w-4 h-4"
               />
               <span className="text-sm" style={{ color: "var(--sh-text)" }}>
@@ -142,11 +144,26 @@ export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPra
             </label>
           )}
 
+          {/* Twin game toggle — only for regular games */}
+          {!isPractice && !isPracticeOnly && (
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isTwin}
+                onChange={(e) => setIsTwin(e.target.checked)}
+                className="accent-blue-500 w-4 h-4"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>
+                ⚾⚾ Twin game — automatically schedule a second game immediately after
+              </span>
+            </label>
+          )}
+
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving…" : isPractice ? "Create practice game" : "Schedule game"}
+              {loading ? "Saving…" : isPractice ? "Create practice game" : isTwin ? "Schedule twin games" : "Schedule game"}
             </Button>
           </div>
         </form>

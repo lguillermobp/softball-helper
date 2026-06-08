@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   const hasAnyRole = league.userRoles.length > 0;
 
-  const { seasonId, categoryId, homeTeamId, awayTeamId, fieldId, scheduledAt, homeAwayTbd, isPractice } =
+  const { seasonId, categoryId, homeTeamId, awayTeamId, fieldId, scheduledAt, homeAwayTbd, isPractice, isTwin } =
     await req.json();
 
   // Practice games: any league member can create; regular games: admin only
@@ -67,18 +67,35 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (homeTeamId === awayTeamId)
     return NextResponse.json({ error: "Home and away teams must be different" }, { status: 400 });
 
+  const gameData = {
+    leagueId:   league.id,
+    seasonId,
+    categoryId: categoryId || null,
+    homeTeamId,
+    awayTeamId,
+    fieldId:    fieldId || null,
+    homeAwayTbd: homeAwayTbd === true,
+    isPractice:  isPractice  === true,
+  };
+
+  if (isTwin && !isPractice) {
+    // Look up field duration; default 90 min
+    const field = fieldId
+      ? await prisma.field.findUnique({ where: { id: fieldId }, select: { slotDurationMins: true } })
+      : null;
+    const durationMs = (field?.slotDurationMins ?? 90) * 60 * 1000;
+    const game1At = new Date(scheduledAt);
+    const game2At = new Date(game1At.getTime() + durationMs);
+
+    const [game1, game2] = await prisma.$transaction([
+      prisma.game.create({ data: { ...gameData, scheduledAt: game1At }, include: gameInclude }),
+      prisma.game.create({ data: { ...gameData, scheduledAt: game2At }, include: gameInclude }),
+    ]);
+    return NextResponse.json([game1, game2], { status: 201 });
+  }
+
   const game = await prisma.game.create({
-    data: {
-      leagueId: league.id,
-      seasonId,
-      categoryId: categoryId || null,
-      homeTeamId,
-      awayTeamId,
-      fieldId: fieldId || null,
-      scheduledAt: new Date(scheduledAt),
-      homeAwayTbd: homeAwayTbd === true,
-      isPractice:  isPractice  === true,
-    },
+    data: { ...gameData, scheduledAt: new Date(scheduledAt) },
     include: gameInclude,
   });
 
