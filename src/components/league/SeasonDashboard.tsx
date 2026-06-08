@@ -213,27 +213,30 @@ export function SeasonDashboard({
 
     function tableHtml(rows: Standing[], groupLabel?: string) {
       const header = groupLabel
-        ? `<h3 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin:18px 0 6px;">${groupLabel}</h3>`
+        ? `<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin:0 0 6px;">${groupLabel}</h3>`
         : "";
-      const trs = rows.map((s, i) => `
+      const trs = rows.map((s, i) => {
+        const rd = s.rf - s.ra;
+        return `
         <tr style="border-bottom:1px solid #e5e7eb;">
-          <td style="padding:7px 10px;font-weight:700;color:${i === 0 ? "#ca8a04" : "#6b7280"};text-align:center;">${i + 1}</td>
-          <td style="padding:7px 10px;font-weight:600;color:#111;">${s.team.name}</td>
-          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.gp}</td>
-          <td style="padding:7px 10px;text-align:center;font-weight:700;color:#16a34a;">${s.w}</td>
-          <td style="padding:7px 10px;text-align:center;color:#ef4444;">${s.l}</td>
-          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.t}</td>
-          <td style="padding:7px 10px;text-align:center;font-weight:700;color:#111;">${s.pts}</td>
-          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.rf}</td>
-          <td style="padding:7px 10px;text-align:center;color:#6b7280;">${s.ra}</td>
-          <td style="padding:7px 10px;text-align:center;color:#0284c7;">${s.pct}</td>
-        </tr>`).join("");
+          <td style="padding:6px 8px;font-weight:700;color:${i === 0 ? "#ca8a04" : "#6b7280"};text-align:center;">${i + 1}</td>
+          <td style="padding:6px 8px;font-weight:600;color:#111;">${s.team.name}</td>
+          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.gp}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#16a34a;">${s.w}</td>
+          <td style="padding:6px 8px;text-align:center;color:#ef4444;">${s.l}</td>
+          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.t}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#111;">${s.pts}</td>
+          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.rf}</td>
+          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.ra}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:${rd >= 0 ? "#16a34a" : "#ef4444"};">${rd > 0 ? "+" + rd : rd}</td>
+          <td style="padding:6px 8px;text-align:center;color:#0284c7;">${s.pct}</td>
+        </tr>`}).join("");
       return `${header}
-        <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:13px;">
+        <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:12px;">
           <thead>
             <tr style="background:#f9fafb;border-bottom:2px solid #16a34a;">
-              ${["#","Team","GP","W","L","T","Pts","RF","RA","Pct"].map(h =>
-                `<th style="padding:8px 10px;text-align:${h === "Team" ? "left" : "center"};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">${h}</th>`
+              ${["#","Team","GP","W","L","T","Pts","RF","RA","RD","Pct"].map(h =>
+                `<th style="padding:6px 8px;text-align:${h === "Team" ? "left" : "center"};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">${h}</th>`
               ).join("")}
             </tr>
           </thead>
@@ -242,11 +245,20 @@ export function SeasonDashboard({
     }
 
     const body = hasGroups
-      ? groupKeys.map(g => {
-          const rows = standings.filter(s => (s.team.group ?? "") === g);
-          const label = g ? `Group ${g}` : "Ungrouped";
-          return tableHtml(rows, label);
-        }).join("")
+      ? (() => {
+          const cells = groupKeys.map(g => {
+            const rows = standings.filter(s => (s.team.group ?? "") === g);
+            const label = g ? `Group ${g}` : "Ungrouped";
+            return `<div style="min-width:0;">${tableHtml(rows, label)}</div>`;
+          });
+          // Pair groups into rows of 2
+          const rows: string[] = [];
+          for (let i = 0; i < cells.length; i += 2) {
+            const pair = cells.slice(i, i + 2);
+            rows.push(`<div style="display:grid;grid-template-columns:${pair.length === 2 ? "1fr 1fr" : "1fr"};gap:20px;margin-bottom:20px;">${pair.join("")}</div>`);
+          }
+          return rows.join("");
+        })()
       : tableHtml(standings);
 
     const html = `<!DOCTYPE html><html><head>
@@ -305,7 +317,7 @@ ${body}
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.pct, ""].map((h, i) => (
+              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.rd, ts.standings.pct, ""].map((h, i) => (
                 <th key={i} className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center first:text-left" style={dim}>
                   {h}
                 </th>
@@ -329,6 +341,7 @@ ${body}
                 <td className="px-3 py-3 text-center font-bold" style={{ color: "var(--sh-text)" }}>{s.pts}</td>
                 <td className="px-3 py-3 text-center" style={dim}>{s.rf}</td>
                 <td className="px-3 py-3 text-center" style={dim}>{s.ra}</td>
+                <td className="px-3 py-3 text-center font-semibold" style={{ color: s.rf - s.ra >= 0 ? "var(--sh-primary)" : "var(--sh-danger)" }}>{s.rf - s.ra > 0 ? `+${s.rf - s.ra}` : s.rf - s.ra}</td>
                 <td className="px-3 py-3 text-center" style={{ color: "var(--sh-secondary)" }}>{s.pct}</td>
                 <td className="px-3 py-3 text-center">
                   <Link

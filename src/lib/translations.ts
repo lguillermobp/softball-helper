@@ -163,7 +163,7 @@ export const translations = {
       },
       standings: {
         none: "Standings will appear once games are completed.",
-        rank: "#", team: "Team", gp: "GP", w: "W", l: "L", t: "T", pts: "Pts", rf: "RF", ra: "RA", pct: "Pct",
+        rank: "#", team: "Team", gp: "GP", w: "W", l: "L", t: "T", pts: "Pts", rf: "RF", ra: "RA", rd: "RD", pct: "Pct",
       },
       groups: {
         title: "Team Groups",
@@ -406,7 +406,7 @@ export const translations = {
       },
       standings: {
         none: "Las clasificaciones aparecerán cuando se completen los juegos.",
-        rank: "#", team: "Equipo", gp: "JJ", w: "G", l: "P", t: "E", pts: "Pts", rf: "RF", ra: "RC", pct: "Pct",
+        rank: "#", team: "Equipo", gp: "JJ", w: "G", l: "P", t: "E", pts: "Pts", rf: "RF", ra: "RC", rd: "DR", pct: "Pct",
       },
       groups: {
         title: "Grupos de Equipos",
@@ -649,7 +649,7 @@ export const translations = {
       },
       standings: {
         none: "試合が完了すると順位表が表示されます。",
-        rank: "#", team: "チーム", gp: "試合", w: "勝", l: "敗", t: "分", pts: "点", rf: "得点", ra: "失点", pct: "勝率",
+        rank: "#", team: "チーム", gp: "試合", w: "勝", l: "敗", t: "分", pts: "点", rf: "得点", ra: "失点", rd: "得失差", pct: "勝率",
       },
       groups: {
         title: "チームグループ",
