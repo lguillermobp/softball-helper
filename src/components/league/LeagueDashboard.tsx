@@ -88,7 +88,10 @@ interface Field {
   slotStartTime?: string | null; slotDurationMins?: number;
   slotsMonday?: number; slotsTuesday?: number; slotsWednesday?: number;
   slotsThursday?: number; slotsFriday?: number; slotsSaturday?: number; slotsSunday?: number;
+  defaultScorekeeperUserId?: string | null;
+  defaultUmpireUserId?: string | null;
 }
+interface Official { id: string; name: string | null; role: string }
 interface Condition {
   id: string; title: string; content: string | null;
   fileUrl: string | null; fileName: string | null; fileType: string | null;
@@ -111,6 +114,7 @@ interface Props {
   teams: Team[];
   members: Member[];
   fields: Field[];
+  officials?: Official[];
   conditions: Condition[];
   publicPage: PublicPageConfig | null;
 }
@@ -214,7 +218,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, conditions, publicPage: initialPublicPage }: Props) {
+export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const tl = t.league;
@@ -1238,7 +1242,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.fields.title}</h2>
-        {isAdmin && <AddFieldDialog slug={slug} />}
+        {isAdmin && <AddFieldDialog slug={slug} officials={officials} />}
       </div>
       {fields.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
@@ -1268,6 +1272,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                   <AddFieldDialog
                     slug={slug}
                     field={field}
+                    officials={officials}
                     trigger={
                       <button className="text-xs px-2 py-1 rounded-md border hover:opacity-80" style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
                         {tl.fields.edit}

@@ -78,25 +78,50 @@ export async function POST(req: NextRequest, { params }: Params) {
     isPractice:  isPractice  === true,
   };
 
+  // Look up field defaults (duration + default officials)
+  const field = fieldId
+    ? await prisma.field.findUnique({
+        where: { id: fieldId },
+        select: { slotDurationMins: true, defaultScorekeeperUserId: true, defaultUmpireUserId: true },
+      })
+    : null;
+
+  async function addDefaultOfficials(tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], gameId: string) {
+    if (field?.defaultUmpireUserId) {
+      await tx.gameOfficial.upsert({
+        where: { gameId_userId: { gameId, userId: field.defaultUmpireUserId } },
+        update: {},
+        create: { gameId, userId: field.defaultUmpireUserId, role: "UMPIRE" },
+      });
+    }
+    if (field?.defaultScorekeeperUserId) {
+      await tx.gameOfficial.upsert({
+        where: { gameId_userId: { gameId, userId: field.defaultScorekeeperUserId } },
+        update: {},
+        create: { gameId, userId: field.defaultScorekeeperUserId, role: "SCOREKEEPER" },
+      });
+    }
+  }
+
   if (isTwin && !isPractice) {
-    // Look up field duration; default 90 min
-    const field = fieldId
-      ? await prisma.field.findUnique({ where: { id: fieldId }, select: { slotDurationMins: true } })
-      : null;
     const durationMs = (field?.slotDurationMins ?? 90) * 60 * 1000;
     const game1At = new Date(scheduledAt);
     const game2At = new Date(game1At.getTime() + durationMs);
 
-    const [game1, game2] = await prisma.$transaction([
-      prisma.game.create({ data: { ...gameData, scheduledAt: game1At }, include: gameInclude }),
-      prisma.game.create({ data: { ...gameData, scheduledAt: game2At }, include: gameInclude }),
-    ]);
+    const [game1, game2] = await prisma.$transaction(async (tx) => {
+      const g1 = await tx.game.create({ data: { ...gameData, scheduledAt: game1At }, include: gameInclude });
+      const g2 = await tx.game.create({ data: { ...gameData, scheduledAt: game2At }, include: gameInclude });
+      await addDefaultOfficials(tx, g1.id);
+      await addDefaultOfficials(tx, g2.id);
+      return [g1, g2];
+    });
     return NextResponse.json([game1, game2], { status: 201 });
   }
 
-  const game = await prisma.game.create({
-    data: { ...gameData, scheduledAt: new Date(scheduledAt) },
-    include: gameInclude,
+  const game = await prisma.$transaction(async (tx) => {
+    const g = await tx.game.create({ data: { ...gameData, scheduledAt: new Date(scheduledAt) }, include: gameInclude });
+    await addDefaultOfficials(tx, g.id);
+    return g;
   });
 
   return NextResponse.json(game, { status: 201 });

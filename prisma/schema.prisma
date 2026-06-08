@@ -252,8 +252,10 @@ model Field {
   slotsThursday    Int         @default(0)
   slotsFriday      Int         @default(0)
   slotsSaturday    Int         @default(0)
-  slotsSunday      Int         @default(0)
-  createdAt        DateTime    @default(now())
+  slotsSunday              Int         @default(0)
+  defaultScorekeeperUserId String?
+  defaultUmpireUserId      String?
+  createdAt                DateTime    @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   games  Game[]

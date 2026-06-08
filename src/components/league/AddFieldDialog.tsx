@@ -31,21 +31,28 @@ interface FieldData {
   slotDurationMins?: number;
   slotsMonday?: number; slotsTuesday?: number; slotsWednesday?: number;
   slotsThursday?: number; slotsFriday?: number; slotsSaturday?: number; slotsSunday?: number;
+  defaultScorekeeperUserId?: string | null;
+  defaultUmpireUserId?: string | null;
 }
+
+interface Official { id: string; name: string | null; role: string }
 
 interface Props {
   slug: string;
   field?: FieldData;
+  officials?: Official[];
   trigger?: React.ReactNode;
   onClose?: () => void;
 }
 
-export function AddFieldDialog({ slug, field, trigger, onClose }: Props) {
+export function AddFieldDialog({ slug, field, officials = [], trigger, onClose }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string[]>(field?.types ?? []);
+  const [defaultScorekeeperUserId, setDefaultScorekeeperUserId] = useState(field?.defaultScorekeeperUserId ?? "");
+  const [defaultUmpireUserId, setDefaultUmpireUserId]           = useState(field?.defaultUmpireUserId ?? "");
   const [slotStartTime, setSlotStartTime] = useState(field?.slotStartTime ?? "");
   const [slotDurationMins, setSlotDurationMins] = useState(String(field?.slotDurationMins ?? 90));
   const [daySlots, setDaySlots] = useState<Record<DayKey, number>>({
@@ -79,6 +86,8 @@ export function AddFieldDialog({ slug, field, trigger, onClose }: Props) {
         slotStartTime: slotStartTime || null,
         slotDurationMins: parseInt(slotDurationMins) || 90,
         ...daySlots,
+        defaultScorekeeperUserId: defaultScorekeeperUserId || null,
+        defaultUmpireUserId: defaultUmpireUserId || null,
       }),
     });
     setLoading(false);
@@ -122,6 +131,46 @@ export function AddFieldDialog({ slug, field, trigger, onClose }: Props) {
               ))}
             </div>
           </div>
+
+          {/* Default officials */}
+          {officials.length > 0 && (
+            <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
+                Default Officials
+              </p>
+              <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                These will be automatically assigned when a game is created at this field.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Default Umpire</Label>
+                  <select
+                    value={defaultUmpireUserId ?? ""}
+                    onChange={e => setDefaultUmpireUserId(e.target.value)}
+                    className={inputCls} style={inputStyle}
+                  >
+                    <option value="">— None —</option>
+                    {officials.filter(o => o.role === "UMPIRE").map(o => (
+                      <option key={o.id} value={o.id}>{o.name ?? o.id}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Default Scorekeeper</Label>
+                  <select
+                    value={defaultScorekeeperUserId ?? ""}
+                    onChange={e => setDefaultScorekeeperUserId(e.target.value)}
+                    className={inputCls} style={inputStyle}
+                  >
+                    <option value="">— None —</option>
+                    {officials.filter(o => o.role === "SCOREKEEPER").map(o => (
+                      <option key={o.id} value={o.id}>{o.name ?? o.id}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Slot schedule */}
           <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)" }}>

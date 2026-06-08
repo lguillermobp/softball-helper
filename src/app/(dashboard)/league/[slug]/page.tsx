@@ -379,7 +379,14 @@ export default async function LeaguePage({ params }: PageProps) {
     slotDurationMins: f.slotDurationMins,
     slotsMonday: f.slotsMonday, slotsTuesday: f.slotsTuesday, slotsWednesday: f.slotsWednesday,
     slotsThursday: f.slotsThursday, slotsFriday: f.slotsFriday, slotsSaturday: f.slotsSaturday, slotsSunday: f.slotsSunday,
+    defaultScorekeeperUserId: f.defaultScorekeeperUserId ?? null,
+    defaultUmpireUserId: f.defaultUmpireUserId ?? null,
   }));
+
+  const officials = league.userRoles
+    .filter(ur => ur.role === "SCOREKEEPER" || ur.role === "UMPIRE")
+    .map(ur => ({ id: ur.user.id, name: ur.user.name ?? ur.user.email, role: ur.role }))
+    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
 
   const rawConditions = await prisma.condition.findMany({
     where: { leagueId: league.id },
@@ -410,6 +417,7 @@ export default async function LeaguePage({ params }: PageProps) {
           teams={teams}
           members={members}
           fields={fields}
+          officials={officials}
           conditions={conditions}
           publicPage={fullLeague.publicPage ? {
             published: fullLeague.publicPage.published,
