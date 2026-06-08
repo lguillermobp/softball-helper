@@ -89,7 +89,19 @@ export function SeasonDashboard({
   const tg = ts.groups;
 
   const [tab, setTab] = useState<Tab>("schedule");
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun … 6=Sat
+    const monday = new Date(now); monday.setDate(now.getDate() - ((dow + 6) % 7)); monday.setHours(0,0,0,0);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    return new Set(
+      games
+        .filter(g => { const d = new Date(g.scheduledAt); return d < monday || d > sunday; })
+        .map(g => { const d = new Date(g.scheduledAt); return toKey(d); })
+    );
+  });
   function toggleDay(dayKey: string) {
     setCollapsedDays(prev => {
       const next = new Set(prev);
