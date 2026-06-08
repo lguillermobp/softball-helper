@@ -9,7 +9,7 @@ export const translations = {
 
   // ── English ────────────────────────────────────────────────────────────────
   en: {
-    nav:      { signin: "Sign in", getStarted: "Get started", contactUs: "Contact Us" },
+    nav:      { signin: "Sign in", getStarted: "Get started", contactUs: "Contact Us", watchDemo: "Watch Demo" },
     hero: {
       badge: "Multi-league softball management",
       headline1: "Step up to the", headline2: "plate.",
@@ -41,13 +41,21 @@ export const translations = {
       name: "Your name", namePlaceholder: "Jane Smith",
       email: "Your email", emailPlaceholder: "jane@example.com",
       subject: "Subject",
-      subjects: ["General Question", "Feature Request", "Partnership / Sales", "Other"],
+      subjects: ["General Question", "Feature Request", "Partnership / Sales", "Demo Request", "Other"],
       message: "Message", messagePlaceholder: "Tell us more…",
       send: "Send message", sending: "Sending…",
       successTitle: "Message sent!",
       successMsg: "We'll get back to you within 24–48 hours.",
       errorMsg: "Something went wrong. Please try again.",
       directEmail: "Or email us directly at",
+    },
+    demo: {
+      title: "See it in action",
+      subtitle: "Watch how SoftballHelper handles a full league season — schedules, rosters, scoring, and standings.",
+      placeholder: "Demo video coming soon",
+      placeholderSub: "We're putting together a full walkthrough. In the meantime, request a live demo and we'll walk you through it personally.",
+      requestDemo: "Request a Demo",
+      demoSubject: "Demo Request",
     },
     footer: "Built for the love of the game.",
     login: {
@@ -244,7 +252,7 @@ export const translations = {
 
   // ── Español ────────────────────────────────────────────────────────────────
   es: {
-    nav:      { signin: "Iniciar sesión", getStarted: "Comenzar", contactUs: "Contáctanos" },
+    nav:      { signin: "Iniciar sesión", getStarted: "Comenzar", contactUs: "Contáctanos", watchDemo: "Ver Demo" },
     hero: {
       badge: "Gestión de ligas de sóftbol",
       headline1: "Sube al", headline2: "plato.",
@@ -276,13 +284,21 @@ export const translations = {
       name: "Tu nombre", namePlaceholder: "Juan Pérez",
       email: "Tu correo", emailPlaceholder: "juan@ejemplo.com",
       subject: "Asunto",
-      subjects: ["Consulta general", "Solicitud de función", "Alianza / Ventas", "Otro"],
+      subjects: ["Consulta general", "Solicitud de función", "Alianza / Ventas", "Solicitud de demo", "Otro"],
       message: "Mensaje", messagePlaceholder: "Cuéntanos más…",
       send: "Enviar mensaje", sending: "Enviando…",
       successTitle: "¡Mensaje enviado!",
       successMsg: "Te responderemos en 24–48 horas.",
       errorMsg: "Algo salió mal. Por favor intenta de nuevo.",
       directEmail: "O escríbenos directamente a",
+    },
+    demo: {
+      title: "Míralo en acción",
+      subtitle: "Descubre cómo SoftballHelper gestiona una temporada completa — calendarios, plantillas, marcadores y clasificaciones.",
+      placeholder: "Video de demostración próximamente",
+      placeholderSub: "Estamos preparando un recorrido completo. Mientras tanto, solicita una demo en vivo y te lo mostramos personalmente.",
+      requestDemo: "Solicitar una Demo",
+      demoSubject: "Solicitud de demo",
     },
     footer: "Hecho por amor al juego.",
     login: {
@@ -479,7 +495,7 @@ export const translations = {
 
   // ── 日本語 ─────────────────────────────────────────────────────────────────
   ja: {
-    nav:      { signin: "サインイン", getStarted: "始める", contactUs: "お問い合わせ" },
+    nav:      { signin: "サインイン", getStarted: "始める", contactUs: "お問い合わせ", watchDemo: "デモを見る" },
     hero: {
       badge: "マルチリーグ ソフトボール管理",
       headline1: "打席に", headline2: "立とう。",
@@ -511,13 +527,21 @@ export const translations = {
       name: "お名前", namePlaceholder: "山田 太郎",
       email: "メールアドレス", emailPlaceholder: "taro@example.com",
       subject: "件名",
-      subjects: ["一般的なご質問", "機能リクエスト", "パートナーシップ / 販売", "その他"],
+      subjects: ["一般的なご質問", "機能リクエスト", "パートナーシップ / 販売", "デモのリクエスト", "その他"],
       message: "メッセージ", messagePlaceholder: "詳しくお聞かせください…",
       send: "メッセージを送る", sending: "送信中…",
       successTitle: "送信完了！",
       successMsg: "24〜48時間以内にご返信いたします。",
       errorMsg: "エラーが発生しました。もう一度お試しください。",
       directEmail: "または直接メールでご連絡ください",
+    },
+    demo: {
+      title: "実際に見てみよう",
+      subtitle: "SoftballHelperがシーズン全体をどのように管理するかをご覧ください — スケジュール、名簿、採点、順位表。",
+      placeholder: "デモ動画は近日公開予定",
+      placeholderSub: "ウォークスルー動画を準備中です。それまでの間、ライブデモをリクエストしていただければ直接ご案内します。",
+      requestDemo: "デモをリクエスト",
+      demoSubject: "デモのリクエスト",
     },
     footer: "野球への愛から生まれた。",
     login: {

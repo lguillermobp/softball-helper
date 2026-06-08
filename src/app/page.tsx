@@ -41,12 +41,83 @@ const FLAGS = [
   { code: "jp", name: "Japón" },
 ];
 
-function ContactSection() {
+// ── Swap this YouTube video ID once the demo is recorded ─────────────────────
+const DEMO_VIDEO_ID = "";
+
+function DemoSection({ onRequestDemo }: { onRequestDemo: () => void }) {
+  const { t } = useLanguage();
+  const td = t.demo;
+
+  return (
+    <section id="demo" className="border-y py-20" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-hero-bg)" }}>
+      <div className="mx-auto max-w-5xl px-4">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: "var(--sh-text)" }}>{td.title}</h2>
+          <p className="max-w-xl mx-auto" style={{ color: "var(--sh-text-muted)" }}>{td.subtitle}</p>
+        </div>
+
+        {/* Video embed or placeholder */}
+        <div className="rounded-2xl overflow-hidden border shadow-xl mb-8" style={{ borderColor: "var(--sh-border-soft)" }}>
+          {DEMO_VIDEO_ID ? (
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?rel=0&modestbranding=1`}
+                title="SoftballHelper Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center gap-4 py-24 px-8 text-center"
+              style={{ background: "var(--sh-section-bg)" }}
+            >
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
+                style={{ background: "var(--sh-accent-bg)", border: "2px solid var(--sh-accent-border)" }}
+              >
+                ▶
+              </div>
+              <p className="text-lg font-black" style={{ color: "var(--sh-text)" }}>{td.placeholder}</p>
+              <p className="max-w-md text-sm" style={{ color: "var(--sh-text-muted)" }}>{td.placeholderSub}</p>
+            </div>
+          )}
+        </div>
+
+        {/* CTA row */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={onRequestDemo}
+            className="px-10 py-4 text-base font-black rounded-full shadow-lg transition-all hover:scale-105"
+            style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff", boxShadow: "0 0 24px rgba(74,222,128,0.3)" }}
+          >
+            {td.requestDemo}
+          </button>
+          <Link href="/register">
+            <button
+              className="w-full sm:w-auto px-10 py-4 text-base font-semibold rounded-full border transition-all hover:opacity-80"
+              style={{ borderColor: "var(--sh-border-dim)", color: "var(--sh-text)", background: "transparent" }}
+            >
+              {t.hero.cta}
+            </button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactSection({ defaultSubject }: { defaultSubject?: string }) {
   const { t } = useLanguage();
   const tc = t.contact;
 
-  const [form, setForm]       = useState({ name: "", email: "", subject: "", message: "" });
+  const [form, setForm]       = useState({ name: "", email: "", subject: defaultSubject ?? "", message: "" });
   const [status, setStatus]   = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  React.useEffect(() => {
+    if (defaultSubject) setForm(f => ({ ...f, subject: defaultSubject }));
+  }, [defaultSubject]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,6 +206,12 @@ function ContactSection() {
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const [demoSubject, setDemoSubject] = useState("");
+
+  function requestDemo() {
+    setDemoSubject(t.demo.demoSubject);
+    setTimeout(() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" }), 50);
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--sh-hero-bg)", color: "var(--sh-text)" }}>
@@ -177,6 +254,13 @@ export default function HomePage() {
 
           {/* Auth + Controls */}
           <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="#demo"
+              className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+              style={{ color: "var(--sh-text-dim)" }}
+            >
+              {t.nav.watchDemo}
+            </a>
             <a
               href="#contact"
               className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
@@ -257,6 +341,13 @@ export default function HomePage() {
                 {t.hero.cta}
               </Button>
             </Link>
+            <button
+              onClick={requestDemo}
+              className="w-full sm:w-auto px-10 py-6 text-base font-black rounded-full border transition-all hover:scale-105"
+              style={{ borderColor: "var(--sh-accent-border)", background: "var(--sh-accent-bg)", color: "var(--sh-primary)" }}
+            >
+              ▶ {t.demo.requestDemo}
+            </button>
             <Link href="/login">
               <Button
                 size="lg"
@@ -339,6 +430,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Demo ────────────────────────────────────────────────────── */}
+      <DemoSection onRequestDemo={requestDemo} />
+
       {/* ── CTA ─────────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-4 py-24 text-center">
         <div className="relative inline-block mb-6">
@@ -357,7 +451,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Contact ─────────────────────────────────────────────────── */}
-      <ContactSection />
+      <ContactSection defaultSubject={demoSubject} />
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
