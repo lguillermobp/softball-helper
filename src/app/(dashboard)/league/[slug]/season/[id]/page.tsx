@@ -78,14 +78,14 @@ export default async function SeasonPage({ params }: PageProps) {
     away.rf += as_; away.ra += hs;
 
     if (hs > as_) {
-      home.w++; home.pts += 3;
-      away.l++;
+      home.w++; home.pts += season.pointsWin;
+      away.l++;  away.pts += season.pointsLoss;
     } else if (as_ > hs) {
-      away.w++; away.pts += 3;
-      home.l++;
+      away.w++; away.pts += season.pointsWin;
+      home.l++;  home.pts += season.pointsLoss;
     } else {
-      home.t++; home.pts += 1;
-      away.t++; away.pts += 1;
+      home.t++; home.pts += season.pointsTie;
+      away.t++; away.pts += season.pointsTie;
     }
   }
 
@@ -97,6 +97,12 @@ export default async function SeasonPage({ params }: PageProps) {
     }));
 
   // ── Official season stats from GameAtBat (exclude practice) ─────────────
+  const leagueOfficials = await prisma.userLeagueRole.findMany({
+    where: { leagueId: league.id, role: { in: ["UMPIRE", "SCOREKEEPER"] } },
+    include: { user: { select: { id: true, name: true } } },
+    orderBy: { user: { name: "asc" } },
+  });
+
   const seasonAtBats = await prisma.gameAtBat.findMany({
     where: { game: { seasonId: id, status: "COMPLETED", isPractice: false } },
     select: { batterId: true, pitcherId: true, outcome: true },
@@ -192,7 +198,17 @@ export default async function SeasonPage({ params }: PageProps) {
           teams={league.teams.map((t) => ({ id: t.id, name: t.name, group: t.group ?? null, logoUrl: t.logoUrl ?? null }))}
           categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
           fields={serializedFields}
+          officials={leagueOfficials.map(r => ({ id: r.user.id, name: r.user.name ?? r.user.id, role: r.role }))}
           standings={standings}
+          seasonConfig={{
+            pointsWin:               season.pointsWin,
+            pointsTie:               season.pointsTie,
+            pointsLoss:              season.pointsLoss,
+            showPct:                 season.showPct,
+            printDark:               season.printDark,
+            defaultTwinGames:        season.defaultTwinGames,
+            defaultGameDurationMins: season.defaultGameDurationMins,
+          }}
           leagueName={league.name}
           leagueCity={league.city}
           leagueState={league.state}

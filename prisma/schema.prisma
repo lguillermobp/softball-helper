@@ -177,6 +177,14 @@ model Season {
   status         SeasonStatus @default(UPCOMING)
   reEntryAllowed Boolean      @default(true)
   reEntryLimit   Int          @default(1)
+  // Season config
+  pointsWin               Int     @default(3)
+  pointsTie               Int     @default(1)
+  pointsLoss              Int     @default(0)
+  showPct                 Boolean @default(true)
+  printDark               Boolean @default(false)
+  defaultTwinGames        Boolean @default(false)
+  defaultGameDurationMins Int     @default(90)
   createdAt      DateTime     @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)

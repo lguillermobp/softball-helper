@@ -78,13 +78,19 @@ export async function POST(req: NextRequest, { params }: Params) {
     isPractice:  isPractice  === true,
   };
 
-  // Look up field defaults (duration + default officials)
-  const field = fieldId
-    ? await prisma.field.findUnique({
-        where: { id: fieldId },
-        select: { slotDurationMins: true, defaultScorekeeperUserId: true, defaultUmpireUserId: true },
-      })
-    : null;
+  // Look up field defaults and season config (duration fallback + default officials)
+  const [field, seasonCfg] = await Promise.all([
+    fieldId
+      ? prisma.field.findUnique({
+          where: { id: fieldId },
+          select: { slotDurationMins: true, defaultScorekeeperUserId: true, defaultUmpireUserId: true },
+        })
+      : Promise.resolve(null),
+    prisma.season.findUnique({
+      where: { id: seasonId },
+      select: { defaultGameDurationMins: true },
+    }),
+  ]);
 
   async function addDefaultOfficials(tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], gameId: string) {
     if (field?.defaultUmpireUserId) {
@@ -104,7 +110,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   if (isTwin && !isPractice) {
-    const durationMs = (field?.slotDurationMins ?? 90) * 60 * 1000;
+    const durationMs = (field?.slotDurationMins ?? seasonCfg?.defaultGameDurationMins ?? 90) * 60 * 1000;
     const game1At = new Date(scheduledAt);
     const game2At = new Date(game1At.getTime() + durationMs);
 

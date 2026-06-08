@@ -17,22 +17,23 @@ interface Props {
   teams: Team[];
   categories: Category[];
   fields: Field[];
-  isPracticeOnly?: boolean; // non-admins can only create practice games
+  isPracticeOnly?: boolean;
+  defaultTwinGames?: boolean;
 }
 
 const selectClass =
   "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
-export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPracticeOnly }: Props) {
+export function AddGameDialog({ slug, seasonId, teams, categories, fields, isPracticeOnly, defaultTwinGames = false }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [homeAwayTbd, setHomeAwayTbd] = useState(false);
   const [isPractice, setIsPractice] = useState(isPracticeOnly ?? false);
-  const [isTwin, setIsTwin] = useState(false);
+  const [isTwin, setIsTwin] = useState(defaultTwinGames);
 
-  function handleClose() { setOpen(false); setHomeAwayTbd(false); setIsPractice(isPracticeOnly ?? false); setIsTwin(false); setError(""); }
+  function handleClose() { setOpen(false); setHomeAwayTbd(false); setIsPractice(isPracticeOnly ?? false); setIsTwin(defaultTwinGames); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

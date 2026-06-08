@@ -55,6 +55,16 @@ interface Standing {
 
 interface Official { id: string; name: string; role: string }
 
+interface SeasonConfig {
+  pointsWin: number;
+  pointsTie: number;
+  pointsLoss: number;
+  showPct: boolean;
+  printDark: boolean;
+  defaultTwinGames: boolean;
+  defaultGameDurationMins: number;
+}
+
 interface Props {
   slug: string;
   seasonId: string;
@@ -69,6 +79,7 @@ interface Props {
   fields: Field[];
   officials?: Official[];
   standings: Standing[];
+  seasonConfig: SeasonConfig;
   leagueName: string;
   leagueCity?: string | null;
   leagueState?: string | null;
@@ -83,6 +94,7 @@ type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
 export function SeasonDashboard({
   slug, seasonId, seasonName, startDate, endDate, seasonStatus,
   isAdmin, games, teams, categories, fields, officials = [], standings,
+  seasonConfig,
   leagueName, leagueCity, leagueState, leagueLogoUrl,
   officialBatting, officialPitching, canCreatePractice,
 }: Props) {
@@ -92,6 +104,51 @@ export function SeasonDashboard({
   const tg = ts.groups;
 
   const [tab, setTab] = useState<Tab>("schedule");
+
+  // ── Season config modal ───────────────────────────────────────────────────
+  const [configOpen,    setConfigOpen]    = useState(false);
+  const [cfgWin,        setCfgWin]        = useState(seasonConfig.pointsWin);
+  const [cfgTie,        setCfgTie]        = useState(seasonConfig.pointsTie);
+  const [cfgLoss,       setCfgLoss]       = useState(seasonConfig.pointsLoss);
+  const [cfgShowPct,    setCfgShowPct]    = useState(seasonConfig.showPct);
+  const [cfgPrintDark,  setCfgPrintDark]  = useState(seasonConfig.printDark);
+  const [cfgTwin,       setCfgTwin]       = useState(seasonConfig.defaultTwinGames);
+  const [cfgDuration,   setCfgDuration]   = useState(seasonConfig.defaultGameDurationMins);
+  const [cfgSaving,     setCfgSaving]     = useState(false);
+  const [cfgError,      setCfgError]      = useState("");
+
+  // Live copies used by the rest of the UI (updated on save)
+  const [liveConfig, setLiveConfig] = useState(seasonConfig);
+
+  function openConfig() {
+    setCfgWin(liveConfig.pointsWin); setCfgTie(liveConfig.pointsTie); setCfgLoss(liveConfig.pointsLoss);
+    setCfgShowPct(liveConfig.showPct); setCfgPrintDark(liveConfig.printDark);
+    setCfgTwin(liveConfig.defaultTwinGames); setCfgDuration(liveConfig.defaultGameDurationMins);
+    setCfgError(""); setConfigOpen(true);
+  }
+
+  async function saveConfig() {
+    setCfgSaving(true); setCfgError("");
+    const res = await fetch(`/api/leagues/${slug}/seasons/${seasonId}/config`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pointsWin: cfgWin, pointsTie: cfgTie, pointsLoss: cfgLoss,
+        showPct: cfgShowPct, printDark: cfgPrintDark,
+        defaultTwinGames: cfgTwin, defaultGameDurationMins: cfgDuration,
+      }),
+    });
+    setCfgSaving(false);
+    if (!res.ok) { const d = await res.json(); setCfgError(d.error ?? "Failed to save"); return; }
+    const updated = await res.json();
+    setLiveConfig({
+      pointsWin: updated.pointsWin, pointsTie: updated.pointsTie, pointsLoss: updated.pointsLoss,
+      showPct: updated.showPct, printDark: updated.printDark,
+      defaultTwinGames: updated.defaultTwinGames, defaultGameDurationMins: updated.defaultGameDurationMins,
+    });
+    setConfigOpen(false);
+    router.refresh();
+  }
   const [assignDialog, setAssignDialog] = useState<{ dayKey: string; label: string } | null>(null);
   const [assignFieldId, setAssignFieldId]         = useState("");
   const [assignUmpireId, setAssignUmpireId]       = useState("");
@@ -211,32 +268,39 @@ export function SeasonDashboard({
       ? `<img src="${leagueLogoUrl}" style="height:48px;width:48px;object-fit:contain;border-radius:6px;" />`
       : "";
 
+    const dark = liveConfig.printDark;
+    const showPct = liveConfig.showPct;
+    const palette = dark
+      ? { bg: "#0f172a", text: "#f1f5f9", muted: "#94a3b8", border: "#334155", headBg: "#1e293b", accent: "#22c55e", danger: "#f87171", warn: "#fbbf24", blue: "#60a5fa" }
+      : { bg: "#ffffff", text: "#111827", muted: "#6b7280", border: "#e5e7eb", headBg: "#f9fafb", accent: "#16a34a", danger: "#ef4444", warn: "#ca8a04", blue: "#0284c7" };
+
     function tableHtml(rows: Standing[], groupLabel?: string) {
       const header = groupLabel
-        ? `<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin:0 0 6px;">${groupLabel}</h3>`
+        ? `<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:${palette.accent};margin:0 0 6px;">${groupLabel}</h3>`
         : "";
+      const headers = ["#","Team","GP","W","L","T","Pts","RF","RA","RD", ...(showPct ? ["Pct"] : [])];
       const trs = rows.map((s, i) => {
         const rd = s.rf - s.ra;
         return `
-        <tr style="border-bottom:1px solid #e5e7eb;">
-          <td style="padding:6px 8px;font-weight:700;color:${i === 0 ? "#ca8a04" : "#6b7280"};text-align:center;">${i + 1}</td>
-          <td style="padding:6px 8px;font-weight:600;color:#111;">${s.team.name}</td>
-          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.gp}</td>
-          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#16a34a;">${s.w}</td>
-          <td style="padding:6px 8px;text-align:center;color:#ef4444;">${s.l}</td>
-          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.t}</td>
-          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#111;">${s.pts}</td>
-          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.rf}</td>
-          <td style="padding:6px 8px;text-align:center;color:#6b7280;">${s.ra}</td>
-          <td style="padding:6px 8px;text-align:center;font-weight:700;color:${rd >= 0 ? "#16a34a" : "#ef4444"};">${rd > 0 ? "+" + rd : rd}</td>
-          <td style="padding:6px 8px;text-align:center;color:#0284c7;">${s.pct}</td>
+        <tr style="border-bottom:1px solid ${palette.border};">
+          <td style="padding:6px 8px;font-weight:700;color:${i === 0 ? palette.warn : palette.muted};text-align:center;">${i + 1}</td>
+          <td style="padding:6px 8px;font-weight:600;color:${palette.text};">${s.team.name}</td>
+          <td style="padding:6px 8px;text-align:center;color:${palette.muted};">${s.gp}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:${palette.accent};">${s.w}</td>
+          <td style="padding:6px 8px;text-align:center;color:${palette.danger};">${s.l}</td>
+          <td style="padding:6px 8px;text-align:center;color:${palette.muted};">${s.t}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:${palette.text};">${s.pts}</td>
+          <td style="padding:6px 8px;text-align:center;color:${palette.muted};">${s.rf}</td>
+          <td style="padding:6px 8px;text-align:center;color:${palette.muted};">${s.ra}</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:${rd >= 0 ? palette.accent : palette.danger};">${rd > 0 ? "+" + rd : rd}</td>
+          ${showPct ? `<td style="padding:6px 8px;text-align:center;color:${palette.blue};">${s.pct}</td>` : ""}
         </tr>`}).join("");
       return `${header}
         <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:12px;">
           <thead>
-            <tr style="background:#f9fafb;border-bottom:2px solid #16a34a;">
-              ${["#","Team","GP","W","L","T","Pts","RF","RA","RD","Pct"].map(h =>
-                `<th style="padding:6px 8px;text-align:${h === "Team" ? "left" : "center"};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">${h}</th>`
+            <tr style="background:${palette.headBg};border-bottom:2px solid ${palette.accent};">
+              ${headers.map(h =>
+                `<th style="padding:6px 8px;text-align:${h === "Team" ? "left" : "center"};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:${palette.muted};">${h}</th>`
               ).join("")}
             </tr>
           </thead>
@@ -266,21 +330,21 @@ export function SeasonDashboard({
 <style>
   @page{size:letter portrait;margin:12mm 14mm;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:-apple-system,sans-serif;color:#111;background:#fff;}
+  body{font-family:-apple-system,sans-serif;color:${palette.text};background:${palette.bg};}
   @media print{.no-print{display:none!important;}body{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}
 </style>
 </head><body>
-<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #16a34a;margin-bottom:16px;">
+<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid ${palette.accent};margin-bottom:16px;">
   <div style="display:flex;align-items:center;gap:12px;">
     ${logoEl}
     <div>
-      <div style="font-size:20px;font-weight:900;color:#111;">${leagueName}</div>
-      <div style="font-size:13px;color:#6b7280;margin-top:2px;">${seasonName} — Standings</div>
+      <div style="font-size:20px;font-weight:900;color:${palette.text};">${leagueName}</div>
+      <div style="font-size:13px;color:${palette.muted};margin-top:2px;">${seasonName} — Standings</div>
     </div>
   </div>
   <div style="text-align:right;">
-    <div style="font-size:11px;color:#9ca3af;">${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</div>
-    <button class="no-print" onclick="window.print()" style="margin-top:6px;padding:5px 16px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print</button>
+    <div style="font-size:11px;color:${palette.muted};">${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</div>
+    <button class="no-print" onclick="window.print()" style="margin-top:6px;padding:5px 16px;background:${palette.accent};color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print</button>
   </div>
 </div>
 ${body}
@@ -317,7 +381,7 @@ ${body}
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.rd, ts.standings.pct, ""].map((h, i) => (
+              {[ts.standings.rank, ts.standings.team, ts.standings.gp, ts.standings.w, ts.standings.l, ts.standings.t, ts.standings.pts, ts.standings.rf, ts.standings.ra, ts.standings.rd, ...(liveConfig.showPct ? [ts.standings.pct] : []), ""].map((h, i) => (
                 <th key={i} className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center first:text-left" style={dim}>
                   {h}
                 </th>
@@ -342,7 +406,7 @@ ${body}
                 <td className="px-3 py-3 text-center" style={dim}>{s.rf}</td>
                 <td className="px-3 py-3 text-center" style={dim}>{s.ra}</td>
                 <td className="px-3 py-3 text-center font-semibold" style={{ color: s.rf - s.ra >= 0 ? "var(--sh-primary)" : "var(--sh-danger)" }}>{s.rf - s.ra > 0 ? `+${s.rf - s.ra}` : s.rf - s.ra}</td>
-                <td className="px-3 py-3 text-center" style={{ color: "var(--sh-secondary)" }}>{s.pct}</td>
+                {liveConfig.showPct && <td className="px-3 py-3 text-center" style={{ color: "var(--sh-secondary)" }}>{s.pct}</td>}
                 <td className="px-3 py-3 text-center">
                   <Link
                     href={`/league/${slug}/season/${seasonId}/team/${s.team.id}/stats`}
@@ -499,6 +563,15 @@ ${body}
         <div className="flex items-center gap-2">
           {isAdmin && (
             <>
+              <button
+                type="button"
+                onClick={openConfig}
+                className="text-xs px-3 py-1.5 rounded-lg border hover:opacity-80 transition-opacity"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                title="Season configuration"
+              >
+                ⚙️ Config
+              </button>
               <ScheduleGeneratorDialog
                 slug={slug}
                 seasonId={seasonId}
@@ -508,7 +581,7 @@ ${body}
                 fields={fields}
                 teamCount={teams.length}
               />
-              <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} />
+              <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} defaultTwinGames={liveConfig.defaultTwinGames} />
             </>
           )}
           {canCreatePractice && !isAdmin && (
@@ -1008,6 +1081,104 @@ ${body}
         )
       )}
     </div>
+
+    {/* ── Season Config Modal ── */}
+    {configOpen && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.6)" }}
+        onClick={() => setConfigOpen(false)}
+      >
+        <div
+          className="rounded-2xl border shadow-2xl w-full max-w-md p-6 space-y-5"
+          style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border2)" }}
+          onClick={e => e.stopPropagation()}
+        >
+          <h2 className="font-bold text-lg" style={{ color: "var(--sh-text)" }}>⚙️ Season Configuration</h2>
+
+          {/* Points */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Standings Points</p>
+            <div className="grid grid-cols-3 gap-3">
+              {([["Win", cfgWin, setCfgWin], ["Tie", cfgTie, setCfgTie], ["Loss", cfgLoss, setCfgLoss]] as const).map(([label, val, setter]) => (
+                <div key={label}>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: "var(--sh-secondary)" }}>{label}</label>
+                  <input
+                    type="number" min={0} max={10}
+                    value={val}
+                    onChange={e => (setter as (v: number) => void)(Number(e.target.value))}
+                    className="w-full text-sm rounded-lg border px-3 py-2 text-center"
+                    style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Display */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Display</p>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={cfgShowPct} onChange={e => setCfgShowPct(e.target.checked)} className="accent-green-500 w-4 h-4" />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Show PCT (win percentage) column</span>
+            </label>
+          </div>
+
+          {/* Print */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Print Standings</p>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={cfgPrintDark} onChange={e => setCfgPrintDark(e.target.checked)} className="accent-slate-500 w-4 h-4" />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Dark background when printing</span>
+            </label>
+          </div>
+
+          {/* Game defaults */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Game Defaults</p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" checked={cfgTwin} onChange={e => setCfgTwin(e.target.checked)} className="accent-blue-500 w-4 h-4" />
+                <span className="text-sm" style={{ color: "var(--sh-text)" }}>Pre-check "twin game" when adding a game</span>
+              </label>
+              <div className="flex items-center gap-3 mt-1">
+                <label className="text-sm shrink-0" style={{ color: "var(--sh-secondary)" }}>Default duration (mins)</label>
+                <input
+                  type="number" min={15} max={300} step={5}
+                  value={cfgDuration}
+                  onChange={e => setCfgDuration(Number(e.target.value))}
+                  className="w-24 text-sm rounded-lg border px-3 py-2 text-center"
+                  style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {cfgError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{cfgError}</p>}
+
+          <div className="flex gap-2 justify-end pt-1">
+            <button
+              type="button"
+              onClick={() => setConfigOpen(false)}
+              disabled={cfgSaving}
+              className="text-sm px-4 py-2 rounded-lg border hover:opacity-80"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={saveConfig}
+              disabled={cfgSaving}
+              className="text-sm px-4 py-2 rounded-lg font-semibold hover:opacity-80 disabled:opacity-50"
+              style={{ background: "var(--sh-primary)", color: "var(--sh-bg-page)" }}
+            >
+              {cfgSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* ── Assign Officials Modal ── */}
     {assignDialog && (
