@@ -89,6 +89,14 @@ export function SeasonDashboard({
   const tg = ts.groups;
 
   const [tab, setTab] = useState<Tab>("schedule");
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  function toggleDay(dayKey: string) {
+    setCollapsedDays(prev => {
+      const next = new Set(prev);
+      next.has(dayKey) ? next.delete(dayKey) : next.add(dayKey);
+      return next;
+    });
+  }
   const [gameError, setGameError] = useState<Record<string, string>>({});
 
   // Per-team group editing state
@@ -487,15 +495,33 @@ ${body}
             </div>
           ) : (
             <div className="space-y-6">
-              {groupedDays.map(({ dayKey, label, catGroups }) => (
+              {groupedDays.map(({ dayKey, label, catGroups }) => {
+                const collapsed = collapsedDays.has(dayKey);
+                const totalGames = catGroups.reduce((s, g) => s + g.catGames.length, 0);
+                return (
                 <div key={dayKey}>
-                  {/* Day header */}
-                  <div className="flex items-center gap-2 mb-3"
-                    style={{ borderLeft: "3px solid var(--sh-primary)", paddingLeft: "10px" }}>
+                  {/* Day header — clickable to collapse */}
+                  <button
+                    type="button"
+                    onClick={() => toggleDay(dayKey)}
+                    className="w-full flex items-center justify-between gap-2 mb-3 group"
+                    style={{ borderLeft: "3px solid var(--sh-primary)", paddingLeft: "10px" }}
+                  >
                     <span className="font-bold text-sm" style={{ color: "var(--sh-text)" }}>📅 {label}</span>
-                  </div>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {collapsed && (
+                        <span className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                          {totalGames} game{totalGames !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                      <span className="text-xs transition-transform"
+                        style={{ color: "var(--sh-muted)", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
+                        ▾
+                      </span>
+                    </span>
+                  </button>
 
-                  <div className="space-y-4">
+                  {!collapsed && <div className="space-y-4">
                     {catGroups.map(({ grpName, catGames }) => (
                       <div key={grpName || "__none__"}>
                         {/* Field sub-header */}
@@ -637,9 +663,10 @@ ${body}
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </div>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         {/* Practice games section */}
