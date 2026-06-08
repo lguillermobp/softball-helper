@@ -577,7 +577,7 @@ ${body}
                       📅 {label}
                     </button>
                     <span className="flex items-center gap-2 shrink-0">
-                      {isAdmin && officials.length > 0 && (
+                      {isAdmin && (
                         <button
                           type="button"
                           onClick={() => openAssignDialog(dayKey, label)}
@@ -1023,6 +1023,12 @@ ${body}
         >
           <h2 className="font-bold text-lg" style={{ color: "var(--sh-text)" }}>👤 Assign Officials</h2>
           <p className="text-sm" style={{ color: "var(--sh-muted)" }}>📅 {assignDialog.label}</p>
+
+          {officials.length === 0 && (
+            <p className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sh-warn-bg)", color: "var(--sh-warn)" }}>
+              No umpires or scorekeepers found. Go to <strong>Members</strong> and assign the Umpire or Scorekeeper role to users first.
+            </p>
+          )}
 
           <div className="space-y-3">
             <div>
