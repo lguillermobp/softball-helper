@@ -89,8 +89,23 @@ export default async function SeasonPage({ params }: PageProps) {
     }
   }
 
+  type Stat = ReturnType<typeof zero>;
+  const parsedTiebreakers = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
+
+  function tbCompare(a: Stat, b: Stat): number {
+    for (const tb of parsedTiebreakers) {
+      let diff = 0;
+      if      (tb === "RD") diff = (b.rf - b.ra) - (a.rf - a.ra);
+      else if (tb === "RF") diff = b.rf - a.rf;
+      else if (tb === "RA") diff = a.ra - b.ra; // fewer is better
+      else if (tb === "W")  diff = b.w - a.w;
+      if (diff !== 0) return diff;
+    }
+    return 0;
+  }
+
   const standings = Array.from(statsMap.values())
-    .sort((a, b) => b.pts - a.pts || b.rf - b.ra - (a.rf - a.ra))
+    .sort((a, b) => b.pts - a.pts || tbCompare(a, b))
     .map((s) => ({
       ...s,
       pct: s.gp === 0 ? ".000" : (s.w / s.gp).toFixed(3).replace(/^0/, ""),
@@ -208,6 +223,7 @@ export default async function SeasonPage({ params }: PageProps) {
             printDark:               season.printDark,
             defaultTwinGames:        season.defaultTwinGames,
             defaultGameDurationMins: season.defaultGameDurationMins,
+            tiebreakers:             parsedTiebreakers,
           }}
           leagueName={league.name}
           leagueCity={league.city}

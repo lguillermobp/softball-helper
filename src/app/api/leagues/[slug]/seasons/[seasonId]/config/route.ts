@@ -26,7 +26,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     pointsWin, pointsTie, pointsLoss,
     showPct, printDark,
     defaultTwinGames, defaultGameDurationMins,
+    tiebreakers,
   } = body;
+
+  const VALID_TB = new Set(["RD", "RF", "RA", "W"]);
 
   const data: Record<string, unknown> = {};
   if (pointsWin               !== undefined) data.pointsWin               = Math.max(0, Number(pointsWin));
@@ -36,6 +39,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (printDark               !== undefined) data.printDark               = Boolean(printDark);
   if (defaultTwinGames        !== undefined) data.defaultTwinGames        = Boolean(defaultTwinGames);
   if (defaultGameDurationMins !== undefined) data.defaultGameDurationMins = Math.max(15, Number(defaultGameDurationMins));
+  if (Array.isArray(tiebreakers)) {
+    const clean = (tiebreakers as string[]).filter(t => VALID_TB.has(t));
+    data.tiebreakers = clean.join(",");
+  }
 
   const season = await prisma.season.update({
     where: { id: seasonId, leagueId: league.id },

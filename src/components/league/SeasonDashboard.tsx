@@ -55,6 +55,13 @@ interface Standing {
 
 interface Official { id: string; name: string; role: string }
 
+const TB_OPTIONS = [
+  { key: "RD", label: "RD — Run Difference (RF − RA)" },
+  { key: "RF", label: "RF — Runs Scored (more is better)" },
+  { key: "RA", label: "RA — Runs Against (fewer is better)" },
+  { key:  "W", label:  "W — Wins" },
+] as const;
+
 interface SeasonConfig {
   pointsWin: number;
   pointsTie: number;
@@ -63,6 +70,7 @@ interface SeasonConfig {
   printDark: boolean;
   defaultTwinGames: boolean;
   defaultGameDurationMins: number;
+  tiebreakers: string[];
 }
 
 interface Props {
@@ -112,10 +120,11 @@ export function SeasonDashboard({
   const [cfgLoss,       setCfgLoss]       = useState(seasonConfig.pointsLoss);
   const [cfgShowPct,    setCfgShowPct]    = useState(seasonConfig.showPct);
   const [cfgPrintDark,  setCfgPrintDark]  = useState(seasonConfig.printDark);
-  const [cfgTwin,       setCfgTwin]       = useState(seasonConfig.defaultTwinGames);
-  const [cfgDuration,   setCfgDuration]   = useState(seasonConfig.defaultGameDurationMins);
-  const [cfgSaving,     setCfgSaving]     = useState(false);
-  const [cfgError,      setCfgError]      = useState("");
+  const [cfgTwin,        setCfgTwin]        = useState(seasonConfig.defaultTwinGames);
+  const [cfgDuration,    setCfgDuration]    = useState(seasonConfig.defaultGameDurationMins);
+  const [cfgTiebreakers, setCfgTiebreakers] = useState<string[]>(seasonConfig.tiebreakers);
+  const [cfgSaving,      setCfgSaving]      = useState(false);
+  const [cfgError,       setCfgError]       = useState("");
 
   // Live copies used by the rest of the UI (updated on save)
   const [liveConfig, setLiveConfig] = useState(seasonConfig);
@@ -124,6 +133,7 @@ export function SeasonDashboard({
     setCfgWin(liveConfig.pointsWin); setCfgTie(liveConfig.pointsTie); setCfgLoss(liveConfig.pointsLoss);
     setCfgShowPct(liveConfig.showPct); setCfgPrintDark(liveConfig.printDark);
     setCfgTwin(liveConfig.defaultTwinGames); setCfgDuration(liveConfig.defaultGameDurationMins);
+    setCfgTiebreakers(liveConfig.tiebreakers);
     setCfgError(""); setConfigOpen(true);
   }
 
@@ -136,6 +146,7 @@ export function SeasonDashboard({
         pointsWin: cfgWin, pointsTie: cfgTie, pointsLoss: cfgLoss,
         showPct: cfgShowPct, printDark: cfgPrintDark,
         defaultTwinGames: cfgTwin, defaultGameDurationMins: cfgDuration,
+        tiebreakers: cfgTiebreakers,
       }),
     });
     setCfgSaving(false);
@@ -145,6 +156,7 @@ export function SeasonDashboard({
       pointsWin: updated.pointsWin, pointsTie: updated.pointsTie, pointsLoss: updated.pointsLoss,
       showPct: updated.showPct, printDark: updated.printDark,
       defaultTwinGames: updated.defaultTwinGames, defaultGameDurationMins: updated.defaultGameDurationMins,
+      tiebreakers: (updated.tiebreakers as string).split(",").filter(Boolean),
     });
     setConfigOpen(false);
     router.refresh();
@@ -281,9 +293,10 @@ export function SeasonDashboard({
       const headers = ["#","Team","GP","W","L","T","Pts","RF","RA","RD", ...(showPct ? ["Pct"] : [])];
       const trs = rows.map((s, i) => {
         const rd = s.rf - s.ra;
+        const rank = computeRank(rows, i);
         return `
         <tr style="border-bottom:1px solid ${palette.border};">
-          <td style="padding:6px 8px;font-weight:700;color:${i === 0 ? palette.warn : palette.muted};text-align:center;">${i + 1}</td>
+          <td style="padding:6px 8px;font-weight:700;color:${rank === 1 ? palette.warn : palette.muted};text-align:center;">${rank}</td>
           <td style="padding:6px 8px;font-weight:600;color:${palette.text};">${s.team.name}</td>
           <td style="padding:6px 8px;text-align:center;color:${palette.muted};">${s.gp}</td>
           <td style="padding:6px 8px;text-align:center;font-weight:700;color:${palette.accent};">${s.w}</td>
@@ -375,6 +388,23 @@ ${body}
     ? [...new Set(standings.map((s) => s.team.group ?? ""))].sort()
     : [];
 
+  function tbVal(s: Standing, tb: string): number {
+    if (tb === "RD") return s.rf - s.ra;
+    if (tb === "RF") return s.rf;
+    if (tb === "RA") return s.ra;
+    if (tb === "W")  return s.w;
+    return 0;
+  }
+
+  function computeRank(rows: Standing[], idx: number): number {
+    if (idx === 0) return 1;
+    const curr = rows[idx];
+    const prev = rows[idx - 1];
+    if (curr.pts === prev.pts && liveConfig.tiebreakers.every(tb => tbVal(curr, tb) === tbVal(prev, tb)))
+      return computeRank(rows, idx - 1);
+    return idx + 1;
+  }
+
   function StandingsTable({ rows }: { rows: Standing[] }) {
     return (
       <div className="rounded-2xl border overflow-hidden" style={card}>
@@ -389,9 +419,11 @@ ${body}
             </tr>
           </thead>
           <tbody>
-            {rows.map((s, i) => (
+            {rows.map((s, i) => {
+              const rank = computeRank(rows, i);
+              return (
               <tr key={s.team.id} style={{ borderBottom: "1px solid var(--sh-border)" }}>
-                <td className="px-3 py-3 text-center font-bold" style={{ color: i === 0 ? "var(--sh-warn)" : "var(--sh-muted)" }}>{i + 1}</td>
+                <td className="px-3 py-3 text-center font-bold" style={{ color: rank === 1 ? "var(--sh-warn)" : "var(--sh-muted)" }}>{rank}</td>
                 <td className="px-3 py-3 font-semibold">
                   <div className="flex items-center gap-2">
                     <TeamAvatar name={s.team.name} logoUrl={s.team.logoUrl} size={6} />
@@ -417,7 +449,8 @@ ${body}
                   </Link>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1152,6 +1185,48 @@ ${body}
                 />
               </div>
             </div>
+          </div>
+
+          {/* Tiebreakers */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: "var(--sh-primary)" }}>Tiebreaker Priority</p>
+            <p className="text-xs mb-2" style={{ color: "var(--sh-muted)" }}>Applied in order when points are equal. If still tied, teams share the same rank.</p>
+            <div className="space-y-1">
+              {cfgTiebreakers.map((tb, idx) => (
+                <div key={tb} className="flex items-center gap-2 rounded-lg px-2 py-1.5" style={{ background: "var(--sh-bg-card2)" }}>
+                  <span className="text-xs font-bold w-4 text-center" style={{ color: "var(--sh-muted)" }}>{idx + 1}</span>
+                  <span className="flex-1 text-sm" style={{ color: "var(--sh-text)" }}>
+                    {TB_OPTIONS.find(o => o.key === tb)?.label ?? tb}
+                  </span>
+                  <button type="button" disabled={idx === 0} onClick={() => {
+                    const next = [...cfgTiebreakers]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; setCfgTiebreakers(next);
+                  }} className="text-xs px-1.5 py-0.5 rounded hover:opacity-70 disabled:opacity-20" style={{ color: "var(--sh-secondary)" }}>↑</button>
+                  <button type="button" disabled={idx === cfgTiebreakers.length - 1} onClick={() => {
+                    const next = [...cfgTiebreakers]; [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]]; setCfgTiebreakers(next);
+                  }} className="text-xs px-1.5 py-0.5 rounded hover:opacity-70 disabled:opacity-20" style={{ color: "var(--sh-secondary)" }}>↓</button>
+                  <button type="button" onClick={() => setCfgTiebreakers(cfgTiebreakers.filter((_, j) => j !== idx))}
+                    className="text-xs px-1.5 py-0.5 rounded hover:opacity-70" style={{ color: "var(--sh-danger)" }}>✕</button>
+                </div>
+              ))}
+            </div>
+            {TB_OPTIONS.filter(o => !cfgTiebreakers.includes(o.key)).length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <select
+                  defaultValue=""
+                  onChange={e => { if (e.target.value) { setCfgTiebreakers([...cfgTiebreakers, e.target.value]); e.target.value = ""; } }}
+                  className="text-xs rounded-lg border px-2 py-1.5 flex-1"
+                  style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+                >
+                  <option value="">+ Add tiebreaker…</option>
+                  {TB_OPTIONS.filter(o => !cfgTiebreakers.includes(o.key)).map(o => (
+                    <option key={o.key} value={o.key}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {cfgTiebreakers.length === 0 && (
+              <p className="text-xs mt-1" style={{ color: "var(--sh-muted)" }}>No tiebreakers — tied teams will share the same rank.</p>
+            )}
           </div>
 
           {cfgError && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{cfgError}</p>}
