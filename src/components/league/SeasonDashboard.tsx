@@ -53,6 +53,8 @@ interface Standing {
   pct: string;
 }
 
+interface Official { id: string; name: string; role: string }
+
 interface Props {
   slug: string;
   seasonId: string;
@@ -65,6 +67,7 @@ interface Props {
   teams: Team[];
   categories: Category[];
   fields: Field[];
+  officials?: Official[];
   standings: Standing[];
   leagueName: string;
   leagueCity?: string | null;
@@ -79,7 +82,7 @@ type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
 
 export function SeasonDashboard({
   slug, seasonId, seasonName, startDate, endDate, seasonStatus,
-  isAdmin, games, teams, categories, fields, standings,
+  isAdmin, games, teams, categories, fields, officials = [], standings,
   leagueName, leagueCity, leagueState, leagueLogoUrl,
   officialBatting, officialPitching, canCreatePractice,
 }: Props) {
@@ -89,6 +92,40 @@ export function SeasonDashboard({
   const tg = ts.groups;
 
   const [tab, setTab] = useState<Tab>("schedule");
+  const [assignDialog, setAssignDialog] = useState<{ dayKey: string; label: string } | null>(null);
+  const [assignFieldId, setAssignFieldId]         = useState("");
+  const [assignUmpireId, setAssignUmpireId]       = useState("");
+  const [assignScorerId, setAssignScorerId]       = useState("");
+  const [assigning, setAssigning]                 = useState(false);
+  const [assignResult, setAssignResult]           = useState<string | null>(null);
+  const [assignError, setAssignError]             = useState("");
+
+  function openAssignDialog(dayKey: string, label: string) {
+    setAssignDialog({ dayKey, label });
+    setAssignFieldId(""); setAssignUmpireId(""); setAssignScorerId("");
+    setAssignResult(null); setAssignError("");
+  }
+
+  async function handleAssign() {
+    if (!assignUmpireId && !assignScorerId) { setAssignError("Select at least one official"); return; }
+    setAssigning(true); setAssignError(""); setAssignResult(null);
+    const res = await fetch(`/api/leagues/${slug}/seasons/${seasonId}/assign-officials`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: assignDialog!.dayKey,
+        fieldId: assignFieldId || null,
+        umpireUserId: assignUmpireId || null,
+        scorekeeperUserId: assignScorerId || null,
+      }),
+    });
+    setAssigning(false);
+    if (!res.ok) { const d = await res.json(); setAssignError(d.error ?? "Failed"); return; }
+    const { updated } = await res.json();
+    setAssignResult(`${updated} game${updated !== 1 ? "s" : ""} updated`);
+    router.refresh();
+  }
+
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
     const now = new Date();
     const dow = now.getDay(); // 0=Sun … 6=Sat
@@ -434,6 +471,7 @@ ${body}
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* ── Season info row ── */}
       <div className="flex items-center justify-between">
@@ -512,26 +550,45 @@ ${body}
                 const totalGames = catGroups.reduce((s, g) => s + g.catGames.length, 0);
                 return (
                 <div key={dayKey}>
-                  {/* Day header — clickable to collapse */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDay(dayKey)}
-                    className="w-full flex items-center justify-between gap-2 mb-3 group"
+                  {/* Day header */}
+                  <div
+                    className="w-full flex items-center justify-between gap-2 mb-3"
                     style={{ borderLeft: "3px solid var(--sh-primary)", paddingLeft: "10px" }}
                   >
-                    <span className="font-bold text-sm" style={{ color: "var(--sh-text)" }}>📅 {label}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleDay(dayKey)}
+                      className="flex-1 text-left font-bold text-sm"
+                      style={{ color: "var(--sh-text)" }}
+                    >
+                      📅 {label}
+                    </button>
                     <span className="flex items-center gap-2 shrink-0">
+                      {isAdmin && officials.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => openAssignDialog(dayKey, label)}
+                          className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity"
+                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                        >
+                          👤 Assign
+                        </button>
+                      )}
                       {collapsed && (
                         <span className="text-xs" style={{ color: "var(--sh-muted)" }}>
                           {totalGames} game{totalGames !== 1 ? "s" : ""}
                         </span>
                       )}
-                      <span className="text-xs transition-transform"
-                        style={{ color: "var(--sh-muted)", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleDay(dayKey)}
+                        className="text-xs transition-transform"
+                        style={{ color: "var(--sh-muted)", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}
+                      >
                         ▾
-                      </span>
+                      </button>
                     </span>
-                  </button>
+                  </div>
 
                   {!collapsed && <div className="space-y-4">
                     {catGroups.map(({ grpName, catGames }) => (
@@ -938,5 +995,99 @@ ${body}
         )
       )}
     </div>
+
+    {/* ── Assign Officials Modal ── */}
+    {assignDialog && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.6)" }}
+        onClick={() => setAssignDialog(null)}
+      >
+        <div
+          className="rounded-2xl border shadow-2xl w-full max-w-sm p-6 space-y-4"
+          style={{ background: "var(--sh-bg-card)", borderColor: "var(--sh-border2)" }}
+          onClick={e => e.stopPropagation()}
+        >
+          <h2 className="font-bold text-lg" style={{ color: "var(--sh-text)" }}>👤 Assign Officials</h2>
+          <p className="text-sm" style={{ color: "var(--sh-muted)" }}>📅 {assignDialog.label}</p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--sh-secondary)" }}>
+                Field <span style={{ color: "var(--sh-muted)", fontWeight: 400 }}>(leave blank for all fields)</span>
+              </label>
+              <select
+                value={assignFieldId}
+                onChange={e => setAssignFieldId(e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2"
+                style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+              >
+                <option value="">All fields</option>
+                {fields.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--sh-secondary)" }}>Umpire</label>
+              <select
+                value={assignUmpireId}
+                onChange={e => setAssignUmpireId(e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2"
+                style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+              >
+                <option value="">— none —</option>
+                {officials.filter(o => o.role === "UMPIRE").map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--sh-secondary)" }}>Scorekeeper</label>
+              <select
+                value={assignScorerId}
+                onChange={e => setAssignScorerId(e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2"
+                style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+              >
+                <option value="">— none —</option>
+                {officials.filter(o => o.role === "SCOREKEEPER").map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {assignError && (
+            <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{assignError}</p>
+          )}
+          {assignResult && (
+            <p className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>✓ {assignResult}</p>
+          )}
+
+          <div className="flex gap-2 justify-end pt-1">
+            <button
+              type="button"
+              onClick={() => setAssignDialog(null)}
+              disabled={assigning}
+              className="text-sm px-4 py-2 rounded-lg border hover:opacity-80"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAssign}
+              disabled={assigning}
+              className="text-sm px-4 py-2 rounded-lg font-semibold hover:opacity-80 disabled:opacity-50"
+              style={{ background: "var(--sh-primary)", color: "var(--sh-bg-page)" }}
+            >
+              {assigning ? "Assigning…" : "Assign"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
