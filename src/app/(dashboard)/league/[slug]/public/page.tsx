@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ScheduleSection } from "@/components/public/ScheduleSection";
-import type { UpcomingGame, PastGame } from "@/components/public/ScheduleSection";
+import type { UpcomingGame, PastGame, SeasonTeam } from "@/components/public/ScheduleSection";
 
 interface PageProps { params: Promise<{ slug: string }> }
 
@@ -218,36 +218,46 @@ export default async function LeaguePublicPage({ params }: PageProps) {
   // ── Schedule ───────────────────────────────────────────────────────────────
   let upcoming: UpcomingGame[] = [];
   let past: PastGame[] = [];
+  let scheduleTeams: SeasonTeam[] = [];
 
   if (cfg.showSchedule) {
-    const [upcomingGames, pastGames] = await Promise.all([
-      prisma.game.findMany({
-        where: { leagueId: league.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
-        orderBy: { scheduledAt: "asc" },
-        take: 20,
-        select: {
-          id: true, scheduledAt: true, seasonId: true,
-          homeTeam: { select: { name: true, logoUrl: true } },
-          awayTeam: { select: { name: true, logoUrl: true } },
-          field:    { select: { name: true } },
-        },
-      }),
-      prisma.game.findMany({
-        where: { leagueId: league.id, status: "COMPLETED" },
-        orderBy: { scheduledAt: "desc" },
-        take: 30,
-        select: {
-          id: true, scheduledAt: true, seasonId: true,
-          homeScore: true, awayScore: true,
-          homeTeam: { select: { name: true, logoUrl: true } },
-          awayTeam: { select: { name: true, logoUrl: true } },
-          field:    { select: { name: true } },
-        },
-      }),
-    ]);
+    const upcomingGames = await prisma.game.findMany({
+      where: { leagueId: league.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
+      orderBy: { scheduledAt: "asc" },
+      take: 50,
+      select: {
+        id: true, scheduledAt: true, seasonId: true,
+        homeTeamId: true, awayTeamId: true,
+        homeTeam: { select: { name: true, logoUrl: true } },
+        awayTeam: { select: { name: true, logoUrl: true } },
+        field:    { select: { name: true } },
+      },
+    });
+
+    const pastGames = await prisma.game.findMany({
+      where: { leagueId: league.id, status: "COMPLETED" },
+      orderBy: { scheduledAt: "desc" },
+      take: 30,
+      select: {
+        id: true, scheduledAt: true, seasonId: true,
+        homeScore: true, awayScore: true,
+        homeTeam: { select: { name: true, logoUrl: true } },
+        awayTeam: { select: { name: true, logoUrl: true } },
+        field:    { select: { name: true } },
+      },
+    });
+
+    if (latestSeason) {
+      scheduleTeams = await prisma.team.findMany({
+        where: { seasonId: latestSeason.id, isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+    }
 
     upcoming = upcomingGames.map(g => ({
       id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId,
+      homeTeamId: g.homeTeamId, awayTeamId: g.awayTeamId,
       homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name,
       homeLogoUrl: g.homeTeam.logoUrl ?? null,
       awayLogoUrl: g.awayTeam.logoUrl ?? null,
@@ -346,7 +356,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
         {/* Schedule (upcoming + results tabs) */}
         {cfg.showSchedule && (
-          <ScheduleSection upcoming={upcoming} past={past} />
+          <ScheduleSection upcoming={upcoming} past={past} seasonTeams={scheduleTeams} />
         )}
 
         {/* Teams */}

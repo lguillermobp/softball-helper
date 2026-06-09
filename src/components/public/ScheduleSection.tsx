@@ -4,10 +4,13 @@ import { useState } from "react";
 
 export interface UpcomingGame {
   id: string; scheduledAt: string;
+  homeTeamId: string; awayTeamId: string;
   homeTeam: string; awayTeam: string;
   homeLogoUrl: string | null; awayLogoUrl: string | null;
   fieldName: string | null;
 }
+
+export interface SeasonTeam { id: string; name: string }
 
 export interface PastGame {
   id: string; scheduledAt: string;
@@ -20,7 +23,7 @@ export interface PastGame {
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface FieldGroup  { field: string | null; games: UpcomingGame[] }
-interface DayGroup    { dayKey: string; label: string; total: number; fieldGroups: FieldGroup[] }
+interface DayGroup    { dayKey: string; label: string; total: number; fieldGroups: FieldGroup[]; byeTeams: SeasonTeam[] }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +32,7 @@ const SMON   = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV
 const FDOW   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as const;
 const FMON   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] as const;
 
-function buildDayGroups(games: UpcomingGame[]): DayGroup[] {
+function buildDayGroups(games: UpcomingGame[], seasonTeams: SeasonTeam[]): DayGroup[] {
   const dayMap = new Map<string, UpcomingGame[]>();
   for (const g of games) {
     const d = new Date(g.scheduledAt);
@@ -57,7 +60,11 @@ function buildDayGroups(games: UpcomingGame[]): DayGroup[] {
     const date = new Date(y, mo - 1, d, 12); // noon avoids DST edge
     const label = `${FDOW[date.getDay()]} · ${FMON[date.getMonth()]} ${d}`;
 
-    return { dayKey, label, total: dayGames.length, fieldGroups };
+    // Bye teams: active season teams not playing this day
+    const playingIds = new Set(dayGames.flatMap(g => [g.homeTeamId, g.awayTeamId]));
+    const byeTeams = seasonTeams.filter(t => !playingIds.has(t.id));
+
+    return { dayKey, label, total: dayGames.length, fieldGroups, byeTeams };
   });
 }
 
@@ -190,10 +197,10 @@ function ResultCard({ game }: { game: PastGame }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function ScheduleSection({ upcoming, past }: { upcoming: UpcomingGame[]; past: PastGame[] }) {
+export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming: UpcomingGame[]; past: PastGame[]; seasonTeams?: SeasonTeam[] }) {
   const [tab, setTab] = useState<"upcoming" | "results">("upcoming");
 
-  const dayGroups = buildDayGroups(upcoming);
+  const dayGroups = buildDayGroups(upcoming, seasonTeams);
 
   const tabBtn = (active: boolean): React.CSSProperties => ({
     padding: "7px 18px",
@@ -228,7 +235,7 @@ export function ScheduleSection({ upcoming, past }: { upcoming: UpcomingGame[]; 
           <p style={{ color: "#86efac", opacity: 0.6, fontSize: 14, margin: 0 }}>No upcoming games scheduled.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-            {dayGroups.map(({ dayKey, label, total, fieldGroups }) => {
+            {dayGroups.map(({ dayKey, label, total, fieldGroups, byeTeams }) => {
               const multiField = fieldGroups.length > 1;
               return (
                 <div key={dayKey}>
@@ -258,6 +265,18 @@ export function ScheduleSection({ upcoming, past }: { upcoming: UpcomingGame[]; 
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                       {fieldGroups[0].games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
+                    </div>
+                  )}
+
+                  {/* Bye teams */}
+                  {byeTeams.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, padding: "7px 12px", borderRadius: 8, background: "rgba(134,239,172,0.04)", border: "1px solid #1a3a1a", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#86efac", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
+                      {byeTeams.map((t, i) => (
+                        <span key={t.id} style={{ fontSize: 12, color: "#86efac", opacity: 0.6 }}>
+                          {t.name}{i < byeTeams.length - 1 ? "," : ""}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>

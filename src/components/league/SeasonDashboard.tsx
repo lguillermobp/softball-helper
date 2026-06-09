@@ -713,6 +713,21 @@ ${body}
                   </div>
 
                   {!collapsed && <div className="space-y-4">
+                    {(() => {
+                      const playingIds = new Set(catGroups.flatMap(cg => cg.catGames).flatMap(g => [g.homeTeamId, g.awayTeamId]));
+                      const byeTeams   = teams.filter(t => !playingIds.has(t.id));
+                      return byeTeams.length > 0 ? (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl mb-1 text-xs flex-wrap"
+                          style={{ background: "var(--sh-bg-card2)", border: "1px solid var(--sh-border)", color: "var(--sh-muted)" }}>
+                          <span className="font-semibold shrink-0">🏖️ Bye:</span>
+                          {byeTeams.map((t, i) => (
+                            <span key={t.id}>
+                              {t.name}{i < byeTeams.length - 1 ? "," : ""}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
                     {catGroups.map(({ grpName, catGames }) => (
                       <div key={grpName || "__none__"}>
                         {/* Field sub-header */}
