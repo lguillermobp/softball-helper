@@ -104,6 +104,7 @@ model League {
   name                 String
   slug                 String       @unique
   logoUrl              String?
+  bannerUrl            String?
   city                 String?
   state                String?
   status               LeagueStatus @default(ACTIVE)

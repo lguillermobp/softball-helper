@@ -266,7 +266,8 @@ export default async function LeaguePublicPage({ params }: PageProps) {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const logoUrl = league.logoUrl;
+  const logoUrl   = league.logoUrl;
+  const bannerUrl = league.bannerUrl;
   const hasGroups = groupedStandings.length > 1;
   const half = Math.ceil(groupedStandings.length / 2);
   const leftCol  = groupedStandings.slice(0, half);
@@ -281,11 +282,13 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       `}</style>
 
       {/* Hero */}
-      <div style={{ position: "relative", overflow: "hidden", minHeight: 260, display: "flex", alignItems: "flex-end" }}>
-        {logoUrl && (
+      <div style={{ position: "relative", overflow: "hidden", minHeight: bannerUrl ? 300 : 260, display: "flex", alignItems: "flex-end" }}>
+        {bannerUrl ? (
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+        ) : logoUrl ? (
           <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${logoUrl})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(50px)", transform: "scale(1.3)", opacity: 0.25 }} />
-        )}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(10,15,10,0.95) 100%)" }} />
+        ) : null}
+        <div style={{ position: "absolute", inset: 0, background: bannerUrl ? "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(10,15,10,0.92) 70%, rgba(10,15,10,1) 100%)" : "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(10,15,10,0.95) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 960, margin: "0 auto", padding: "40px 24px 32px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             {logoUrl && (

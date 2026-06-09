@@ -19,6 +19,7 @@ import { EditPlayerDialog } from "@/components/league/EditPlayerDialog";
 import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
 import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
+import { LeagueBannerUpload } from "@/components/league/LeagueBannerUpload";
 import { EditMemberDialog } from "@/components/league/EditMemberDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 import { flagUrl } from "@/lib/countries";
@@ -107,7 +108,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; plan: { name: string } };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string } };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -229,7 +230,8 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [memberDeleteConfirm, setMemberDeleteConfirm] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
-  const [leagueLogoUrl, setLeagueLogoUrl] = useState<string | null>(league.logoUrl);
+  const [leagueLogoUrl,   setLeagueLogoUrl]   = useState<string | null>(league.logoUrl);
+  const [leagueBannerUrl, setLeagueBannerUrl] = useState<string | null>(league.bannerUrl);
   const [technician, setTechnician]       = useState<TechnicianOption | null>(initialTechnician ?? null);
   const [selectedTechId, setSelectedTechId] = useState(initialTechnician?.id ?? "");
   const [savingTech, setSavingTech]       = useState(false);
@@ -397,6 +399,16 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 leagueName={league.name}
                 currentLogoUrl={leagueLogoUrl}
                 onUpdated={(url) => setLeagueLogoUrl(url)}
+              />
+            </div>
+          )}
+          {isAdmin && (
+            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>League Banner</p>
+              <LeagueBannerUpload
+                slug={slug}
+                currentBannerUrl={leagueBannerUrl}
+                onUpdated={(url) => setLeagueBannerUrl(url)}
               />
             </div>
           )}
