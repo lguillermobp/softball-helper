@@ -14,8 +14,18 @@ const ROLES = [
   { value: "SCOREKEEPER",   label: "Scorekeeper" },
 ];
 
+const ROLE_LABELS: Record<string, string> = {
+  LEAGUE_ADMIN:          "League Admin",
+  UMPIRE:                "Umpire",
+  SCOREKEEPER:           "Scorekeeper",
+  TEAM_MANAGER:          "Team Manager",
+  TEAM_MANAGER_PLAYER:   "Manager / Player",
+  TEAM_ASSISTANT:        "Team Assistant",
+  TEAM_ASSISTANT_PLAYER: "Assistant / Player",
+};
+
 function roleLabel(r: string) {
-  return ROLES.find(x => x.value === r)?.label ?? r;
+  return ROLE_LABELS[r] ?? r.replace(/_/g, " ").toLowerCase();
 }
 
 const PAGE_SIZE = 15;

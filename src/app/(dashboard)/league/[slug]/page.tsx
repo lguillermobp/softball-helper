@@ -366,7 +366,7 @@ export default async function LeaguePage({ params }: PageProps) {
     } : null,
   }));
 
-  const members = league.userRoles.map((ur) => ({
+  const members = league.userRoles.filter((ur) => ur.role !== "PLAYER").map((ur) => ({
     id: ur.id, role: ur.role,
     user: {
       id: ur.user.id, name: ur.user.name, email: ur.user.email,
