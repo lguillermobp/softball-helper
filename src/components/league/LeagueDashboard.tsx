@@ -9,7 +9,7 @@ import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { EditTeamDialog } from "@/components/league/EditTeamDialog";
 import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
-import { AddMemberDialog } from "@/components/league/AddMemberDialog";
+import { MembersPanel } from "@/components/league/MembersPanel";
 import { ResendVerificationButton } from "@/components/league/ResendVerificationButton";
 import { AddFieldDialog } from "@/components/league/AddFieldDialog";
 import { UploadPlayersDialog } from "@/components/league/UploadPlayersDialog";
@@ -20,7 +20,6 @@ import { BroadcastDialog } from "@/components/league/BroadcastDialog";
 import { TeamLogoUpload } from "@/components/league/TeamLogoUpload";
 import { LeagueLogoUpload } from "@/components/league/LeagueLogoUpload";
 import { LeagueBannerUpload } from "@/components/league/LeagueBannerUpload";
-import { EditMemberDialog } from "@/components/league/EditMemberDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 import { flagUrl } from "@/lib/countries";
 
@@ -227,8 +226,6 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [section, setSection] = useState<Section>("overview");
   const [showInactive, setShowInactive] = useState(false);
   const [teamError, setTeamError] = useState<Record<string, string>>({});
-  const [memberDeleteConfirm, setMemberDeleteConfirm] = useState<string | null>(null);
-  const [memberError, setMemberError] = useState<Record<string, string>>({});
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
   const [leagueLogoUrl,   setLeagueLogoUrl]   = useState<string | null>(league.logoUrl);
   const [leagueBannerUrl, setLeagueBannerUrl] = useState<string | null>(league.bannerUrl);
@@ -321,17 +318,6 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     if (res.ok) router.refresh();
   }
 
-  async function deleteMember(memberId: string) {
-    setMemberError({});
-    const res = await fetch(`/api/leagues/${slug}/members/${memberId}`, { method: "DELETE" });
-    setMemberDeleteConfirm(null);
-    if (res.ok) {
-      router.refresh();
-    } else {
-      const data = await res.json();
-      setMemberError((prev) => ({ ...prev, [memberId]: data.error ?? "Cannot remove" }));
-    }
-  }
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
 
@@ -1181,84 +1167,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     </div>
   );
 
-  const Members = (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold" style={head}>{tl.members.title}</h2>
-        <AddMemberDialog slug={slug} />
-      </div>
-      <div className="rounded-2xl border overflow-hidden" style={card}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {[tl.members.name, tl.members.email, tl.members.phone, tl.members.role, tl.members.verified, ""].map((h, i) => (
-                <th key={i} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider${i === 2 ? " hidden sm:table-cell" : ""}`} style={dim}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((ur) => (
-              <tr key={ur.id} style={{ borderBottom: "1px solid #0f2310" }}>
-                <td className="px-4 py-3 font-medium" style={head}>{ur.user.name ?? "—"}</td>
-                <td className="px-4 py-3" style={dim}>{ur.user.email}</td>
-                <td className="px-4 py-3 hidden sm:table-cell" style={dim}>{ur.user.phone ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <span className="text-xs font-semibold rounded-full px-2.5 py-0.5" style={{ background: "#1a3d1a", color: "#4ade80" }}>
-                    {roleLabel(ur.role)}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {ur.user.emailVerified
-                    ? <span className="text-xs font-semibold" style={muted}>✓ Verified</span>
-                    : <ResendVerificationButton email={ur.user.email} />}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <ResetPasswordButton slug={slug} userId={ur.user.id} tl={tl.members} />
-                    <EditMemberDialog
-                      slug={slug}
-                      memberId={ur.id}
-                      memberName={ur.user.name}
-                      currentRole={ur.role}
-                    />
-                    {memberDeleteConfirm === ur.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => deleteMember(ur.id)}
-                          className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
-                          style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setMemberDeleteConfirm(null)}
-                          className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
-                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => { setMemberError({}); setMemberDeleteConfirm(ur.id); }}
-                        className="text-xs px-2 py-1 rounded-md border hover:opacity-80 transition-colors"
-                        style={{ borderColor: "var(--sh-border2)", color: "#f87171", background: "transparent" }}
-                      >
-                        Remove
-                      </button>
-                    )}
-                    {memberError[ur.id] && (
-                      <p className="text-xs w-full mt-0.5" style={{ color: "#f87171" }}>{memberError[ur.id]}</p>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  const Members = <MembersPanel slug={slug} members={members} />;
 
   const FIELD_TYPE_LABELS: Record<string, string> = {
     MORNING: tl.fields.morning, AFTERNOON: tl.fields.afternoon, NIGHT: tl.fields.night,
