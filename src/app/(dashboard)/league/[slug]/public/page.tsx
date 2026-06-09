@@ -282,7 +282,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       `}</style>
 
       {/* Hero */}
-      <div style={{ position: "relative", overflow: "hidden", minHeight: bannerUrl ? 300 : 260, display: "flex", alignItems: "flex-end" }}>
+      <div style={{ position: "relative", overflow: "hidden", minHeight: bannerUrl ? 190 : 260, display: "flex", alignItems: "flex-end" }}>
         {bannerUrl ? (
           <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }} />
         ) : logoUrl ? (

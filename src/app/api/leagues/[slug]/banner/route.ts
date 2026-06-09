@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     folder:         `softball-helper/${league.id}/league`,
     public_id:      "banner",
     overwrite:      true,
-    transformation: [{ width: 1600, height: 480, crop: "fill", gravity: "auto" }],
+    transformation: [{ width: 1600, height: 300, crop: "fill", gravity: "auto" }],
     format:         "jpg",
   });
 

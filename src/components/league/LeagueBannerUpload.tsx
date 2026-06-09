@@ -109,7 +109,7 @@ export function LeagueBannerUpload({ slug, currentBannerUrl, onUpdated }: Props)
       </div>
 
       {error && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{error}</p>}
-      <p className="text-xs" style={{ color: "var(--sh-muted)" }}>PNG, JPG · max 10 MB · cropped to 1600 × 480</p>
+      <p className="text-xs" style={{ color: "var(--sh-muted)" }}>PNG, JPG · max 10 MB · cropped to 1600 × 300</p>
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
