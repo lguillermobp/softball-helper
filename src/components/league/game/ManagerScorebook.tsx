@@ -118,7 +118,9 @@ export function ManagerScorebook({
   const [offenseKeys, setOffenseKeys] = useState<string[]>(initOffenseKeys);
   const [data,       setData]       = useState<ScoreBookData>(initData);
   const [saveState,  setSaveState]  = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragResultRef = useRef<OffenseResult | null>(null);
+  const [dragTarget,  setDragTarget]  = useState<string | null>(null); // "key-order"
 
   const save = useCallback(async (next: ScoreBookData) => {
     setSaveState("saving");
@@ -259,8 +261,8 @@ export function ManagerScorebook({
   const visitorName = isHome ? opponentName : teamName;
   const homeName    = isHome ? teamName     : opponentName;
 
-  const col  = "w-14 shrink-0 text-center";
-  const cell = "w-14 h-9 shrink-0 text-center text-xs font-bold rounded flex items-center justify-center";
+  const col  = "w-16 shrink-0 text-center";
+  const cell = "w-16 h-9 shrink-0 text-center text-xs font-bold rounded flex items-center justify-center";
   const hdr  = { color: "var(--sh-muted)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 
@@ -290,7 +292,7 @@ export function ManagerScorebook({
           const isExt = ext !== "";
           const canRemove = isExt && canEdit && isExtEmpty(key);
           return (
-            <div key={key} className="w-14 shrink-0 flex flex-col items-center" style={{ gap: 1 }}>
+            <div key={key} className="w-16 shrink-0 flex flex-col items-center" style={{ gap: 1 }}>
               <span
                 onDoubleClick={canRemove ? (e) => { e.preventDefault(); removeExtInning(key); } : undefined}
                 title={canRemove ? "Double-tap to remove this column" : undefined}
@@ -310,7 +312,7 @@ export function ManagerScorebook({
             </div>
           );
         })}
-        <div className="w-14 shrink-0 text-center" style={hdr}>TOT</div>
+        <div className="w-16 shrink-0 text-center" style={hdr}>TOT</div>
       </div>
     );
   }
@@ -328,7 +330,7 @@ export function ManagerScorebook({
           </div>
           <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
             {canEdit
-              ? "Manager's own record. Tap to cycle · double-tap to clear. Auto-saves."
+              ? "Tap to cycle · double-tap to clear · drag a badge onto a cell to set directly. Auto-saves."
               : "Manager's own record — independent from the official league scoring."}
           </p>
         </div>
@@ -347,15 +349,29 @@ export function ManagerScorebook({
       </div>
 
       {/* ── Legend ── */}
-      <div className="flex flex-wrap gap-2">
-        {OFFENSE_CYCLE.slice(1).map(r => {
-          const s = RESULT_STYLE[r];
-          return (
-            <span key={r} className="text-xs font-bold rounded px-2 py-0.5" style={{ background: s.bg, color: s.color }}>
-              {s.label}
-            </span>
-          );
-        })}
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap gap-2">
+          {OFFENSE_CYCLE.slice(1).map(r => {
+            const s = RESULT_STYLE[r];
+            return (
+              <span key={r}
+                className="text-xs font-bold rounded px-2 py-0.5 select-none"
+                draggable={canEdit}
+                onDragStart={() => { dragResultRef.current = r; }}
+                onDragEnd={() => { dragResultRef.current = null; setDragTarget(null); }}
+                style={{ background: s.bg, color: s.color, cursor: canEdit ? "grab" : "default" }}
+                title={canEdit ? `Drag onto a cell to set ${s.label}` : undefined}
+              >
+                {s.label}
+              </span>
+            );
+          })}
+        </div>
+        {canEdit && (
+          <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+            Drag a badge directly onto any cell to set the result
+          </p>
+        )}
       </div>
 
       {/* ── Runs per Inning ── */}
@@ -397,7 +413,7 @@ export function ManagerScorebook({
                   </button>
                 );
               })}
-              <div className="w-14 shrink-0 text-center font-bold text-sm" style={{ color: "#93c5fd" }}>
+              <div className="w-16 shrink-0 text-center font-bold text-sm" style={{ color: "#93c5fd" }}>
                 {totalVisitor}
               </div>
             </div>
@@ -429,7 +445,7 @@ export function ManagerScorebook({
                   </button>
                 );
               })}
-              <div className="w-14 shrink-0 text-center font-bold text-sm" style={{ color: "#4ade80" }}>
+              <div className="w-16 shrink-0 text-center font-bold text-sm" style={{ color: "#4ade80" }}>
                 {totalHome}
               </div>
             </div>
@@ -455,22 +471,46 @@ export function ManagerScorebook({
                   <span className="text-xs truncate" style={{ color: "var(--sh-text)" }}>{batter.name}</span>
                 </div>
                 {offenseKeys.map(key => {
-                  const result = (data.offense[key]?.[batter.battingOrder] ?? "") as OffenseResult;
-                  const s = RESULT_STYLE[result];
+                  const result   = (data.offense[key]?.[batter.battingOrder] ?? "") as OffenseResult;
+                  const s        = RESULT_STYLE[result];
+                  const targetId = `${key}-${batter.battingOrder}`;
+                  const isOver   = dragTarget === targetId;
                   return (
                     <button key={key}
                       onClick={() => cycleOffense(key, batter.battingOrder)}
                       onDoubleClick={canEdit ? (e) => { e.preventDefault(); resetOffense(key, batter.battingOrder); } : undefined}
+                      onDragOver={canEdit ? (e) => { e.preventDefault(); setDragTarget(targetId); } : undefined}
+                      onDragLeave={canEdit ? () => setDragTarget(null) : undefined}
+                      onDrop={canEdit ? (e) => {
+                        e.preventDefault();
+                        const r = dragResultRef.current;
+                        if (r !== null) {
+                          setData(prev => {
+                            const updated: ScoreBookData = {
+                              ...prev,
+                              offense: { ...prev.offense, [key]: { ...prev.offense[key], [batter.battingOrder]: r } },
+                            };
+                            scheduleAutosave(updated);
+                            return updated;
+                          });
+                        }
+                        setDragTarget(null);
+                      } : undefined}
                       disabled={!canEdit}
                       className={cell}
-                      style={{ background: s.bg, color: s.color, border: "1px solid var(--sh-border)", cursor: canEdit ? "pointer" : "default" }}
-                      title={canEdit ? "Tap to cycle · double-tap to clear" : undefined}>
-                      {s.label}
+                      style={{
+                        background: isOver ? "rgba(74,222,128,0.15)" : s.bg,
+                        color: isOver ? "#4ade80" : s.color,
+                        border: isOver ? "2px solid #4ade80" : "1px solid var(--sh-border)",
+                        cursor: canEdit ? "pointer" : "default",
+                      }}
+                      title={canEdit ? "Tap to cycle · double-tap to clear · drop a badge to set" : undefined}>
+                      {isOver ? (dragResultRef.current ? RESULT_STYLE[dragResultRef.current].label : s.label) : s.label}
                     </button>
                   );
                 })}
                 {/* Totals column placeholder */}
-                <div className="w-14 shrink-0" />
+                <div className="w-16 shrink-0" />
               </div>
             ))}
 
@@ -498,7 +538,7 @@ export function ManagerScorebook({
                   </div>
                 );
               })}
-              <div className="w-14 shrink-0" />
+              <div className="w-16 shrink-0" />
             </div>
           </div>
         </div>
@@ -534,7 +574,7 @@ export function ManagerScorebook({
                   </button>
                 );
               })}
-              <div className="w-14 shrink-0" />
+              <div className="w-16 shrink-0" />
             </div>
           </div>
         </div>
