@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { ScheduleSection } from "@/components/public/ScheduleSection";
+import type { UpcomingGame, PastGame } from "@/components/public/ScheduleSection";
 
 interface PageProps { params: Promise<{ slug: string }> }
 
@@ -14,13 +16,6 @@ interface StandingRow {
 
 interface GroupBlock { group: string | null; rows: StandingRow[] }
 
-interface UpcomingGame {
-  id: string; scheduledAt: string; seasonId: string;
-  homeTeam: string; awayTeam: string;
-  homeLogoUrl: string | null; awayLogoUrl: string | null;
-  fieldName: string | null;
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function tbv(rf: number, ra: number, w: number, key: string): number {
@@ -31,12 +26,9 @@ function tbv(rf: number, ra: number, w: number, key: string): number {
   return 0;
 }
 
-const DAYS   = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
-const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] as const;
-
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function TeamLogo({ name, logoUrl, size = 28 }: { name: string; logoUrl: string | null; size?: number }) {
+function TeamLogo({ name, logoUrl, size = 24 }: { name: string; logoUrl: string | null; size?: number }) {
   if (logoUrl) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={logoUrl} alt={name} style={{ width: size, height: size, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />;
@@ -49,100 +41,53 @@ function TeamLogo({ name, logoUrl, size = 28 }: { name: string; logoUrl: string 
 }
 
 function GroupTable({ block, showPct }: { block: GroupBlock; showPct: boolean }) {
-  const cols = ["#", "Team", "GP", "W", "L", "T", "Pts", ...(showPct ? ["PCT"] : [])];
+  const cols = ["#", "Team", "GP", "W", "L", "T", "Pts", "RF", "RA", "RD", ...(showPct ? ["PCT"] : [])];
   return (
     <div>
       {block.group && (
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 8px", opacity: 0.8 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 10px", opacity: 0.8 }}>
           Group {block.group}
         </p>
       )}
       <div style={{ border: "1px solid #1a3a1a", borderRadius: 12, overflow: "hidden", background: "#0d1a0d" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #1a3a1a" }}>
               {cols.map(h => (
-                <th key={h} style={{ padding: "9px 10px", color: "#4ade80", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: h === "Team" ? "left" : "center" }}>
+                <th key={h} style={{ padding: "10px 10px", color: "#4ade80", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: h === "Team" ? "left" : "center" }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {block.rows.map((s, i) => (
-              <tr key={s.name} style={{ borderBottom: i < block.rows.length - 1 ? "1px solid #111c11" : "none" }}>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: s.rank === 1 ? "#fbbf24" : "#4ade80", fontWeight: 700, fontSize: 12 }}>{s.rank}</td>
-                <td style={{ padding: "9px 10px", color: "#f0fdf4", fontWeight: 600, maxWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <TeamLogo name={s.name} logoUrl={s.logoUrl} size={24} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-                  </div>
-                </td>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{s.gp}</td>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>{s.w}</td>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: "#f87171" }}>{s.l}</td>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{s.t}</td>
-                <td style={{ padding: "9px 10px", textAlign: "center", color: "#f0fdf4", fontWeight: 700 }}>{s.pts}</td>
-                {showPct && (
-                  <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac", fontSize: 12 }}>{s.pct}</td>
-                )}
-              </tr>
-            ))}
+            {block.rows.map((s, i) => {
+              const rd = s.rf - s.ra;
+              const rdColor = rd > 0 ? "#4ade80" : rd < 0 ? "#f87171" : "#86efac";
+              const rdText  = rd > 0 ? `+${rd}` : String(rd);
+              return (
+                <tr key={s.name} style={{ borderBottom: i < block.rows.length - 1 ? "1px solid #0f1a0f" : "none", background: s.rank === 1 ? "rgba(74,222,128,0.04)" : "transparent" }}>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: s.rank === 1 ? "#fbbf24" : "#4ade80", fontWeight: 700, fontSize: 13 }}>{s.rank}</td>
+                  <td style={{ padding: "10px 10px", color: "#f0fdf4", fontWeight: 600 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <TeamLogo name={s.name} logoUrl={s.logoUrl} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.gp}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>{s.w}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#f87171" }}>{s.l}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.t}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#f0fdf4", fontWeight: 700 }}>{s.pts}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.rf}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.ra}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: rdColor, fontWeight: 600 }}>{rdText}</td>
+                  {showPct && <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac", fontSize: 13 }}>{s.pct}</td>}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-function GameCard({ game }: { game: UpcomingGame }) {
-  const d = new Date(game.scheduledAt);
-  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  return (
-    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", overflow: "hidden" }}>
-      {/* Date block */}
-      <div style={{ padding: "12px 14px", background: "#111c11", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80" }}>
-          {DAYS[d.getDay()]}
-        </span>
-        <span style={{ fontSize: 22, fontWeight: 800, color: "#f0fdf4", lineHeight: 1 }}>
-          {d.getDate()}
-        </span>
-        <span style={{ fontSize: 10, textTransform: "uppercase", color: "#86efac" }}>
-          {MONTHS[d.getMonth()]}
-        </span>
-      </div>
-
-      {/* Matchup */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 16px", minWidth: 0 }}>
-        {/* Home */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", overflow: "hidden" }}>
-          <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {game.homeTeam}
-          </span>
-          <TeamLogo name={game.homeTeam} logoUrl={game.homeLogoUrl} size={30} />
-        </div>
-
-        <span style={{ fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.1em", flexShrink: 0, padding: "0 4px" }}>VS</span>
-
-        {/* Away */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" }}>
-          <TeamLogo name={game.awayTeam} logoUrl={game.awayLogoUrl} size={30} />
-          <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {game.awayTeam}
-          </span>
-        </div>
-      </div>
-
-      {/* Time + field */}
-      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, gap: 3, minWidth: 70 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#86efac" }}>{time}</span>
-        {game.fieldName && (
-          <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            📍 {game.fieldName}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -208,6 +153,8 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       name: string; logoUrl: string | null; group: string | null;
       gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number;
     };
+
+    // Accumulate stats
     const statsMap = new Map<string, StatEntry>();
     for (const t of seasonTeams) {
       statsMap.set(t.id, { name: t.name, logoUrl: t.logoUrl ?? null, group: t.group ?? null, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
@@ -220,69 +167,100 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       home.gp++; away.gp++;
       home.rf += hs; home.ra += as_;
       away.rf += as_; away.ra += hs;
-      if (hs > as_)       { home.w++; home.pts += ptsWin; away.l++; away.pts += ptsLoss; }
-      else if (as_ > hs)  { away.w++; away.pts += ptsWin; home.l++; home.pts += ptsLoss; }
-      else                { home.t++; home.pts += ptsTie; away.t++; away.pts += ptsTie; }
+      if (hs > as_)       { home.w++; home.pts += ptsWin;  away.l++; away.pts += ptsLoss; }
+      else if (as_ > hs)  { away.w++; away.pts += ptsWin;  home.l++; home.pts += ptsLoss; }
+      else                { home.t++; home.pts += ptsTie;  away.t++; away.pts += ptsTie;  }
     }
 
-    // Sort globally, then split by group (keeps intra-group order correct)
-    const sorted = [...statsMap.values()].sort((a, b) => {
+    // Split into groups first, then sort WITHIN each group independently
+    const groupMap = new Map<string, StatEntry[]>();
+    for (const s of statsMap.values()) {
+      const key = s.group ?? "";
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(s);
+    }
+
+    const cmp = (a: StatEntry, b: StatEntry) => {
       if (b.pts !== a.pts) return b.pts - a.pts;
       for (const tb of tbs) {
         const diff = tbv(b.rf, b.ra, b.w, tb) - tbv(a.rf, a.ra, a.w, tb);
         if (diff !== 0) return diff;
       }
       return a.name.localeCompare(b.name);
-    });
+    };
 
-    // Build StandingRow with equal-rank (1,2,2,4 style)
-    const groupMap = new Map<string, StandingRow[]>();
-    for (let i = 0; i < sorted.length; i++) {
-      const s = sorted[i];
-      let rank = i + 1;
-      for (let j = i - 1; j >= 0; j--) {
-        const prev = sorted[j];
-        if (prev.pts !== s.pts) break;
-        if (tbs.every(tb => tbv(prev.rf, prev.ra, prev.w, tb) === tbv(s.rf, s.ra, s.w, tb))) rank = j + 1;
-        else break;
-      }
-      const row: StandingRow = {
-        ...s, rank,
-        pct: s.gp > 0 ? (s.w / s.gp).toFixed(3).replace(/^0/, "") : ".000",
-      };
-      const key = s.group ?? "";
-      if (!groupMap.has(key)) groupMap.set(key, []);
-      groupMap.get(key)!.push(row);
-    }
-
-    // Sort group keys: named groups alphabetically, ungrouped ("") last
-    const sortedKeys = [...groupMap.keys()].sort((a, b) => {
+    const sortedGroupKeys = [...groupMap.keys()].sort((a, b) => {
       if (!a && b) return 1;
       if (a && !b) return -1;
       return a.localeCompare(b);
     });
-    groupedStandings = sortedKeys.map(key => ({ group: key || null, rows: groupMap.get(key)! }));
+
+    groupedStandings = sortedGroupKeys.map(key => {
+      const entries = groupMap.get(key)!.sort(cmp);
+      const rows: StandingRow[] = entries.map((s, i, arr) => {
+        // Equal-rank: walk back while still tied on pts + all tiebreakers
+        let rank = i + 1;
+        for (let j = i - 1; j >= 0; j--) {
+          const prev = arr[j];
+          if (prev.pts !== s.pts) break;
+          if (tbs.every(tb => tbv(prev.rf, prev.ra, prev.w, tb) === tbv(s.rf, s.ra, s.w, tb))) rank = j + 1;
+          else break;
+        }
+        return {
+          ...s, rank,
+          pct: s.gp > 0 ? (s.w / s.gp).toFixed(3).replace(/^0/, "") : ".000",
+        };
+      });
+      return { group: key || null, rows };
+    });
   }
 
-  // ── Upcoming Games ─────────────────────────────────────────────────────────
+  // ── Schedule ───────────────────────────────────────────────────────────────
   let upcoming: UpcomingGame[] = [];
+  let past: PastGame[] = [];
+
   if (cfg.showSchedule) {
-    const games = await prisma.game.findMany({
-      where: { leagueId: league.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
-      orderBy: { scheduledAt: "asc" },
-      take: 10,
-      select: {
-        id: true, scheduledAt: true, seasonId: true,
-        homeTeam: { select: { name: true, logoUrl: true } },
-        awayTeam: { select: { name: true, logoUrl: true } },
-        field:    { select: { name: true } },
-      },
-    });
-    upcoming = games.map(g => ({
+    const [upcomingGames, pastGames] = await Promise.all([
+      prisma.game.findMany({
+        where: { leagueId: league.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
+        orderBy: { scheduledAt: "asc" },
+        take: 20,
+        select: {
+          id: true, scheduledAt: true, seasonId: true,
+          homeTeam: { select: { name: true, logoUrl: true } },
+          awayTeam: { select: { name: true, logoUrl: true } },
+          field:    { select: { name: true } },
+        },
+      }),
+      prisma.game.findMany({
+        where: { leagueId: league.id, status: "COMPLETED" },
+        orderBy: { scheduledAt: "desc" },
+        take: 30,
+        select: {
+          id: true, scheduledAt: true, seasonId: true,
+          homeScore: true, awayScore: true,
+          homeTeam: { select: { name: true, logoUrl: true } },
+          awayTeam: { select: { name: true, logoUrl: true } },
+          field:    { select: { name: true } },
+        },
+      }),
+    ]);
+
+    upcoming = upcomingGames.map(g => ({
       id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId,
       homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name,
       homeLogoUrl: g.homeTeam.logoUrl ?? null,
       awayLogoUrl: g.awayTeam.logoUrl ?? null,
+      fieldName: g.field?.name ?? null,
+    }));
+
+    past = pastGames.map(g => ({
+      id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId,
+      homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name,
+      homeLogoUrl: g.homeTeam.logoUrl ?? null,
+      awayLogoUrl: g.awayTeam.logoUrl ?? null,
+      homeScore: g.homeScore ?? 0,
+      awayScore: g.awayScore ?? 0,
       fieldName: g.field?.name ?? null,
     }));
   }
@@ -325,7 +303,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       </div>
 
       {/* Content */}
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px", display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px", display: "flex", flexDirection: "column", gap: 36 }}>
 
         {/* Description */}
         {cfg.description && (
@@ -348,11 +326,11 @@ export default async function LeaguePublicPage({ params }: PageProps) {
             <h2 style={sectionTitle}>🏆 Standings{latestSeason ? ` — ${latestSeason.name}` : ""}</h2>
             {hasGroups ? (
               <div className="pub-sg">
-                {/* Left column: first half of groups (A, B with 4 groups → A|C, B|D layout) */}
+                {/* Left column: first half (A,B with 4 groups → A|C, B|D layout) */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {leftCol.map(g => <GroupTable key={g.group ?? "l"} block={g} showPct={showPct} />)}
                 </div>
-                {/* Right column: second half of groups */}
+                {/* Right column: second half */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {rightCol.map(g => <GroupTable key={g.group ?? "r"} block={g} showPct={showPct} />)}
                 </div>
@@ -363,14 +341,9 @@ export default async function LeaguePublicPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Upcoming Games */}
-        {cfg.showSchedule && upcoming.length > 0 && (
-          <section>
-            <h2 style={sectionTitle}>📅 Upcoming Games</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {upcoming.map(g => <GameCard key={g.id} game={g} />)}
-            </div>
-          </section>
+        {/* Schedule (upcoming + results tabs) */}
+        {cfg.showSchedule && (
+          <ScheduleSection upcoming={upcoming} past={past} />
         )}
 
         {/* Teams */}
