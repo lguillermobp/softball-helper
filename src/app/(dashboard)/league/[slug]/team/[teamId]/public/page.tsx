@@ -162,7 +162,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
     fieldName: string | null;
   }
   let pastGames: PastGame[] = [];
-  if (cfg.showSchedule) {
+  {
     const games = await prisma.game.findMany({
       where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: "COMPLETED" },
       orderBy: { scheduledAt: "desc" },
@@ -401,7 +401,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
         )}
 
         {/* Results */}
-        {cfg.showSchedule && pastGames.length > 0 && (
+        {pastGames.length > 0 && (
           <section>
             <h2 style={sectionTitle}>🏁 Results</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
