@@ -12,9 +12,10 @@ interface Props {
   slug: string;
   teamId: string;
   teamName: string;
+  requireDob?: boolean;
 }
 
-export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
+export function AddPlayerDialog({ slug, teamId, teamName, requireDob = false }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,8 +74,8 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
             <Input id="jerseyNumber" name="jerseyNumber" placeholder="e.g. 7" />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="dob">Date of birth</Label>
-            <Input id="dob" name="dob" type="date" />
+            <Label htmlFor="dob">Date of birth{requireDob ? " *" : ""}</Label>
+            <Input id="dob" name="dob" type="date" required={requireDob} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="nationality">Nationality</Label>

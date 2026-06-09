@@ -186,6 +186,7 @@ model Season {
   defaultTwinGames        Boolean @default(false)
   defaultGameDurationMins Int     @default(90)
   tiebreakers             String  @default("RD,RF,RA")
+  requireDob              Boolean @default(false)
   createdAt      DateTime     @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)

@@ -71,6 +71,7 @@ interface SeasonConfig {
   defaultTwinGames: boolean;
   defaultGameDurationMins: number;
   tiebreakers: string[];
+  requireDob: boolean;
 }
 
 interface Props {
@@ -123,6 +124,7 @@ export function SeasonDashboard({
   const [cfgTwin,        setCfgTwin]        = useState(seasonConfig.defaultTwinGames);
   const [cfgDuration,    setCfgDuration]    = useState(seasonConfig.defaultGameDurationMins);
   const [cfgTiebreakers, setCfgTiebreakers] = useState<string[]>(seasonConfig.tiebreakers);
+  const [cfgRequireDob,  setCfgRequireDob]  = useState(seasonConfig.requireDob);
   const [cfgSaving,      setCfgSaving]      = useState(false);
   const [cfgError,       setCfgError]       = useState("");
 
@@ -133,7 +135,7 @@ export function SeasonDashboard({
     setCfgWin(liveConfig.pointsWin); setCfgTie(liveConfig.pointsTie); setCfgLoss(liveConfig.pointsLoss);
     setCfgShowPct(liveConfig.showPct); setCfgPrintDark(liveConfig.printDark);
     setCfgTwin(liveConfig.defaultTwinGames); setCfgDuration(liveConfig.defaultGameDurationMins);
-    setCfgTiebreakers(liveConfig.tiebreakers);
+    setCfgTiebreakers(liveConfig.tiebreakers); setCfgRequireDob(liveConfig.requireDob);
     setCfgError(""); setConfigOpen(true);
   }
 
@@ -146,7 +148,7 @@ export function SeasonDashboard({
         pointsWin: cfgWin, pointsTie: cfgTie, pointsLoss: cfgLoss,
         showPct: cfgShowPct, printDark: cfgPrintDark,
         defaultTwinGames: cfgTwin, defaultGameDurationMins: cfgDuration,
-        tiebreakers: cfgTiebreakers,
+        tiebreakers: cfgTiebreakers, requireDob: cfgRequireDob,
       }),
     });
     setCfgSaving(false);
@@ -157,6 +159,7 @@ export function SeasonDashboard({
       showPct: updated.showPct, printDark: updated.printDark,
       defaultTwinGames: updated.defaultTwinGames, defaultGameDurationMins: updated.defaultGameDurationMins,
       tiebreakers: (updated.tiebreakers as string).split(",").filter(Boolean),
+      requireDob: updated.requireDob,
     });
     setConfigOpen(false);
     router.refresh();
@@ -1163,6 +1166,15 @@ ${body}
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" checked={cfgPrintDark} onChange={e => setCfgPrintDark(e.target.checked)} className="accent-slate-500 w-4 h-4" />
               <span className="text-sm" style={{ color: "var(--sh-text)" }}>Dark background when printing</span>
+            </label>
+          </div>
+
+          {/* Roster */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Roster</p>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={cfgRequireDob} onChange={e => setCfgRequireDob(e.target.checked)} className="accent-orange-500 w-4 h-4" />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Require date of birth for all roster players</span>
             </label>
           </div>
 

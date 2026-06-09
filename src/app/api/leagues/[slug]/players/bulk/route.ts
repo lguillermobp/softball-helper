@@ -28,8 +28,13 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!teamId || !Array.isArray(players) || players.length === 0)
     return NextResponse.json({ error: "teamId and players array are required" }, { status: 400 });
 
-  const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
+  const team = await prisma.team.findFirst({
+    where: { id: teamId, leagueId: league.id },
+    include: { season: { select: { requireDob: true } } },
+  });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+
+  const requireDob = team.season?.requireDob ?? false;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,6 +43,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   for (const p of players) {
     if (!p.name || !p.email || !emailRegex.test(p.email)) {
       results.push({ name: p.name ?? "", email: p.email ?? "", status: "error", message: "Invalid data" });
+      continue;
+    }
+    if (requireDob && !p.dob) {
+      results.push({ name: p.name, email: p.email, status: "error", message: "DOB required" });
       continue;
     }
 

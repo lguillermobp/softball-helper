@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-interface Props { slug: string; teamId: string; teamName: string }
+interface Props { slug: string; teamId: string; teamName: string; requireDob?: boolean }
 
 interface ParsedRow {
   name: string;
@@ -41,7 +41,7 @@ function parseCSVLine(line: string): string[] {
   return cells;
 }
 
-function parseCSV(text: string): ParsedRow[] {
+function parseCSV(text: string, requireDob = false): ParsedRow[] {
   const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) return [];
 
@@ -57,10 +57,11 @@ function parseCSV(text: string): ParsedRow[] {
     const dob          = cells[3] ?? "";
 
     let error: string | undefined;
-    if (!name)                      error = "Name required";
-    else if (!email)                error = "Email required";
-    else if (!EMAIL_RE.test(email)) error = "Invalid email";
-    else if (dob && isNaN(Date.parse(dob))) error = "Invalid date format (use YYYY-MM-DD)";
+    if (!name)                               error = "Name required";
+    else if (!email)                         error = "Email required";
+    else if (!EMAIL_RE.test(email))          error = "Invalid email";
+    else if (requireDob && !dob)             error = "DOB required (YYYY-MM-DD)";
+    else if (dob && isNaN(Date.parse(dob)))  error = "Invalid date format (use YYYY-MM-DD)";
 
     return { name, email, jerseyNumber, dob, error };
   });
@@ -72,7 +73,7 @@ const SAMPLE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE)}`;
 const th = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider";
 const tdBase = "px-3 py-2 text-sm";
 
-export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
+export function UploadPlayersDialog({ slug, teamId, teamName, requireDob = false }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen]       = useState(false);
@@ -94,7 +95,7 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
     setFileErr("");
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const parsed = parseCSV(ev.target?.result as string);
+      const parsed = parseCSV(ev.target?.result as string, requireDob);
       if (parsed.length === 0) { setFileErr("No data rows found."); return; }
       setRows(parsed);
       setStep("preview");

@@ -57,8 +57,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
   }
 
-  const team = await prisma.team.findFirst({ where: { id: teamId, leagueId: league.id } });
+  const team = await prisma.team.findFirst({
+    where: { id: teamId, leagueId: league.id },
+    include: { season: { select: { requireDob: true } } },
+  });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+
+  if (team.season?.requireDob && !dob)
+    return NextResponse.json({ error: "Date of birth is required for this season" }, { status: 400 });
 
   if (email) {
     const existing = await prisma.player.findFirst({ where: { email, leagueId: league.id } });

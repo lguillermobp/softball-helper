@@ -20,9 +20,10 @@ interface Player {
 interface Props {
   slug: string;
   player: Player;
+  requireDob?: boolean;
 }
 
-export function EditPlayerDialog({ slug, player }: Props) {
+export function EditPlayerDialog({ slug, player, requireDob = false }: Props) {
   const router = useRouter();
   const [open,    setOpen]    = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,9 +83,10 @@ export function EditPlayerDialog({ slug, player }: Props) {
             <Input id="ep-jersey" name="jerseyNumber" defaultValue={player.jerseyNumber ?? ""} placeholder="e.g. 7" />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="ep-dob">Date of birth</Label>
+            <Label htmlFor="ep-dob">Date of birth{requireDob ? " *" : ""}</Label>
             <Input id="ep-dob" name="dob" type="date"
-              defaultValue={player.dob ? player.dob.slice(0, 10) : ""} />
+              defaultValue={player.dob ? player.dob.slice(0, 10) : ""}
+              required={requireDob} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="ep-nationality">Nationality</Label>

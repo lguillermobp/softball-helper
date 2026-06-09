@@ -224,6 +224,7 @@ export default async function SeasonPage({ params }: PageProps) {
             defaultTwinGames:        season.defaultTwinGames,
             defaultGameDurationMins: season.defaultGameDurationMins,
             tiebreakers:             parsedTiebreakers,
+            requireDob:              season.requireDob,
           }}
           leagueName={league.name}
           leagueCity={league.city}

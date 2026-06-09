@@ -56,6 +56,7 @@ interface Team {
   assistant: StaffMember | null;
   players: Player[];
   publicPage: TeamPublicPageConfig | null;
+  requireDob: boolean;
 }
 interface Member {
   id: string; role: string;
@@ -774,8 +775,8 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                       seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
                       categories={categories.map((c) => ({ id: c.id, name: c.name }))}
                     />
-                    <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} />
-                    <UploadPlayersDialog slug={slug} teamId={team.id} teamName={team.name} />
+                    <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} requireDob={team.requireDob} />
+                    <UploadPlayersDialog slug={slug} teamId={team.id} teamName={team.name} requireDob={team.requireDob} />
                   </>
                 )}
                 {/* Approve / Unapprove — admin only */}
@@ -1048,7 +1049,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     {(canEdit || canRemovePlayer) && (
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {canEdit && <EditPlayerDialog slug={slug} player={p} />}
+                          {canEdit && <EditPlayerDialog slug={slug} player={p} requireDob={team.requireDob} />}
                           {canEdit && p.invitePending && (
                             <button
                               onClick={() => resendInvite(p.id)}

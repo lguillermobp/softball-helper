@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     pointsWin, pointsTie, pointsLoss,
     showPct, printDark,
     defaultTwinGames, defaultGameDurationMins,
-    tiebreakers,
+    tiebreakers, requireDob,
   } = body;
 
   const VALID_TB = new Set(["RD", "RF", "RA", "W"]);
@@ -43,6 +43,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const clean = (tiebreakers as string[]).filter(t => VALID_TB.has(t));
     data.tiebreakers = clean.join(",");
   }
+  if (requireDob !== undefined) data.requireDob = Boolean(requireDob);
 
   const season = await prisma.season.update({
     where: { id: seasonId, leagueId: league.id },
