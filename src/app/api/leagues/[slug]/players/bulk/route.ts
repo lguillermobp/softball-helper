@@ -5,7 +5,7 @@ import { sendPlayerInviteEmail, sendRoleNotificationEmail } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string }> }
 
-interface PlayerInput { name: string; email: string; jerseyNumber?: string | null }
+interface PlayerInput { name: string; email: string; jerseyNumber?: string | null; dob?: string | null }
 
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -50,13 +50,15 @@ export async function POST(req: NextRequest, { params }: Params) {
         user = await prisma.user.create({ data: { name: p.name, email: p.email } });
       }
 
+      const dobVal = p.dob ? new Date(p.dob) : null;
       await prisma.player.upsert({
         where: { email_teamId: { email: p.email, teamId } },
-        update: { name: p.name, jerseyNumber: p.jerseyNumber || null, userId: user.id },
+        update: { name: p.name, jerseyNumber: p.jerseyNumber || null, userId: user.id, ...(dobVal && { dob: dobVal }) },
         create: {
           name: p.name,
           email: p.email,
           jerseyNumber: p.jerseyNumber || null,
+          dob: dobVal,
           teamId,
           leagueId: league.id,
           userId: user.id,

@@ -33,6 +33,7 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
         email: fd.get("email"),
         jerseyNumber: fd.get("jerseyNumber") || null,
         nationality: fd.get("nationality") || null,
+        dob: fd.get("dob") || null,
         teamId,
       }),
     });
@@ -70,6 +71,10 @@ export function AddPlayerDialog({ slug, teamId, teamName }: Props) {
           <div className="space-y-1">
             <Label htmlFor="jerseyNumber">Jersey number</Label>
             <Input id="jerseyNumber" name="jerseyNumber" placeholder="e.g. 7" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input id="dob" name="dob" type="date" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="nationality">Nationality</Label>

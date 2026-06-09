@@ -46,6 +46,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { name, jerseyNumber, teamId } = body;
   const email: string | null = (body.email as string | undefined)?.trim() || null;
   const nationality: string | null = (body.nationality as string | undefined) || null;
+  const dob: Date | null = body.dob ? new Date(body.dob) : null;
 
   if (!name || !teamId)
     return NextResponse.json({ error: "name and teamId are required" }, { status: 400 });
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // Create player without linking a user account — ownership confirmed via accept-invite email
   const player = await prisma.player.create({
-    data: { name, email, jerseyNumber: jerseyNumber || null, nationality, teamId, leagueId: league.id },
+    data: { name, email, jerseyNumber: jerseyNumber || null, nationality, dob, teamId, leagueId: league.id },
   });
 
   if (email) {

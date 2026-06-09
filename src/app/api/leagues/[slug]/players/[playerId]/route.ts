@@ -38,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { name, jerseyNumber } = body;
   const email: string | null | undefined = "email" in body ? ((body.email as string | undefined)?.trim() || null) : undefined;
   const nationality: string | null | undefined = "nationality" in body ? (body.nationality || null) : undefined;
+  const dob: Date | null | undefined = "dob" in body ? (body.dob ? new Date(body.dob) : null) : undefined;
 
   const emailChanging = email !== undefined && email !== player.email;
 
@@ -58,7 +59,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       // Reset account link when email changes — re-confirmed via accept-invite
       ...(emailChanging            && { userId: null }),
       ...(jerseyNumber !== undefined && { jerseyNumber: jerseyNumber || null }),
-      ...(nationality !== undefined && { nationality }),
+      ...(nationality  !== undefined && { nationality }),
+      ...(dob          !== undefined && { dob }),
     },
   });
 

@@ -14,6 +14,7 @@ interface Player {
   email: string | null;
   jerseyNumber: string | null;
   nationality: string | null;
+  dob: string | null;
 }
 
 interface Props {
@@ -40,6 +41,7 @@ export function EditPlayerDialog({ slug, player }: Props) {
         email:        fd.get("email"),
         jerseyNumber: fd.get("jerseyNumber") || null,
         nationality:  fd.get("nationality") || null,
+        dob:          fd.get("dob") || null,
       }),
     });
     setLoading(false);
@@ -78,6 +80,11 @@ export function EditPlayerDialog({ slug, player }: Props) {
           <div className="space-y-1">
             <Label htmlFor="ep-jersey">Jersey number</Label>
             <Input id="ep-jersey" name="jerseyNumber" defaultValue={player.jerseyNumber ?? ""} placeholder="e.g. 7" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ep-dob">Date of birth</Label>
+            <Input id="ep-dob" name="dob" type="date"
+              defaultValue={player.dob ? player.dob.slice(0, 10) : ""} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="ep-nationality">Nationality</Label>

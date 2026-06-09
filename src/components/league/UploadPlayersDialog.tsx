@@ -14,6 +14,7 @@ interface ParsedRow {
   name: string;
   email: string;
   jerseyNumber: string;
+  dob: string;
   error?: string;
 }
 
@@ -50,20 +51,22 @@ function parseCSV(text: string): ParsedRow[] {
 
   return dataLines.filter((l) => l.trim()).map((line) => {
     const cells = parseCSVLine(line);
-    const name        = cells[0] ?? "";
-    const email       = cells[1] ?? "";
+    const name         = cells[0] ?? "";
+    const email        = cells[1] ?? "";
     const jerseyNumber = cells[2] ?? "";
+    const dob          = cells[3] ?? "";
 
     let error: string | undefined;
-    if (!name)                    error = "Name required";
-    else if (!email)              error = "Email required";
+    if (!name)                      error = "Name required";
+    else if (!email)                error = "Email required";
     else if (!EMAIL_RE.test(email)) error = "Invalid email";
+    else if (dob && isNaN(Date.parse(dob))) error = "Invalid date format (use YYYY-MM-DD)";
 
-    return { name, email, jerseyNumber, error };
+    return { name, email, jerseyNumber, dob, error };
   });
 }
 
-const SAMPLE = "name,email,jersey_number\nJane Smith,jane@example.com,7\nBob Jones,bob@example.com,\n";
+const SAMPLE = "name,email,jersey_number,dob\nJane Smith,jane@example.com,7,1995-06-09\nBob Jones,bob@example.com,,\n";
 const SAMPLE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE)}`;
 
 const th = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider";
@@ -113,6 +116,7 @@ export function UploadPlayersDialog({ slug, teamId, teamName }: Props) {
             name: r.name,
             email: r.email,
             jerseyNumber: r.jerseyNumber || null,
+            dob: r.dob || null,
           })),
         }),
       });

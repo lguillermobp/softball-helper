@@ -342,17 +342,18 @@ enum OfficialRole {
 // ─── Players ─────────────────────────────────────────────────────────────────
 
 model Player {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
   email        String?
   jerseyNumber String?
   nationality  String?
   photoUrl     String?
+  dob          DateTime?
   teamId       String
   leagueId     String
   userId       String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)

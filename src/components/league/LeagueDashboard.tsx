@@ -29,7 +29,7 @@ type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fi
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
 interface Category { id: string; name: string; description: string | null }
-interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; userId: string | null; invitePending: boolean }
+interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; dob: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface PublicPageConfig {
   published: boolean;
@@ -975,6 +975,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.photo}</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider w-12" style={dim}>{tl.teams.jersey}</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{tl.teams.name}</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-28" style={dim}>DOB / Age</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider w-16" style={dim}>{tl.teams.account}</th>
                 {(canEdit || canRemovePlayer) && <th className="px-4 py-2 w-16" />}
               </tr>
@@ -1028,6 +1029,18 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                         )}
                         {p.name}
                       </span>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {p.dob ? (() => {
+                        const d = new Date(p.dob);
+                        const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+                        return (
+                          <span className="text-xs" style={{ color: "var(--sh-secondary)" }}>
+                            {d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                            <span className="ml-1 font-semibold" style={{ color: "var(--sh-primary)" }}>· {age}y</span>
+                          </span>
+                        );
+                      })() : <span style={dim}>—</span>}
                     </td>
                     <td className="px-4 py-2 text-center text-xs font-semibold" style={{ color: p.userId ? "#4ade80" : "#374151" }}>
                       {p.userId ? "✓" : "—"}
