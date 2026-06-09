@@ -197,10 +197,44 @@ function ResultCard({ game }: { game: PastGame }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+function currentWeekBounds(): { monday: Date; sunday: Date } {
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun…6=Sat
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dow + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { monday, sunday };
+}
+
 export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming: UpcomingGame[]; past: PastGame[]; seasonTeams?: SeasonTeam[] }) {
   const [tab, setTab] = useState<"upcoming" | "results">("upcoming");
 
   const dayGroups = buildDayGroups(upcoming, seasonTeams);
+
+  // Collapse all days outside the current Mon–Sun window
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
+    const { monday, sunday } = currentWeekBounds();
+    const toCollapse = new Set<string>();
+    for (const g of upcoming) {
+      const d = new Date(g.scheduledAt);
+      if (d < monday || d > sunday) {
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        toCollapse.add(key);
+      }
+    }
+    return toCollapse;
+  });
+
+  function toggleDay(dayKey: string) {
+    setCollapsedDays(prev => {
+      const next = new Set(prev);
+      next.has(dayKey) ? next.delete(dayKey) : next.add(dayKey);
+      return next;
+    });
+  }
 
   const tabBtn = (active: boolean): React.CSSProperties => ({
     padding: "7px 18px",
@@ -234,49 +268,58 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
         upcoming.length === 0 ? (
           <p style={{ color: "#86efac", opacity: 0.6, fontSize: 14, margin: 0 }}>No upcoming games scheduled.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {dayGroups.map(({ dayKey, label, total, fieldGroups, byeTeams }) => {
               const multiField = fieldGroups.length > 1;
+              const collapsed  = collapsedDays.has(dayKey);
               return (
-                <div key={dayKey}>
-                  {/* Day header */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#f0fdf4", whiteSpace: "nowrap" }}>{label}</span>
-                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 600, background: "rgba(74,222,128,0.1)", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap" }}>
+                <div key={dayKey} style={{ borderRadius: 12, border: "1px solid #1a3a1a", overflow: "hidden" }}>
+                  {/* Accordion header */}
+                  <button
+                    onClick={() => toggleDay(dayKey)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: collapsed ? "#0d1a0d" : "#101e10", border: "none", cursor: "pointer", textAlign: "left" }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f0fdf4", whiteSpace: "nowrap", flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 600, background: "rgba(74,222,128,0.1)", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>
                       {total} game{total !== 1 ? "s" : ""}
                     </span>
-                    <div style={{ flex: 1, height: 1, background: "#1a3a1a" }} />
-                  </div>
+                    <span style={{ color: "#4ade80", fontSize: 16, flexShrink: 0, transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
+                      ▾
+                    </span>
+                  </button>
 
-                  {/* Field sub-groups (when ≥2 fields on this day) or flat list */}
-                  {multiField ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                      {fieldGroups.map(({ field, games }) => (
-                        <div key={field ?? "tbd"}>
-                          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 8px", opacity: 0.75 }}>
-                            📍 {field ?? "No field assigned"}
-                          </p>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                            {games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
-                          </div>
+                  {/* Collapsible content */}
+                  {!collapsed && (
+                    <div style={{ padding: "12px 16px 14px", borderTop: "1px solid #1a3a1a", display: "flex", flexDirection: "column", gap: 12 }}>
+                      {multiField ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                          {fieldGroups.map(({ field, games }) => (
+                            <div key={field ?? "tbd"}>
+                              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 8px", opacity: 0.75 }}>
+                                📍 {field ?? "No field assigned"}
+                              </p>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                                {games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                      {fieldGroups[0].games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
-                    </div>
-                  )}
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                          {fieldGroups[0].games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
+                        </div>
+                      )}
 
-                  {/* Bye teams */}
-                  {byeTeams.length > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, padding: "7px 12px", borderRadius: 8, background: "rgba(134,239,172,0.04)", border: "1px solid #1a3a1a", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#86efac", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
-                      {byeTeams.map((t, i) => (
-                        <span key={t.id} style={{ fontSize: 12, color: "#86efac", opacity: 0.6 }}>
-                          {t.name}{i < byeTeams.length - 1 ? "," : ""}
-                        </span>
-                      ))}
+                      {byeTeams.length > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "rgba(134,239,172,0.04)", border: "1px solid #1a3a1a", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#86efac", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
+                          {byeTeams.map((t, i) => (
+                            <span key={t.id} style={{ fontSize: 12, color: "#86efac", opacity: 0.6 }}>
+                              {t.name}{i < byeTeams.length - 1 ? "," : ""}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
