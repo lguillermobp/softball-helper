@@ -50,6 +50,7 @@ function buildEmail(opts: {
   leagueName: string;
   recipientName: string | null;
   teamName: string;
+  teamPageUrl?: string;
   roster?: { name: string; jerseyNumber: string | null }[];
   games?: {
     date: string; opponent: string; field: string | null;
@@ -120,6 +121,16 @@ function buildEmail(opts: {
     </p>
 
     ${sections}
+
+    ${opts.teamPageUrl ? `
+    <div style="margin:32px 0 0;text-align:center;">
+      <a href="${opts.teamPageUrl}"
+         style="display:inline-block;padding:11px 28px;background:#16a34a;color:#fff;
+                font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
+        View team page →
+      </a>
+      <p style="font-size:11px;color:#374151;margin:10px 0 0;">No login required</p>
+    </div>` : ""}
 
     <p style="font-size:12px;color:#374151;margin:28px 0 0;text-align:center;">
       Sent via Softball Helper · ${opts.leagueName}
@@ -248,10 +259,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       ? `Week of ${new Date(weekStart + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}–${new Date(weekEnd + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
       : undefined;
 
+    const origin = req.nextUrl.origin;
+    const teamPageUrl = `${origin}/league/${slug}/team/${team.id}/public`;
+
     const html = buildEmail({
       leagueName:    league.name,
       recipientName: r.name,
       teamName:      r.teamName,
+      teamPageUrl,
       roster,
       games,
       seasonName:    season?.name,

@@ -137,7 +137,10 @@ export function BroadcastDialog({ slug, teams, seasons, hasConditions }: Props) 
         </Button>
       </DialogTrigger>
 
-      <DialogContent style={{ maxWidth: 520 }}>
+      <DialogContent
+        className="top-[4vh] translate-y-0 overflow-y-auto"
+        style={{ maxWidth: 520, maxHeight: "92vh" }}
+      >
         <DialogHeader>
           <DialogTitle>Send to managers</DialogTitle>
         </DialogHeader>
