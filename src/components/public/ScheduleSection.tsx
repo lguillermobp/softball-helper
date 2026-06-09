@@ -75,7 +75,7 @@ function Logo({ name, logoUrl, size = 30 }: { name: string; logoUrl: string | nu
   );
 }
 
-// Full date block — used in ResultCard and standalone upcoming (no day header)
+// Full date block — used in standalone upcoming cards
 function DateBlock({ iso }: { iso: string }) {
   const d = new Date(iso);
   return (
@@ -83,6 +83,20 @@ function DateBlock({ iso }: { iso: string }) {
       <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80" }}>{SDOW[d.getDay()]}</span>
       <span style={{ fontSize: 22, fontWeight: 800, color: "#f0fdf4", lineHeight: 1 }}>{d.getDate()}</span>
       <span style={{ fontSize: 10, textTransform: "uppercase", color: "#86efac" }}>{SMON[d.getMonth()]}</span>
+    </div>
+  );
+}
+
+// Date + time block — used in ResultCard
+function DateTimeBlock({ iso }: { iso: string }) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return (
+    <div style={{ padding: "12px 14px", background: "#111c11", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80" }}>{SDOW[d.getDay()]}</span>
+      <span style={{ fontSize: 20, fontWeight: 800, color: "#f0fdf4", lineHeight: 1 }}>{d.getDate()}</span>
+      <span style={{ fontSize: 10, textTransform: "uppercase", color: "#86efac" }}>{SMON[d.getMonth()]}</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#86efac", marginTop: 3 }}>{time}</span>
     </div>
   );
 }
@@ -147,20 +161,20 @@ function ResultCard({ game }: { game: PastGame }) {
   const awayWon = game.awayScore > game.homeScore;
   return (
     <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", overflow: "hidden" }}>
-      <DateBlock iso={game.scheduledAt} />
+      <DateTimeBlock iso={game.scheduledAt} />
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 16px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", overflow: "hidden" }}>
-          <span style={{ color: homeWon ? "#f0fdf4" : "#4b5563", fontWeight: homeWon ? 700 : 400, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
+          <span style={{ color: homeWon ? "#f0fdf4" : "#9ca3af", fontWeight: homeWon ? 700 : 400, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
           <Logo name={game.homeTeam} logoUrl={game.homeLogoUrl} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "5px 14px", borderRadius: 8, background: "#111c11", border: "1px solid #1a3a1a" }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "#f0fdf4" : "#4b5563", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "#f0fdf4" : "#9ca3af", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
           <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 700 }}>–</span>
-          <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "#f0fdf4" : "#4b5563", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "#f0fdf4" : "#9ca3af", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" }}>
           <Logo name={game.awayTeam} logoUrl={game.awayLogoUrl} />
-          <span style={{ color: awayWon ? "#f0fdf4" : "#4b5563", fontWeight: awayWon ? 700 : 400, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
+          <span style={{ color: awayWon ? "#f0fdf4" : "#9ca3af", fontWeight: awayWon ? 700 : 400, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
         </div>
       </div>
       {game.fieldName && (
