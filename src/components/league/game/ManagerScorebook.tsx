@@ -4,8 +4,8 @@ import { useState, useRef, useCallback } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type OffenseResult = "" | "OUT" | "K" | "DP" | "TP" | "BB" | "1B" | "2B" | "3B" | "HR";
-const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "DP", "TP", "BB", "1B", "2B", "3B", "HR"];
+type OffenseResult = "" | "OUT" | "K" | "DP" | "TP" | "E" | "BB" | "1B" | "2B" | "3B" | "HR";
+const OFFENSE_CYCLE: OffenseResult[] = ["", "OUT", "K", "DP", "TP", "E", "BB", "1B", "2B", "3B", "HR"];
 
 // How many outs each result contributes to the inning total
 const OUT_WEIGHT: Partial<Record<OffenseResult, number>> = { OUT: 1, K: 1, DP: 2, TP: 3 };
@@ -48,6 +48,7 @@ const RESULT_STYLE: Record<OffenseResult, { bg: string; color: string; label: st
   "HR":  { bg: "#78350f",     color: "#fcd34d",           label: "HR"  },
   "DP":  { bg: "#6b1a1a",     color: "#fca5a5",           label: "DP"  },
   "TP":  { bg: "#881337",     color: "#fda4af",           label: "TP"  },
+  "E":   { bg: "#431407",     color: "#fb923c",           label: "E"   },
   "BB":  { bg: "#164e63",     color: "#67e8f9",           label: "BB"  },
 };
 
