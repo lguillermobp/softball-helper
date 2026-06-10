@@ -4,27 +4,37 @@ import { prisma } from "@/lib/prisma";
 
 interface Params { params: Promise<{ slug: string; gameId: string }> }
 
+async function resolvePermission(slug: string, gameId: string, userId: string, isMasterAdmin: boolean) {
+  const [league, game] = await Promise.all([
+    prisma.league.findUnique({
+      where: { slug },
+      include: { userRoles: { where: { userId } } },
+    }),
+    prisma.game.findFirst({
+      where: { id: gameId },
+      include: { officials: { select: { userId: true, role: true } } },
+    }),
+  ]);
+  if (!league || !game || game.leagueId !== league.id) return { league: null, game: null, allowed: false };
+
+  const isAdmin           = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
+  const isAssignedScorer  = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
+  return { league, game, allowed: isAdmin || isAssignedScorer };
+}
+
 export async function POST(req: NextRequest, { params }: Params) {
   const { slug, gameId } = await params;
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user.id!;
+  const userId       = session.user.id!;
   const isMasterAdmin = (session.user as any).isMasterAdmin as boolean;
 
-  const league = await prisma.league.findUnique({
-    where: { slug },
-    include: { userRoles: { where: { userId } } },
-  });
+  const { league, game, allowed } = await resolvePermission(slug, gameId, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
-  const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
-  if (!isAdmin && !isScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const game = await prisma.game.findFirst({ where: { id: gameId, leagueId: league.id } });
-  if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
-  if (game.status !== "IN_PROGRESS") return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!game || game.status !== "IN_PROGRESS")
+    return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
   const { outcome, batterId, pitcherId, inningNumber, isTop, sequence } = await req.json();
   if (!outcome || !batterId || !pitcherId || inningNumber == null || isTop == null || sequence == null)
@@ -37,7 +47,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const atBat = await prisma.gameAtBat.create({
     data: { gameId, inningNumber, isTop, batterId, pitcherId, outcome, sequence },
   });
-
   return NextResponse.json(atBat);
 }
 
@@ -46,23 +55,18 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user.id!;
+  const userId        = session.user.id!;
   const isMasterAdmin = (session.user as any).isMasterAdmin as boolean;
 
-  const league = await prisma.league.findUnique({
-    where: { slug },
-    include: { userRoles: { where: { userId } } },
-  });
+  const { league, game, allowed } = await resolvePermission(slug, gameId, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
-  const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
-  if (!isAdmin && !isScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!game || game.status !== "IN_PROGRESS")
+    return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
   const { atBatId } = await req.json();
   if (!atBatId) return NextResponse.json({ error: "atBatId is required" }, { status: 400 });
 
-  // Only allow undoing the very last at-bat of the game
   const last = await prisma.gameAtBat.findFirst({
     where: { gameId },
     orderBy: { createdAt: "desc" },

@@ -19,11 +19,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
-  const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
-  if (!isAdmin && !isScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const game = await prisma.game.findFirst({ where: { id: gameId, leagueId: league.id } });
+  const game = await prisma.game.findFirst({
+    where: { id: gameId, leagueId: league.id },
+    include: { officials: { select: { userId: true, role: true } } },
+  });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+
+  const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
+  if (!isAdmin && !isAssignedScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status !== "IN_PROGRESS") return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
   const { inningNumber, isTop, runsScored } = await req.json();

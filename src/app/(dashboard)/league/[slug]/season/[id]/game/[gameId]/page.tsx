@@ -91,20 +91,24 @@ export default async function GameScoringPage({ params }: PageProps) {
   const isAwayManager = game.awayTeam.managerId === userId || game.awayTeam.assistantId === userId;
   const hasAnyRole    = !!league.userRoles[0];
 
+  // Scorekeeper must be assigned to this specific game (not just have the league role)
+  const isAssignedScorer = isScorer &&
+    game.officials.some(o => o.user.id === userId && o.role === "SCOREKEEPER");
+
   // Practice games: relax all permissions to any league member
   const isPractice = game.isPractice;
   const canEditOfficials = isAdmin || isUmpire || isPractice && hasAnyRole;
-  const canStartGame     = isAdmin || isUmpire || isScorer || isPractice && hasAnyRole;
-  const canSwapTeams     = isAdmin || isUmpire || isScorer || isPractice && hasAnyRole;
+  const canStartGame     = isAdmin || isUmpire || isAssignedScorer || isPractice && hasAnyRole;
+  const canSwapTeams     = isAdmin || isUmpire || isAssignedScorer || isPractice && hasAnyRole;
   const canEditHomeLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager || isPractice && hasAnyRole)) ||
-    (game.status === "IN_PROGRESS" && (isAdmin || isScorer || isPractice && hasAnyRole));
+    (game.status === "IN_PROGRESS" && (isAdmin || isAssignedScorer || isPractice && hasAnyRole));
   const canEditAwayLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager || isPractice && hasAnyRole)) ||
-    (game.status === "IN_PROGRESS" && (isAdmin || isScorer || isPractice && hasAnyRole));
+    (game.status === "IN_PROGRESS" && (isAdmin || isAssignedScorer || isPractice && hasAnyRole));
   const canEditHomeScorebook = isAdmin || isHomeManager || isPractice && hasAnyRole;
   const canEditAwayScorebook = isAdmin || isAwayManager || isPractice && hasAnyRole;
-  const canScore  = isAdmin || isScorer || isPractice && hasAnyRole;
+  const canScore  = isAdmin || isAssignedScorer || isPractice && hasAnyRole;
   const canReset       = isPractice && hasAnyRole;
   const canEditResult  = isAdmin;
 
