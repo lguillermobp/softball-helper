@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
 import { AddSeasonDialog } from "@/components/league/AddSeasonDialog";
@@ -107,7 +107,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string } };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -128,6 +128,88 @@ const muted = { color: "var(--sh-primary)" };
 const head  = { color: "var(--sh-text)" };
 
 function roleLabel(r: string) { return r.replace(/_/g, " "); }
+
+function SubscriptionPanel({ slug, league, isAdmin }: {
+  slug: string;
+  league: { plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null };
+  isAdmin: boolean;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError]     = React.useState("");
+
+  if (!isAdmin) return null;
+
+  const status = league.subscriptionStatus;
+  const hasCustomer = !!league.stripeCustomerId;
+  const hasPriceId  = !!league.plan.stripePriceId;
+
+  const statusColor = status === "active"   ? "#22c55e"
+                    : status === "past_due"  ? "#f59e0b"
+                    : status === "cancelled" ? "#ef4444"
+                    : "var(--sh-muted)";
+
+  async function handleSubscribe() {
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueSlug: slug }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to start checkout"); return; }
+      window.location.href = data.url;
+    } catch { setError("Network error"); }
+    finally { setLoading(false); }
+  }
+
+  async function handleManage() {
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueSlug: slug }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to open billing portal"); return; }
+      window.location.href = data.url;
+    } catch { setError("Network error"); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--sh-muted)" }}>Billing</p>
+      {status && (
+        <p className="text-sm mb-2" style={{ color: "var(--sh-text)" }}>
+          Status: <span className="font-semibold capitalize" style={{ color: statusColor }}>{status.replace("_", " ")}</span>
+        </p>
+      )}
+      {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+      {hasCustomer ? (
+        <button
+          onClick={handleManage}
+          disabled={loading}
+          className="text-sm rounded-lg px-3 py-1.5 font-medium"
+          style={{ background: "var(--sh-primary)", color: "#fff", opacity: loading ? 0.6 : 1 }}
+        >
+          {loading ? "Loading…" : "Manage billing"}
+        </button>
+      ) : hasPriceId ? (
+        <button
+          onClick={handleSubscribe}
+          disabled={loading}
+          className="text-sm rounded-lg px-3 py-1.5 font-medium"
+          style={{ background: "var(--sh-primary)", color: "#fff", opacity: loading ? 0.6 : 1 }}
+        >
+          {loading ? "Loading…" : "Subscribe"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function AssignManagerInline({ slug, teamId }: { slug: string; teamId: string }) {
   const router = useRouter();
@@ -221,6 +303,8 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
 
 export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stripeParam  = searchParams.get("stripe");
   const { t } = useLanguage();
   const tl = t.league;
   const [section, setSection] = useState<Section>("overview");
@@ -433,6 +517,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               )}
             </div>
           )}
+          <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />
         </div>
         {[
           { label: tl.overview.seasons,     value: seasons.length },
@@ -1368,6 +1453,16 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="flex flex-col lg:flex-row gap-6">
       {Sidebar}
       <div className="flex-1 min-w-0">
+        {stripeParam === "success" && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm font-medium" style={{ background: "#14532d", color: "#86efac", borderColor: "#16a34a" }}>
+            Subscription activated. Your league is now on the paid plan.
+          </div>
+        )}
+        {stripeParam === "cancelled" && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm" style={{ background: "#1c1917", color: "#a8a29e", borderColor: "#44403c" }}>
+            Checkout was cancelled. You can subscribe anytime from the Overview tab.
+          </div>
+        )}
         {CONTENT[section]}
       </div>
     </div>
