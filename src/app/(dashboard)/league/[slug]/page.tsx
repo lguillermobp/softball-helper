@@ -353,7 +353,7 @@ export default async function LeaguePage({ params }: PageProps) {
     manager:   t.manager   ? { id: t.manager.id,   name: t.manager.name,   email: t.manager.email,   phone: t.manager.phone }   : null,
     assistant: t.assistant ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email, phone: t.assistant.phone } : null,
     players: t.players.map((p) => ({
-      id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null, dob: p.dob ? p.dob.toISOString() : null, userId: p.userId,
+      id: p.id, name: p.name, email: p.email, jerseyNumber: p.jerseyNumber, nationality: p.nationality ?? null, photoUrl: p.photoUrl ?? null, dob: p.dob ? p.dob.toISOString().slice(0, 10) : null, userId: p.userId,
       invitePending: !!(p.email && (!p.user?.password || !p.user?.emailVerified)),
     })),
     publicPage: t.publicPage ? {

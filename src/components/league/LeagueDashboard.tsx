@@ -1031,7 +1031,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     </td>
                     <td className="px-4 py-2 text-center">
                       {p.dob ? (() => {
-                        const d = new Date(p.dob);
+                        const d = new Date(p.dob + "T12:00:00");
                         const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
                         return (
                           <span className="text-xs" style={{ color: "var(--sh-secondary)" }}>
