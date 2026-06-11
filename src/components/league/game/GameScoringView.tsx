@@ -51,6 +51,8 @@ interface Substitution {
 }
 interface Game {
   id: string; status: string; scheduledAt: string;
+  startedAt: string | null;
+  defaultGameDurationMins: number | null;
   hasStats: boolean;
   homeAwayTbd: boolean; homeScore: number | null; awayScore: number | null;
   isPractice: boolean;
@@ -492,6 +494,8 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           initialRunnerOuts={game.runnerOuts ?? []}
           initialPitcherStints={game.pitcherStints}
           initialSubstitutions={game.substitutions}
+          startedAt={game.startedAt}
+          defaultGameDurationMins={game.defaultGameDurationMins}
           canEdit={game.status === "IN_PROGRESS" && permissions.canScore}
         />
       )}

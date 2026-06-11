@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -51,6 +51,8 @@ interface Props {
   initialRunnerOuts?: RunnerOut[];
   initialPitcherStints: PitcherStint[];
   initialSubstitutions?: Substitution[];
+  startedAt?: string | null;
+  defaultGameDurationMins?: number | null;
   canEdit: boolean;
 }
 
@@ -129,6 +131,7 @@ export function OfficialScorekeeper({
   slug, gameId, homeTeam, awayTeam,
   homeLineup, awayLineup,
   initialAtBats, initialInnings, initialRunnerOuts, initialPitcherStints, initialSubstitutions,
+  startedAt, defaultGameDurationMins,
   canEdit,
 }: Props) {
   const [atBats,      setAtBats]      = useState<AtBat[]>(initialAtBats);
@@ -146,6 +149,12 @@ export function OfficialScorekeeper({
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState("");
   const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
+  const [now,           setNow]           = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { isOnline, queueLength, syncing, syncError, clearSyncError, enqueue } = useOfflineQueue(gameId);
 
@@ -249,6 +258,27 @@ export function OfficialScorekeeper({
   // Home/away scores from completed innings
   const homeScore = innings.filter(i => !i.isTop && i.completed).reduce((s, i) => s + i.runsScored, 0);
   const awayScore = innings.filter(i =>  i.isTop && i.completed).reduce((s, i) => s + i.runsScored, 0);
+
+  // Match timing
+  const startDate       = startedAt ? new Date(startedAt) : null;
+  const scheduledEndDate = startDate && defaultGameDurationMins
+    ? new Date(startDate.getTime() + defaultGameDurationMins * 60_000)
+    : null;
+  const remainingMs     = scheduledEndDate ? scheduledEndDate.getTime() - now.getTime() : null;
+  const remainingMins   = remainingMs != null ? Math.ceil(remainingMs / 60_000) : null;
+  const isUrgent        = remainingMins != null && remainingMins <= 10;
+  const isOvertime      = remainingMins != null && remainingMins < 0;
+
+  function fmtTime(d: Date) {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  function fmtRemaining(mins: number) {
+    if (mins <= 0) {
+      const over = Math.abs(mins);
+      return over < 60 ? `+${over}m overtime` : `+${Math.floor(over / 60)}h ${over % 60}m overtime`;
+    }
+    return mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  }
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -577,6 +607,29 @@ export function OfficialScorekeeper({
           </div>
         </div>
       </div>
+
+      {/* Match timing row */}
+      {startDate && (
+        <div className="rounded-2xl border px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap" style={card}>
+          <div className="text-xs" style={{ color: "var(--sh-muted)" }}>
+            <span className="font-semibold uppercase tracking-wide mr-1" style={{ fontSize: 10 }}>Started</span>
+            {fmtTime(startDate)}
+          </div>
+          {scheduledEndDate && (
+            <div className="text-xs" style={{ color: "var(--sh-muted)" }}>
+              <span className="font-semibold uppercase tracking-wide mr-1" style={{ fontSize: 10 }}>Ends</span>
+              {fmtTime(scheduledEndDate)}
+            </div>
+          )}
+          {remainingMins != null && (
+            <div className="text-sm font-bold flex items-center gap-1" style={{ color: isOvertime ? "#ef4444" : isUrgent ? "#ef4444" : "var(--sh-text)" }}>
+              {isOvertime || isUrgent ? "⏱" : "⏳"}
+              {fmtRemaining(remainingMins)}
+              {!isOvertime && !isUrgent && <span className="text-xs font-normal ml-0.5" style={{ color: "var(--sh-muted)" }}>left</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 3-out prompt — enter runs before continuing */}
       {pendingRuns !== null ? (

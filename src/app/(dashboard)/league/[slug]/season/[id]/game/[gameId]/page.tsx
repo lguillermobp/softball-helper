@@ -132,6 +132,8 @@ export default async function GameScoringPage({ params }: PageProps) {
     status: game.status,
     hasStats: game.hasStats,
     scheduledAt: game.scheduledAt.toISOString(),
+    startedAt:   game.startedAt?.toISOString() ?? null,
+    defaultGameDurationMins: season.defaultGameDurationMins ?? null,
     homeAwayTbd: game.homeAwayTbd,
     homeScore: game.homeScore,
     awayScore: game.awayScore,
