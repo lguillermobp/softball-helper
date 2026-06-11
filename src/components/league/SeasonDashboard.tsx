@@ -766,6 +766,7 @@ ${body}
                             const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
                             const date = new Date(game.scheduledAt);
                             const isActive = game.status === "IN_PROGRESS";
+                            const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
                             return (
                               <div key={game.id} className="rounded-xl border p-4" style={card}>
                                 {gameError[game.id] && (
@@ -870,6 +871,9 @@ ${body}
                                         {new Date(game.rescheduledFrom.scheduledAt).toLocaleDateString()}
                                       </p>
                                     )}
+                                    {scorekeeper && (
+                                      <p className="text-xs" style={{ color: "var(--sh-muted)" }}>📋 {scorekeeper.user.name}</p>
+                                    )}
                                   </div>
                                 </div>
                                 {isActive && (() => {
@@ -878,7 +882,6 @@ ${body}
                                   const remainMs = endAt.getTime() - now.getTime();
                                   const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
                                   const isOvertime = remainMs < 0;
-                                  const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
                                   return (
                                     <div className="mt-2 pt-2 border-t flex items-center gap-4 flex-wrap text-xs"
                                       style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)" }}>
@@ -887,7 +890,6 @@ ${body}
                                       <span style={{ color: isOvertime || remainMins <= 10 ? "var(--sh-danger)" : "var(--sh-muted)" }}>
                                         {isOvertime ? "Overtime" : `${remainMins}min left`}
                                       </span>
-                                      {scorekeeper && <span>📋 {scorekeeper.user.name}</span>}
                                     </div>
                                   );
                                 })()}
@@ -914,6 +916,7 @@ ${body}
               {practiceGames.map(game => {
                 const date = new Date(game.scheduledAt);
                 const isActive = game.status === "IN_PROGRESS";
+                const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
                 return (
                   <div key={game.id} className="px-4 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -931,6 +934,7 @@ ${body}
                       <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>
                         {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         {game.field && ` · 🏟️ ${game.field.name}`}
+                        {scorekeeper && ` · 📋 ${scorekeeper.user.name}`}
                       </p>
                       {isActive && (() => {
                         const startedAt = new Date(game.startedAt ?? game.scheduledAt);
@@ -938,7 +942,6 @@ ${body}
                         const remainMs = endAt.getTime() - now.getTime();
                         const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
                         const isOvertime = remainMs < 0;
-                        const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
                         return (
                           <div className="flex items-center gap-3 flex-wrap text-xs mt-1" style={{ color: "var(--sh-muted)" }}>
                             <span>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -946,7 +949,6 @@ ${body}
                             <span style={{ color: isOvertime || remainMins <= 10 ? "var(--sh-danger)" : "var(--sh-muted)" }}>
                               {isOvertime ? "Overtime" : `${remainMins}min left`}
                             </span>
-                            {scorekeeper && <span>📋 {scorekeeper.user.name}</span>}
                           </div>
                         );
                       })()}
