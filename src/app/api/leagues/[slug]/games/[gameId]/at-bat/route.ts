@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!outcome || !batterId || !pitcherId || inningNumber == null || isTop == null || sequence == null)
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
-  const validOutcomes = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "WALK", "OUT", "STRIKEOUT"];
+  const validOutcomes = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "WALK", "OUT", "STRIKEOUT", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY"];
   if (!validOutcomes.includes(outcome))
     return NextResponse.json({ error: "Invalid outcome" }, { status: 400 });
 

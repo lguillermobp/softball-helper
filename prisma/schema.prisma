@@ -409,6 +409,9 @@ enum AtBatOutcome {
   WALK
   OUT
   STRIKEOUT
+  ERROR
+  DOUBLE_PLAY
+  TRIPLE_PLAY
 }
 
 model GameAtBat {

@@ -52,26 +52,33 @@ interface Props {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const OUTCOMES = [
-  { key: "SINGLE",    label: "1B",  color: "#4ade80" },
-  { key: "DOUBLE",    label: "2B",  color: "#60a5fa" },
-  { key: "TRIPLE",    label: "3B",  color: "#f59e0b" },
-  { key: "HOME_RUN",  label: "HR",  color: "#f87171" },
-  { key: "WALK",      label: "BB",  color: "#a78bfa" },
-  { key: "OUT",       label: "OUT", color: "#6b7280" },
-  { key: "STRIKEOUT", label: "K",   color: "#6b7280" },
+  { key: "SINGLE",      label: "1B",  color: "#4ade80" },
+  { key: "DOUBLE",      label: "2B",  color: "#60a5fa" },
+  { key: "TRIPLE",      label: "3B",  color: "#f59e0b" },
+  { key: "HOME_RUN",    label: "HR",  color: "#f87171" },
+  { key: "WALK",        label: "BB",  color: "#a78bfa" },
+  { key: "ERROR",       label: "E",   color: "#fb923c" },
+  { key: "OUT",         label: "OUT", color: "#6b7280" },
+  { key: "STRIKEOUT",   label: "K",   color: "#6b7280" },
+  { key: "DOUBLE_PLAY", label: "DP",  color: "#6b7280" },
+  { key: "TRIPLE_PLAY", label: "TP",  color: "#6b7280" },
 ] as const;
 
 const OUTCOME_LABEL: Record<string, string> = {
   SINGLE: "1B", DOUBLE: "2B", TRIPLE: "3B", HOME_RUN: "HR",
-  WALK: "BB", OUT: "OUT", STRIKEOUT: "K",
+  WALK: "BB", ERROR: "E", OUT: "OUT", STRIKEOUT: "K",
+  DOUBLE_PLAY: "DP", TRIPLE_PLAY: "TP",
 };
 
 const OUTCOME_COLOR: Record<string, string> = {
   SINGLE: "#4ade80", DOUBLE: "#60a5fa", TRIPLE: "#f59e0b", HOME_RUN: "#f87171",
-  WALK: "#a78bfa", OUT: "#6b7280", STRIKEOUT: "#6b7280",
+  WALK: "#a78bfa", ERROR: "#fb923c", OUT: "#6b7280", STRIKEOUT: "#6b7280",
+  DOUBLE_PLAY: "#6b7280", TRIPLE_PLAY: "#6b7280",
 };
 
-function isOut(outcome: string) { return outcome === "OUT" || outcome === "STRIKEOUT"; }
+function isOut(outcome: string) {
+  return outcome === "OUT" || outcome === "STRIKEOUT" || outcome === "DOUBLE_PLAY" || outcome === "TRIPLE_PLAY";
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
