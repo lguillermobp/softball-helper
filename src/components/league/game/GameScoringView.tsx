@@ -77,6 +77,8 @@ interface Permissions {
   canSwapTeams: boolean;
   canEditHomeScorebook: boolean;
   canEditAwayScorebook: boolean;
+  canViewHomeScorebookTab: boolean;
+  canViewAwayScorebookTab: boolean;
   canScore: boolean;
   canReset: boolean;
   canEditResult: boolean;
@@ -268,11 +270,11 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
       { key: "home-official-stats" as Tab, label: `📋 ${game.homeTeam.name}` },
       { key: "away-official-stats" as Tab, label: `📋 ${game.awayTeam.name}` },
     ] : []),
-    ...(showHomeScorebookTab && permissions.canEditHomeScorebook ? [
+    ...(showHomeScorebookTab && permissions.canViewHomeScorebookTab ? [
       { key: "home-book"  as Tab, label: `📓 ${game.homeTeam.name}` },
       { key: "home-stats" as Tab, label: `📊 ${game.homeTeam.name}` },
     ] : []),
-    ...(showAwayScorebookTab && permissions.canEditAwayScorebook ? [
+    ...(showAwayScorebookTab && permissions.canViewAwayScorebookTab ? [
       { key: "away-book"  as Tab, label: `📓 ${game.awayTeam.name}` },
       { key: "away-stats" as Tab, label: `📊 ${game.awayTeam.name}` },
     ] : []),

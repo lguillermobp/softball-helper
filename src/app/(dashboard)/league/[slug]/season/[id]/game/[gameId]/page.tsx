@@ -107,8 +107,11 @@ export default async function GameScoringPage({ params }: PageProps) {
   const canEditAwayLineup =
     (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager || isPractice && hasAnyRole)) ||
     (game.status === "IN_PROGRESS" && (isAdmin || isAssignedScorer || isPractice && hasAnyRole));
-  const canEditHomeScorebook = isAdmin || isHomeManager || isPractice && hasAnyRole;
-  const canEditAwayScorebook = isAdmin || isAwayManager || isPractice && hasAnyRole;
+  const canEditHomeScorebook    = isAdmin || isHomeManager || isPractice && hasAnyRole;
+  const canEditAwayScorebook    = isAdmin || isAwayManager || isPractice && hasAnyRole;
+  // Scorebook tabs: only managers/admins — never scorekeeper-only users
+  const canViewHomeScorebookTab = isAdmin || isHomeManager;
+  const canViewAwayScorebookTab = isAdmin || isAwayManager;
   const canScore  = isAdmin || isAssignedScorer || isPractice && hasAnyRole;
   const canReset       = isPractice && hasAnyRole;
   const canEditResult  = isAdmin;
@@ -245,6 +248,8 @@ export default async function GameScoringPage({ params }: PageProps) {
             canSwapTeams,
             canEditHomeScorebook,
             canEditAwayScorebook,
+            canViewHomeScorebookTab,
+            canViewAwayScorebookTab,
             canScore,
             canReset,
             canEditResult,
