@@ -627,22 +627,16 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
 
       {tab === "home-official-stats" && showOfficialStatsTab && (() => {
         const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
-        const homeAtBats = game.atBats.filter(ab => {
-          const isHomeBatter  = game.lineups.some(l => l.isHome  && l.player.id === ab.batterId);
-          const isHomePitcher = game.lineups.some(l => l.isHome  && l.player.id === ab.pitcherId);
-          return isHomeBatter || !isHomePitcher;
-        });
-        const homeBatting  = computeOfficialBatting(game.atBats.filter(ab => game.lineups.some(l => l.isHome && l.player.id === ab.batterId)), allPlayers);
-        const awayPitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l => !l.isHome && l.player.id === ab.pitcherId)), allPlayers);
-        void homeAtBats;
-        return <OfficialStatsTable batting={homeBatting} pitching={awayPitching} teamName={game.homeTeam.name} />;
+        const homeBatting  = computeOfficialBatting(game.atBats.filter(ab => game.lineups.some(l =>  l.isHome && l.player.id === ab.batterId)), allPlayers);
+        const homePitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l =>  l.isHome && l.player.id === ab.pitcherId)), allPlayers);
+        return <OfficialStatsTable batting={homeBatting} pitching={homePitching} teamName={game.homeTeam.name} />;
       })()}
 
       {tab === "away-official-stats" && showOfficialStatsTab && (() => {
         const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
         const awayBatting  = computeOfficialBatting(game.atBats.filter(ab => game.lineups.some(l => !l.isHome && l.player.id === ab.batterId)), allPlayers);
-        const homePitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l => l.isHome  && l.player.id === ab.pitcherId)), allPlayers);
-        return <OfficialStatsTable batting={awayBatting} pitching={homePitching} teamName={game.awayTeam.name} />;
+        const awayPitching = computeOfficialPitching(game.atBats.filter(ab => game.lineups.some(l => !l.isHome && l.player.id === ab.pitcherId)), allPlayers);
+        return <OfficialStatsTable batting={awayBatting} pitching={awayPitching} teamName={game.awayTeam.name} />;
       })()}
 
       {/* ── End Game Modal ── */}
