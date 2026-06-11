@@ -31,10 +31,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
+  const isAdmin  = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isUmpire = league.userRoles.some(r => r.role === "UMPIRE");
-  if (!isAdmin && !isUmpire)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const game = await prisma.game.findFirst({
     where: { id: gameId, leagueId: league.id },
@@ -44,6 +42,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
   });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+
+  const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
+  if (!isAdmin && !isUmpire && !isAssignedScorer)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status !== "SCHEDULED")
     return NextResponse.json({ error: "Only scheduled games can be started" }, { status: 409 });
 
