@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -77,8 +77,41 @@ const OUTCOMES_ROW2 = [
 const OUTCOME_LABEL: Record<string, string> = {
   SINGLE: "1B", DOUBLE: "2B", TRIPLE: "3B", HOME_RUN: "HR",
   WALK: "BB", ERROR: "E", OUT: "OUT", STRIKEOUT: "K",
-  DOUBLE_PLAY: "DP", TRIPLE_PLAY: "TP",
+  DOUBLE_PLAY: "DP", TRIPLE_PLAY: "TP", RUNNER_OUT: "RO",
 };
+
+// Spoken phrases → outcome key (longest-first for greedy match)
+const VOICE_MAP: [string, string][] = [
+  ["double play",   "DOUBLE_PLAY"],
+  ["triple play",   "TRIPLE_PLAY"],
+  ["runner out",    "RUNNER_OUT"],
+  ["base on balls", "WALK"],
+  ["home run",      "HOME_RUN"],
+  ["homerun",       "HOME_RUN"],
+  ["strikeout",     "STRIKEOUT"],
+  ["strike out",    "STRIKEOUT"],
+  ["single",        "SINGLE"],
+  ["double",        "DOUBLE"],
+  ["triple",        "TRIPLE"],
+  ["homer",         "HOME_RUN"],
+  ["error",         "ERROR"],
+  ["walk",          "WALK"],
+  ["out",           "OUT"],
+  ["hr",            "HOME_RUN"],
+  ["bb",            "WALK"],
+  ["dp",            "DOUBLE_PLAY"],
+  ["tp",            "TRIPLE_PLAY"],
+  ["ro",            "RUNNER_OUT"],
+  ["1b",            "SINGLE"],
+  ["2b",            "DOUBLE"],
+  ["3b",            "TRIPLE"],
+  ["k",             "STRIKEOUT"],
+  ["e",             "ERROR"],
+];
+
+type VoicePhase = "idle" | "listening" | "recognized" | "error" | "unsupported";
+interface VoiceState { phase: VoicePhase; result: string | null; transcript: string }
+const IDLE_VOICE: VoiceState = { phase: "idle", result: null, transcript: "" };
 
 const OUTCOME_COLOR: Record<string, string> = {
   SINGLE: "#4ade80", DOUBLE: "#60a5fa", TRIPLE: "#f59e0b", HOME_RUN: "#f87171",
@@ -150,6 +183,8 @@ export function OfficialScorekeeper({
   const [error,         setError]         = useState("");
   const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
   const [now,           setNow]           = useState(() => new Date());
+  const [voiceState,    setVoiceState]    = useState<VoiceState>(IDLE_VOICE);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -528,6 +563,71 @@ export function OfficialScorekeeper({
   const card: React.CSSProperties = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
   const dim:  React.CSSProperties = { color: "var(--sh-muted)" };
 
+  // ── Voice input ──────────────────────────────────────────────────────────
+
+  function cancelVoice() {
+    if (recognitionRef.current) { recognitionRef.current.abort(); recognitionRef.current = null; }
+    setVoiceState(IDLE_VOICE);
+  }
+
+  function startVoice() {
+    if (!canEdit || !currentBatter || !activePitcher || currentOuts >= 3 || saving) return;
+
+    const SR = typeof window !== "undefined"
+      && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+    if (!SR) {
+      setVoiceState({ phase: "unsupported", result: null, transcript: "" });
+      return;
+    }
+
+    setVoiceState({ phase: "listening", result: null, transcript: "" });
+
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 5;
+
+    recognition.onresult = (event: any) => {
+      const transcripts: string[] = Array.from(
+        { length: event.results[0].length },
+        (_: unknown, i: number) => event.results[0][i].transcript as string,
+      );
+      const combined = transcripts.join(" ");
+      const lower = combined.toLowerCase().trim();
+      let matched: string | null = null;
+      for (const [phrase, outcome] of VOICE_MAP) {
+        if (lower.includes(phrase)) { matched = outcome; break; }
+      }
+      if (!matched) {
+        setVoiceState({ phase: "error", result: null, transcript: combined });
+        return;
+      }
+      setVoiceState({ phase: "recognized", result: matched, transcript: combined });
+      if (matched === "RUNNER_OUT") {
+        recordRunnerOut();
+      } else {
+        recordAtBat(matched);
+      }
+      setTimeout(() => setVoiceState(v => v.phase === "recognized" ? IDLE_VOICE : v), 2000);
+    };
+
+    recognition.onerror = (event: any) => {
+      const msg = event.error === "no-speech" ? "No speech detected" : event.error;
+      setVoiceState({ phase: "error", result: null, transcript: msg });
+    };
+
+    recognition.onend = () => {
+      setVoiceState(prev => prev.phase === "listening"
+        ? { ...prev, phase: "error", transcript: "No speech detected" }
+        : prev,
+      );
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
   // ── Initial pitcher setup ────────────────────────────────────────────────
 
   if (needsPitchers) {
@@ -875,7 +975,16 @@ export function OfficialScorekeeper({
 
             {/* Undo + pitcher change */}
             {canEdit && (
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-1 flex-wrap">
+                <button
+                  onClick={startVoice}
+                  disabled={saving || !activePitcher || !currentBatter || currentOuts >= 3}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-opacity hover:opacity-70 disabled:opacity-30 font-semibold"
+                  style={{ borderColor: "#4ade80", color: "#4ade80" }}
+                  title="Voice input — speak the outcome"
+                >
+                  🎤 Voice
+                </button>
                 <button
                   onClick={undoLastAtBat}
                   disabled={saving || (currentHalfABs.length === 0 && currentHalfROs.length === 0)}
@@ -1076,6 +1185,56 @@ export function OfficialScorekeeper({
             </div>
             {error && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{error}</p>}
           </div>
+        </div>
+      )}
+
+      {/* Voice overlay */}
+      {voiceState.phase !== "idle" && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(4px)" }}>
+          {voiceState.phase === "listening" && (
+            <div className="flex flex-col items-center gap-5 text-center">
+              <div style={{ fontSize: 64, animation: "pulse 1.2s ease-in-out infinite" }}>🎤</div>
+              <p className="text-white text-xl font-bold">Listening…</p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+                Speak the outcome for <strong style={{ color: "#fff" }}>{currentBatter?.player.name}</strong>
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center max-w-xs">
+                {["single","double","triple","home run","walk","strikeout","out","error","double play","triple play","runner out"].map(cmd => (
+                  <span key={cmd} className="text-xs px-2.5 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.13)", color: "rgba(255,255,255,0.8)" }}>
+                    {cmd}
+                  </span>
+                ))}
+              </div>
+              <button onClick={cancelVoice} className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>Cancel</button>
+            </div>
+          )}
+          {voiceState.phase === "recognized" && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div style={{ fontSize: 64 }}>✅</div>
+              <p className="text-white text-2xl font-black">{OUTCOME_LABEL[voiceState.result!] ?? voiceState.result}</p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>"{voiceState.transcript}"</p>
+            </div>
+          )}
+          {(voiceState.phase === "error" || voiceState.phase === "unsupported") && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div style={{ fontSize: 64 }}>❌</div>
+              <p className="text-white text-xl font-bold">
+                {voiceState.phase === "unsupported" ? "Voice not supported" : "Not recognized"}
+              </p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                {voiceState.phase === "unsupported"
+                  ? "Voice input requires Chrome or Edge."
+                  : `"${voiceState.transcript}"`}
+              </p>
+              <button
+                onClick={cancelVoice}
+                className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
       )}
 
