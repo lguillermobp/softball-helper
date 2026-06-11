@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!isAdmin && !isAssignedScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status !== "IN_PROGRESS") return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
-  const { inningNumber, isTop, runsScored } = await req.json();
+  const { inningNumber, isTop, runsScored, carryOverBattingOrder } = await req.json();
   if (inningNumber == null || isTop == null || runsScored == null)
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   if (typeof runsScored !== "number" || runsScored < 0)
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const inning = await prisma.gameInning.upsert({
     where: { gameId_inningNumber_isTop: { gameId, inningNumber, isTop } },
-    update: { runsScored, completed: true },
-    create: { gameId, inningNumber, isTop, runsScored, completed: true },
+    update: { runsScored, completed: true, ...(carryOverBattingOrder != null ? { carryOverBattingOrder } : {}) },
+    create: { gameId, inningNumber, isTop, runsScored, completed: true, ...(carryOverBattingOrder != null ? { carryOverBattingOrder } : {}) },
   });
 
   return NextResponse.json(inning);

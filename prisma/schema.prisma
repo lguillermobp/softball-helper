@@ -320,6 +320,7 @@ model Game {
   scorebooks      ManagerScorebook[]
   atBats          GameAtBat[]
   innings         GameInning[]
+  runnerOuts      GameRunnerOut[]
   pitcherStints   GamePitcherStint[]
   substitutions   GameSubstitution[]
   rescheduledFrom Game?     @relation("GameReschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
@@ -432,14 +433,27 @@ model GameAtBat {
   @@map("game_at_bats")
 }
 
-model GameInning {
+model GameRunnerOut {
   id           String   @id @default(cuid())
   gameId       String
   inningNumber Int
   isTop        Boolean
-  runsScored   Int      @default(0)
-  completed    Boolean  @default(false)
+  sequence     Int
   createdAt    DateTime @default(now())
+  game         Game     @relation(fields: [gameId], references: [id])
+
+  @@map("game_runner_outs")
+}
+
+model GameInning {
+  id                    String   @id @default(cuid())
+  gameId                String
+  inningNumber          Int
+  isTop                 Boolean
+  runsScored            Int      @default(0)
+  completed             Boolean  @default(false)
+  carryOverBattingOrder Int?
+  createdAt             DateTime @default(now())
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 

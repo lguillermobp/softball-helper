@@ -33,6 +33,10 @@ interface AtBat {
 }
 interface Inning {
   id: string; inningNumber: number; isTop: boolean; runsScored: number; completed: boolean;
+  carryOverBattingOrder: number | null;
+}
+interface RunnerOut {
+  id: string; inningNumber: number; isTop: boolean; sequence: number;
 }
 interface PitcherStint {
   id: string; isHome: boolean;
@@ -59,6 +63,7 @@ interface Game {
   lineups: LineupEntry[];
   atBats: AtBat[];
   innings: Inning[];
+  runnerOuts: RunnerOut[];
   pitcherStints: PitcherStint[];
   substitutions: Substitution[];
 }
@@ -482,6 +487,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           awayLineup={game.lineups.filter(l => !l.isHome && l.battingOrder != null && l.position !== "B").sort((a, b) => a.battingOrder! - b.battingOrder!)}
           initialAtBats={game.atBats}
           initialInnings={game.innings}
+          initialRunnerOuts={game.runnerOuts ?? []}
           initialPitcherStints={game.pitcherStints}
           initialSubstitutions={game.substitutions}
           canEdit={game.status === "IN_PROGRESS" && permissions.canScore}

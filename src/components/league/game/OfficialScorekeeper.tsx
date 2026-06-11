@@ -21,6 +21,10 @@ interface AtBat {
 interface Inning {
   id: string; inningNumber: number; isTop: boolean;
   runsScored: number; completed: boolean;
+  carryOverBattingOrder: number | null;
+}
+interface RunnerOut {
+  id: string; inningNumber: number; isTop: boolean; sequence: number;
 }
 interface PitcherStint {
   id: string; isHome: boolean;
@@ -44,6 +48,7 @@ interface Props {
   awayLineup: LineupEntry[];
   initialAtBats: AtBat[];
   initialInnings: Inning[];
+  initialRunnerOuts?: RunnerOut[];
   initialPitcherStints: PitcherStint[];
   initialSubstitutions?: Substitution[];
   canEdit: boolean;
@@ -51,13 +56,16 @@ interface Props {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const OUTCOMES = [
+const OUTCOMES_ROW1 = [
+  { key: "WALK",        label: "BB",  color: "#a78bfa" },
   { key: "SINGLE",      label: "1B",  color: "#4ade80" },
   { key: "DOUBLE",      label: "2B",  color: "#60a5fa" },
   { key: "TRIPLE",      label: "3B",  color: "#f59e0b" },
   { key: "HOME_RUN",    label: "HR",  color: "#f87171" },
-  { key: "WALK",        label: "BB",  color: "#a78bfa" },
   { key: "ERROR",       label: "E",   color: "#fb923c" },
+] as const;
+
+const OUTCOMES_ROW2 = [
   { key: "OUT",         label: "OUT", color: "#6b7280" },
   { key: "STRIKEOUT",   label: "K",   color: "#6b7280" },
   { key: "DOUBLE_PLAY", label: "DP",  color: "#6b7280" },
@@ -109,13 +117,14 @@ function PlayerAvatar({ player, size = 36 }: { player: { name: string; jerseyNum
 export function OfficialScorekeeper({
   slug, gameId, homeTeam, awayTeam,
   homeLineup, awayLineup,
-  initialAtBats, initialInnings, initialPitcherStints, initialSubstitutions,
+  initialAtBats, initialInnings, initialRunnerOuts, initialPitcherStints, initialSubstitutions,
   canEdit,
 }: Props) {
-  const [atBats,        setAtBats]        = useState<AtBat[]>(initialAtBats);
-  const [innings,       setInnings]       = useState<Inning[]>(initialInnings);
-  const [stints,        setStints]        = useState<PitcherStint[]>(initialPitcherStints);
-  const [subs,          setSubs]          = useState<Substitution[]>(initialSubstitutions ?? []);
+  const [atBats,      setAtBats]      = useState<AtBat[]>(initialAtBats);
+  const [innings,     setInnings]     = useState<Inning[]>(initialInnings);
+  const [runnerOuts,  setRunnerOuts]  = useState<RunnerOut[]>(initialRunnerOuts ?? []);
+  const [stints,      setStints]      = useState<PitcherStint[]>(initialPitcherStints);
+  const [subs,        setSubs]        = useState<Substitution[]>(initialSubstitutions ?? []);
   // Active lineup reflects substitutions (maps battingOrderSpot → current playerId)
   const [activeHome,    setActiveHome]    = useState<Map<number, string>>(
     () => new Map(homeLineup.map(l => [l.battingOrder!, l.player.id]))
@@ -129,7 +138,9 @@ export function OfficialScorekeeper({
   const { isOnline, queueLength, syncing, syncError, clearSyncError, enqueue } = useOfflineQueue(gameId);
 
   // End-of-half-inning prompt
-  const [pendingRuns,   setPendingRuns]   = useState<number | null>(null);
+  const [pendingRuns,       setPendingRuns]       = useState<number | null>(null);
+  // Carry-over: batting order spot that should lead off next inning
+  const [pendingCarryOver,  setPendingCarryOver]  = useState<number | null>(null);
 
   // Substitution panel
   const [showSubPanel,  setShowSubPanel]  = useState(false);
@@ -174,7 +185,10 @@ export function OfficialScorekeeper({
   const currentHalfABs = atBats.filter(
     ab => ab.inningNumber === currentInning.number && ab.isTop === currentInning.isTop
   );
-  const currentOuts = currentHalfABs.filter(ab => isOut(ab.outcome)).length;
+  const currentHalfROs = runnerOuts.filter(
+    ro => ro.inningNumber === currentInning.number && ro.isTop === currentInning.isTop
+  );
+  const currentOuts = currentHalfABs.filter(ab => isOut(ab.outcome)).length + currentHalfROs.length;
 
   const activePitcher = stints.find(s => s.isHome === pitchingIsHome && s.outsAtEnd == null);
   const pitchingTeam  = pitchingIsHome ? homeTeam : awayTeam;
@@ -182,8 +196,19 @@ export function OfficialScorekeeper({
     ? pitchingTeam.players.find(p => p.id === activePitcher.pitcher.id) ?? null
     : null;
 
+  // Carry-over: if the previous inning (same isTop) ended with a carry-over batter,
+  // that batter leads off this inning instead of continuing the normal rotation.
+  const prevInningForTeam = innings.find(
+    i => i.isTop === currentInning.isTop && i.inningNumber === currentInning.number - 1
+  );
+  const carryOverOrder = prevInningForTeam?.carryOverBattingOrder ?? null;
+  const carryOverStartIdx = carryOverOrder != null && effectiveBatting.length > 0
+    ? effectiveBatting.findIndex(l => l.battingOrder === carryOverOrder)
+    : -1;
+  const startIdx = carryOverStartIdx >= 0 ? carryOverStartIdx : 0;
+
   const currentBatterIdx = effectiveBatting.length > 0
-    ? currentHalfABs.length % effectiveBatting.length
+    ? (startIdx + currentHalfABs.length) % effectiveBatting.length
     : 0;
   const currentBatter = effectiveBatting[currentBatterIdx];
   const onDeckBatter  = effectiveBatting.length > 1
@@ -268,18 +293,67 @@ export function OfficialScorekeeper({
     if (pendingRuns !== null) setPendingRuns(null);
   }
 
+  async function recordRunnerOut() {
+    if (!canEdit || saving || currentOuts >= 3 || !currentBatter) return;
+    setError("");
+    setSaving(true);
+
+    const willBe3rd = currentOuts + 1 >= 3;
+    const carryOver = willBe3rd ? (currentBatter.battingOrder ?? null) : null;
+
+    const tempId = `tmp-ro-${Date.now()}`;
+    const newRO: RunnerOut = {
+      id: tempId,
+      inningNumber: currentInning.number,
+      isTop: currentInning.isTop,
+      sequence: currentHalfABs.length + currentHalfROs.length + 1,
+    };
+    setRunnerOuts(prev => [...prev, newRO]);
+    if (willBe3rd) {
+      setPendingRuns(0);
+      setPendingCarryOver(carryOver);
+    }
+
+    const result = await enqueue(
+      `/api/leagues/${slug}/games/${gameId}/runner-out`, "POST",
+      {
+        inningNumber: currentInning.number,
+        isTop: currentInning.isTop,
+        sequence: newRO.sequence,
+        ...(carryOver != null ? { carryOverBattingOrder: carryOver } : {}),
+      },
+    );
+    setSaving(false);
+    if (!result.ok) {
+      setRunnerOuts(prev => prev.filter(r => r.id !== tempId));
+      if (willBe3rd) { setPendingRuns(null); setPendingCarryOver(null); }
+      setError(result.error ?? "Failed to record runner out");
+      return;
+    }
+    if (!result.queued && result.data) {
+      const saved = result.data as RunnerOut;
+      setRunnerOuts(prev => prev.map(r => r.id === tempId ? saved : r));
+    }
+  }
+
   async function confirmInning(runs: number) {
     if (!canEdit || saving) return;
     setError("");
     setSaving(true);
-    const body = { inningNumber: currentInning.number, isTop: currentInning.isTop, runsScored: runs };
-    // Optimistic update so UI advances immediately
-    const optimistic: Inning = { id: `tmp-inn-${Date.now()}`, ...body, completed: true };
+    const body = {
+      inningNumber: currentInning.number, isTop: currentInning.isTop, runsScored: runs,
+      ...(pendingCarryOver != null ? { carryOverBattingOrder: pendingCarryOver } : {}),
+    };
+    const optimistic: Inning = {
+      id: `tmp-inn-${Date.now()}`, ...body, completed: true,
+      carryOverBattingOrder: pendingCarryOver ?? null,
+    };
     setInnings(prev => [
       ...prev.filter(i => !(i.inningNumber === currentInning.number && i.isTop === currentInning.isTop)),
       optimistic,
     ]);
     setPendingRuns(null);
+    setPendingCarryOver(null);
     const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/inning`, "POST", body);
     setSaving(false);
     if (!result.ok) {
@@ -501,6 +575,11 @@ export function OfficialScorekeeper({
               ))}
             </div>
           </div>
+          {pendingCarryOver != null && currentBatter && (
+            <div className="rounded-xl px-3 py-2 text-xs text-center font-medium" style={{ background: "#1c1917", color: "#fb923c", border: "1px solid #431407" }}>
+              ⚠ Runner out ended the inning — <strong>{currentBatter.player.name}</strong> carries over and bats first next inning
+            </div>
+          )}
           <button
             onClick={() => confirmInning(pendingRuns)}
             disabled={saving}
@@ -514,6 +593,11 @@ export function OfficialScorekeeper({
         <>
           {/* Current batter + pitcher */}
           <div className="rounded-2xl border p-4 space-y-3" style={card}>
+            {carryOverOrder != null && currentHalfABs.length === 0 && (
+              <div className="rounded-xl px-3 py-2 text-xs text-center font-medium" style={{ background: "#1c1917", color: "#fb923c", border: "1px solid #431407" }}>
+                ⚠ Carry-over at-bat — this batter's turn was interrupted last inning
+              </div>
+            )}
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="text-xs font-semibold uppercase mb-0.5" style={dim}>
@@ -521,7 +605,7 @@ export function OfficialScorekeeper({
                 </div>
                 {currentBatter ? (
                   <div className="flex items-center gap-2">
-                    <PlayerAvatar player={currentBatter.player} size={40} />
+                    <PlayerAvatar player={currentBatter.player} size={56} />
                     <div>
                       <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
                       {currentBatter.player.jerseyNumber && (
@@ -554,7 +638,7 @@ export function OfficialScorekeeper({
                         <div className="text-xs" style={dim}>#{activePitcher.pitcher.jerseyNumber}</div>
                       )}
                     </div>
-                    <PlayerAvatar player={activePitcherFull ?? activePitcher.pitcher} size={40} />
+                    <PlayerAvatar player={activePitcherFull ?? activePitcher.pitcher} size={56} />
                   </div>
                 ) : (
                   <span className="text-xs" style={{ color: "var(--sh-danger)" }}>No pitcher</span>
@@ -564,18 +648,44 @@ export function OfficialScorekeeper({
 
             {/* Outcome buttons */}
             {canEdit && (
-              <div className="grid grid-cols-7 gap-1.5">
-                {OUTCOMES.map(({ key, label, color }) => (
+              <div className="space-y-1.5">
+                {/* Row 1: reaches base */}
+                <div className="grid grid-cols-6 gap-1.5">
+                  {OUTCOMES_ROW1.map(({ key, label, color }) => (
+                    <button
+                      key={key}
+                      onClick={() => recordAtBat(key)}
+                      disabled={saving || !activePitcher || !currentBatter || currentOuts >= 3}
+                      className="py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80 disabled:opacity-30"
+                      style={{ borderColor: color, color, background: "transparent" }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Row 2: outs + runner out */}
+                <div className="grid grid-cols-5 gap-1.5">
+                  {OUTCOMES_ROW2.map(({ key, label, color }) => (
+                    <button
+                      key={key}
+                      onClick={() => recordAtBat(key)}
+                      disabled={saving || !activePitcher || !currentBatter || currentOuts >= 3}
+                      className="py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80 disabled:opacity-30"
+                      style={{ borderColor: color, color, background: "transparent" }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                   <button
-                    key={key}
-                    onClick={() => recordAtBat(key)}
-                    disabled={saving || !activePitcher || !currentBatter}
+                    onClick={recordRunnerOut}
+                    disabled={saving || !currentBatter || currentOuts >= 3}
                     className="py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80 disabled:opacity-30"
-                    style={{ borderColor: color, color, background: "transparent" }}
+                    style={{ borderColor: "#ef4444", color: "#ef4444", background: "transparent" }}
+                    title="Runner put out while batter's at-bat continues"
                   >
-                    {label}
+                    RO
                   </button>
-                ))}
+                </div>
               </div>
             )}
 

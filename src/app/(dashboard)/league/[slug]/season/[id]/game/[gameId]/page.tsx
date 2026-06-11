@@ -63,8 +63,9 @@ export default async function GameScoringPage({ params }: PageProps) {
         include: { player: { select: { id: true, name: true, jerseyNumber: true, nationality: true, photoUrl: true } } },
         orderBy: { battingOrder: "asc" },
       },
-      atBats:  { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }, { sequence: "asc" }] },
-      innings: { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }] },
+      atBats:     { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }, { sequence: "asc" }] },
+      innings:    { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }] },
+      runnerOuts: { orderBy: [{ inningNumber: "asc" }, { isTop: "desc" }, { sequence: "asc" }] },
       pitcherStints: {
         include: { pitcher: { select: { id: true, name: true, jerseyNumber: true } } },
         orderBy: { createdAt: "asc" },
@@ -160,7 +161,14 @@ export default async function GameScoringPage({ params }: PageProps) {
       player: l.player,
     })),
     atBats: game.atBats,
-    innings: game.innings,
+    innings: game.innings.map(i => ({
+      id: i.id, inningNumber: i.inningNumber, isTop: i.isTop,
+      runsScored: i.runsScored, completed: i.completed,
+      carryOverBattingOrder: i.carryOverBattingOrder ?? null,
+    })),
+    runnerOuts: game.runnerOuts.map(r => ({
+      id: r.id, inningNumber: r.inningNumber, isTop: r.isTop, sequence: r.sequence,
+    })),
     pitcherStints: game.pitcherStints.map(s => ({
       id: s.id, isHome: s.isHome,
       inningStart: s.inningStart, isTopStart: s.isTopStart, outsAtStart: s.outsAtStart,
