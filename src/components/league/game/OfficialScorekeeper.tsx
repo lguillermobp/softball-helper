@@ -328,12 +328,45 @@ export function OfficialScorekeeper({
   }
 
   async function undoLastAtBat() {
-    if (!canEdit || saving || currentHalfABs.length === 0) return;
+    if (!canEdit || saving) return;
     if (!isOnline) { setError("Cannot undo while offline"); return; }
-    const last = [...currentHalfABs].sort((a, b) => b.sequence - a.sequence)[0];
-    // Don't undo a queued (temp) at-bat via the server — remove it locally only
-    if (last.id.startsWith("tmp-")) {
-      setAtBats(prev => prev.filter(ab => ab.id !== last.id));
+
+    const lastAB = currentHalfABs.length > 0
+      ? [...currentHalfABs].sort((a, b) => b.sequence - a.sequence)[0]
+      : null;
+    const lastRO = currentHalfROs.length > 0
+      ? [...currentHalfROs].sort((a, b) => b.sequence - a.sequence)[0]
+      : null;
+
+    if (!lastAB && !lastRO) return;
+
+    // Pick whichever happened last
+    const undoRO = lastRO && (!lastAB || lastRO.sequence > lastAB.sequence);
+
+    if (undoRO) {
+      if (lastRO!.id.startsWith("tmp-ro-")) {
+        setRunnerOuts(prev => prev.filter(r => r.id !== lastRO!.id));
+        if (pendingRuns !== null) setPendingRuns(null);
+        if (pendingCarryOver !== null) setPendingCarryOver(null);
+        return;
+      }
+      setError("");
+      setSaving(true);
+      const result = await enqueue(
+        `/api/leagues/${slug}/games/${gameId}/runner-out`, "DELETE",
+        { runnerOutId: lastRO!.id },
+      );
+      setSaving(false);
+      if (!result.ok) { setError(result.error ?? "Failed to undo runner out"); return; }
+      setRunnerOuts(prev => prev.filter(r => r.id !== lastRO!.id));
+      if (pendingRuns !== null) setPendingRuns(null);
+      if (pendingCarryOver !== null) setPendingCarryOver(null);
+      return;
+    }
+
+    // Undo last at-bat
+    if (lastAB!.id.startsWith("tmp-")) {
+      setAtBats(prev => prev.filter(ab => ab.id !== lastAB!.id));
       if (pendingRuns !== null) setPendingRuns(null);
       return;
     }
@@ -341,11 +374,11 @@ export function OfficialScorekeeper({
     setSaving(true);
     const result = await enqueue(
       `/api/leagues/${slug}/games/${gameId}/at-bat`, "DELETE",
-      { atBatId: last.id },
+      { atBatId: lastAB!.id },
     );
     setSaving(false);
     if (!result.ok) { setError(result.error ?? "Failed to undo"); return; }
-    setAtBats(prev => prev.filter(ab => ab.id !== last.id));
+    setAtBats(prev => prev.filter(ab => ab.id !== lastAB!.id));
     if (pendingRuns !== null) setPendingRuns(null);
   }
 
@@ -843,7 +876,7 @@ export function OfficialScorekeeper({
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={undoLastAtBat}
-                  disabled={saving || currentHalfABs.length === 0}
+                  disabled={saving || (currentHalfABs.length === 0 && currentHalfROs.length === 0)}
                   className="text-xs px-3 py-1.5 rounded-lg border transition-opacity hover:opacity-70 disabled:opacity-30"
                   style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)" }}
                 >
