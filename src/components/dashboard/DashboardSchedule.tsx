@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export interface ScheduleGame {
   id: string;
   scheduledAt: string;
+  startedAt: string | null;
   status: string;
   isPractice: boolean;
   homeScore: number | null;
@@ -17,6 +19,8 @@ export interface ScheduleGame {
   field: string | null;
   roleLabel: string;
   myTeamIsHome: boolean | null;
+  scorekeeper: string | null;
+  defaultGameDurationMins: number | null;
 }
 
 export interface StatRow {
@@ -53,10 +57,11 @@ function TeamLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   );
 }
 
-function GameCard({ game }: { game: ScheduleGame }) {
+function GameCard({ game, now }: { game: ScheduleGame; now: Date }) {
   const st      = STATUS_STYLE[game.status] ?? STATUS_STYLE.SCHEDULED;
   const date    = new Date(game.scheduledAt);
   const isPast  = game.status === "COMPLETED" || game.status === "CANCELLED";
+  const isLive  = game.status === "IN_PROGRESS";
   const myTeam  = game.myTeamIsHome === true ? game.homeTeam : game.myTeamIsHome === false ? game.awayTeam : null;
   const oppTeam = game.myTeamIsHome === true ? game.awayTeam : game.myTeamIsHome === false ? game.homeTeam : null;
   const href    = `/league/${game.league.slug}/season/${game.season.id}/game/${game.id}`;
@@ -133,19 +138,42 @@ function GameCard({ game }: { game: ScheduleGame }) {
             {date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
           </span>
           {game.field && <span className="text-xs" style={{ color: "var(--sh-muted)" }}>📍 {game.field}</span>}
+          {game.scorekeeper && <span className="text-xs" style={{ color: "var(--sh-muted)" }}>📋 {game.scorekeeper}</span>}
         </div>
         <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
           style={{ color: "var(--sh-secondary)", borderColor: "var(--sh-border2)", background: "var(--sh-bg-card2)" }}>
           {game.roleLabel}
         </span>
       </div>
+      {isLive && game.defaultGameDurationMins && (() => {
+        const startedAt = new Date(game.startedAt ?? game.scheduledAt);
+        const endAt = new Date(startedAt.getTime() + game.defaultGameDurationMins * 60_000);
+        const remainMs = endAt.getTime() - now.getTime();
+        const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
+        const isOvertime = remainMs < 0;
+        return (
+          <div className="flex items-center gap-4 flex-wrap text-xs pt-2 border-t"
+            style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)" }}>
+            <span>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+            <span>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+            <span style={{ color: isOvertime || remainMins <= 10 ? "var(--sh-danger)" : "var(--sh-muted)" }}>
+              {isOvertime ? "Overtime" : `${remainMins}min left`}
+            </span>
+          </div>
+        );
+      })()}
     </div>
     </Link>
   );
 }
 
 export function DashboardSchedule({ games, stats, hasPlayingRole }: Props) {
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const upcoming = games.filter(g => new Date(g.scheduledAt) >= now || g.status === "IN_PROGRESS");
   const past     = games.filter(g => new Date(g.scheduledAt) < now  && g.status !== "IN_PROGRESS" && g.status !== "SCHEDULED")
     .slice(-5);
@@ -168,7 +196,7 @@ export function DashboardSchedule({ games, stats, hasPlayingRole }: Props) {
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
             Upcoming · {upcoming.length} game{upcoming.length !== 1 ? "s" : ""}
           </h3>
-          {upcoming.map(g => <GameCard key={g.id} game={g} />)}
+          {upcoming.map(g => <GameCard key={g.id} game={g} now={now} />)}
         </div>
       )}
 
@@ -178,7 +206,7 @@ export function DashboardSchedule({ games, stats, hasPlayingRole }: Props) {
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--sh-muted)" }}>
             Last {past.length} game{past.length !== 1 ? "s" : ""}
           </h3>
-          {[...past].reverse().map(g => <GameCard key={g.id} game={g} />)}
+          {[...past].reverse().map(g => <GameCard key={g.id} game={g} now={now} />)}
         </div>
       )}
 

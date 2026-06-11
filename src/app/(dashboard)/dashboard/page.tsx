@@ -9,12 +9,13 @@ const PLAYING_ROLES = new Set(["PLAYER", "TEAM_MANAGER_PLAYER", "TEAM_ASSISTANT_
 const SCHEDULE_SKIP_ROLES = new Set(["LEAGUE_ADMIN"]);
 
 const GAME_INCLUDE = {
-  homeTeam: { select: { id: true, name: true, logoUrl: true } },
-  awayTeam: { select: { id: true, name: true, logoUrl: true } },
-  league:   { select: { id: true, name: true, slug: true } },
-  season:   { select: { id: true, name: true } },
-  category: { select: { name: true } },
-  field:    { select: { name: true } },
+  homeTeam:  { select: { id: true, name: true, logoUrl: true } },
+  awayTeam:  { select: { id: true, name: true, logoUrl: true } },
+  league:    { select: { id: true, name: true, slug: true } },
+  season:    { select: { id: true, name: true, defaultGameDurationMins: true } },
+  category:  { select: { name: true } },
+  field:     { select: { name: true } },
+  officials: { include: { user: { select: { name: true } } } },
 } as const;
 
 export default async function DashboardPage() {
@@ -153,6 +154,7 @@ export default async function DashboardPage() {
       gameEntries.set(g.id, {
         id: g.id,
         scheduledAt: g.scheduledAt.toISOString(),
+        startedAt: g.startedAt?.toISOString() ?? null,
         status: g.status,
         isPractice: g.isPractice,
         homeScore: g.homeScore,
@@ -160,11 +162,13 @@ export default async function DashboardPage() {
         homeTeam: g.homeTeam,
         awayTeam: g.awayTeam,
         league:   { id: g.league.id, name: g.league.name, slug: g.league.slug },
-        season:   g.season,
+        season:   { id: g.season.id, name: g.season.name },
         category: g.category?.name ?? null,
         field:    g.field?.name ?? null,
         roleLabel,
         myTeamIsHome,
+        scorekeeper: g.officials.find(o => o.role === "SCOREKEEPER")?.user.name ?? null,
+        defaultGameDurationMins: g.season.defaultGameDurationMins ?? null,
       });
     }
 
