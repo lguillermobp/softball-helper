@@ -84,9 +84,13 @@ const OUTCOME_COLOR: Record<string, string> = {
   DOUBLE_PLAY: "#6b7280", TRIPLE_PLAY: "#6b7280",
 };
 
-function isOut(outcome: string) {
-  return outcome === "OUT" || outcome === "STRIKEOUT" || outcome === "DOUBLE_PLAY" || outcome === "TRIPLE_PLAY";
+function outCount(outcome: string): number {
+  if (outcome === "DOUBLE_PLAY") return 2;
+  if (outcome === "TRIPLE_PLAY") return 3;
+  if (outcome === "OUT" || outcome === "STRIKEOUT") return 1;
+  return 0;
 }
+function isOut(outcome: string) { return outCount(outcome) > 0; }
 
 function PlayerAvatar({ player, size = 36, onClick }: { player: { name: string; jerseyNumber?: string | null; photoUrl?: string | null }; size?: number; onClick?: () => void }) {
   const initials = player.jerseyNumber ? `#${player.jerseyNumber}` : player.name.charAt(0).toUpperCase();
@@ -196,7 +200,7 @@ export function OfficialScorekeeper({
   const currentHalfROs = runnerOuts.filter(
     ro => ro.inningNumber === currentInning.number && ro.isTop === currentInning.isTop
   );
-  const currentOuts = currentHalfABs.filter(ab => isOut(ab.outcome)).length + currentHalfROs.length;
+  const currentOuts = currentHalfABs.reduce((sum, ab) => sum + outCount(ab.outcome), 0) + currentHalfROs.length;
 
   const activePitcher = stints.find(s => s.isHome === pitchingIsHome && s.outsAtEnd == null);
   const pitchingTeam  = pitchingIsHome ? homeTeam : awayTeam;
@@ -265,7 +269,7 @@ export function OfficialScorekeeper({
     };
 
     setAtBats(prev => [...prev, newAb]);
-    const newOuts = currentOuts + (isOut(outcome) ? 1 : 0);
+    const newOuts = currentOuts + outCount(outcome);
     if (newOuts >= 3) setPendingRuns(0);
 
     const result = await enqueue(
@@ -750,17 +754,24 @@ export function OfficialScorekeeper({
                 </div>
                 {/* Row 2: outs + runner out */}
                 <div className="grid grid-cols-5 gap-1.5">
-                  {OUTCOMES_ROW2.map(({ key, label, color }) => (
-                    <button
-                      key={key}
-                      onClick={() => recordAtBat(key)}
-                      disabled={saving || !activePitcher || !currentBatter || currentOuts >= 3}
-                      className="py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80 disabled:opacity-30"
-                      style={{ borderColor: color, color, background: "transparent" }}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                  {OUTCOMES_ROW2.map(({ key, label, color }) => {
+                    const outsNeeded = key === "DOUBLE_PLAY" ? 2 : key === "TRIPLE_PLAY" ? 3 : 1;
+                    const disabled = saving || !activePitcher || !currentBatter || currentOuts >= 3
+                      || (key === "DOUBLE_PLAY" && currentOuts >= 2)
+                      || (key === "TRIPLE_PLAY" && currentOuts >= 1);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => recordAtBat(key)}
+                        disabled={disabled}
+                        className="py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80 disabled:opacity-30"
+                        style={{ borderColor: color, color, background: "transparent" }}
+                        title={key === "DOUBLE_PLAY" ? `Needs ≤1 out (currently ${currentOuts})` : key === "TRIPLE_PLAY" ? `Needs 0 outs (currently ${currentOuts})` : undefined}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={recordRunnerOut}
                     disabled={saving || !currentBatter || currentOuts >= 3}
