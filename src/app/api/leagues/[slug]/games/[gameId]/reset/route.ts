@@ -28,6 +28,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   await prisma.$transaction([
     prisma.gameAtBat.deleteMany({ where: { gameId } }),
     prisma.gameInning.deleteMany({ where: { gameId } }),
+    prisma.gameRunnerOut.deleteMany({ where: { gameId } }),
     prisma.gamePitcherStint.deleteMany({ where: { gameId } }),
     prisma.gameSubstitution.deleteMany({ where: { gameId } }),
     prisma.managerScorebook.deleteMany({ where: { gameId } }),

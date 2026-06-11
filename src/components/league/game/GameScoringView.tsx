@@ -125,7 +125,9 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
   const router = useRouter();
   const { t } = useLanguage();
   const ts = t.scoring;
-  const [tab, setTab] = useState<Tab>("setup");
+  const [tab, setTab] = useState<Tab>(
+    () => game.status === "IN_PROGRESS" && permissions.canScore ? "official" : "setup"
+  );
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
   const [showEndModal, setShowEndModal] = useState(false);
@@ -401,15 +403,27 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
                   Public view ↗
                 </Link>
               </div>
-              {canEnd && (
-                <button
-                  onClick={() => { setShowEndModal(true); setEndError(""); setCancelReason(""); }}
-                  className="text-xs px-3 py-1.5 rounded-lg border font-semibold transition-opacity hover:opacity-80"
-                  style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
-                >
-                  End Game
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {permissions.canReset && (
+                  <button
+                    onClick={handleReset}
+                    disabled={resetting}
+                    className="text-xs px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-40"
+                    style={{ borderColor: "#92400e", color: "#f59e0b", background: "transparent" }}
+                  >
+                    {resetting ? "Resetting…" : "↺ Reset practice"}
+                  </button>
+                )}
+                {canEnd && (
+                  <button
+                    onClick={() => { setShowEndModal(true); setEndError(""); setCancelReason(""); }}
+                    className="text-xs px-3 py-1.5 rounded-lg border font-semibold transition-opacity hover:opacity-80"
+                    style={{ borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }}
+                  >
+                    End Game
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -465,7 +479,7 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
           <button
             key={tb.key}
             onClick={() => setTab(tb.key)}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+            className={`flex-1 rounded-lg font-semibold transition-all flex items-center justify-center gap-1.5 ${tb.key === "official" ? "py-2.5 text-base" : "py-2 text-sm"}`}
             style={tab === tb.key
               ? { background: "var(--sh-primary-dark)", color: "#fff" }
               : { color: "var(--sh-primary)", background: "transparent" }}

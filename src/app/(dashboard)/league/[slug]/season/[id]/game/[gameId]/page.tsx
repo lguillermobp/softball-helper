@@ -102,10 +102,10 @@ export default async function GameScoringPage({ params }: PageProps) {
   const canStartGame     = isAdmin || isUmpire || isAssignedScorer || isPractice && hasAnyRole;
   const canSwapTeams     = isAdmin || isUmpire || isAssignedScorer || isPractice && hasAnyRole;
   const canEditHomeLineup =
-    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isHomeManager || isPractice && hasAnyRole)) ||
+    (game.status === "SCHEDULED" && (isAdmin || isAssignedScorer || isHomeManager || isPractice && hasAnyRole)) ||
     (game.status === "IN_PROGRESS" && (isAdmin || isAssignedScorer || isPractice && hasAnyRole));
   const canEditAwayLineup =
-    (game.status === "SCHEDULED" && (isAdmin || isUmpire || isAwayManager || isPractice && hasAnyRole)) ||
+    (game.status === "SCHEDULED" && (isAdmin || isAssignedScorer || isAwayManager || isPractice && hasAnyRole)) ||
     (game.status === "IN_PROGRESS" && (isAdmin || isAssignedScorer || isPractice && hasAnyRole));
   const canEditHomeScorebook    = isAdmin || isHomeManager || isPractice && hasAnyRole;
   const canEditAwayScorebook    = isAdmin || isAwayManager || isPractice && hasAnyRole;

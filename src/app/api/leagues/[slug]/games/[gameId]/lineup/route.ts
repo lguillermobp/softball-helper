@@ -57,6 +57,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     include: {
       homeTeam: { select: { id: true, managerId: true, assistantId: true } },
       awayTeam:  { select: { id: true, managerId: true, assistantId: true } },
+      officials: { select: { userId: true, role: true } },
     },
   });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
@@ -64,24 +65,26 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Cannot edit a completed or cancelled game" }, { status: 409 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
-  const isUmpire = league.userRoles.some(r => r.role === "UMPIRE");
   const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
   const isHomeManager = game.homeTeam.managerId === userId || game.homeTeam.assistantId === userId;
   const isAwayManager = game.awayTeam.managerId === userId || game.awayTeam.assistantId === userId;
+  const isAssignedScorer = isScorer && game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
+  const isPractice = game.isPractice;
+  const hasAnyRole = isMasterAdmin || league.userRoles.length > 0;
 
   const { isHome, entries } = await req.json() as {
     isHome: boolean;
     entries: { playerId: string; position: string; battingOrder: number | null }[];
   };
 
-  // Role check
-  const canEditPreGame = isAdmin || isUmpire || (isHome ? isHomeManager : isAwayManager);
-  const canEditInGame = isAdmin || isScorer;
+  // Role check — mirror page.tsx canEditHomeLineup / canEditAwayLineup
+  const canEditPreGame = isAdmin || isAssignedScorer || (isHome ? isHomeManager : isAwayManager) || isPractice && hasAnyRole;
+  const canEditInGame  = isAdmin || isAssignedScorer || isPractice && hasAnyRole;
 
   if (game.status === "SCHEDULED" && !canEditPreGame)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status === "IN_PROGRESS" && !canEditInGame)
-    return NextResponse.json({ error: "Forbidden — only admin or scorekeeper can edit in-game lineups" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden — only admin or assigned scorekeeper can edit in-game lineups" }, { status: 403 });
 
   // Validate lineup
   const validationError = validateLineup(entries);
