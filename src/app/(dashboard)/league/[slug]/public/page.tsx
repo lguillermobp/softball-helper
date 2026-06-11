@@ -11,7 +11,7 @@ interface PageProps { params: Promise<{ slug: string }> }
 type SocialLinks = { instagram?: string; facebook?: string; whatsapp?: string; twitter?: string };
 
 interface StandingRow {
-  name: string; logoUrl: string | null; rank: number;
+  id: string; name: string; logoUrl: string | null; rank: number;
   gp: number; w: number; l: number; t: number;
   pts: number; rf: number; ra: number; pct: string;
 }
@@ -42,7 +42,7 @@ function TeamLogo({ name, logoUrl, size = 24 }: { name: string; logoUrl: string 
   );
 }
 
-function GroupTable({ block, showPct }: { block: GroupBlock; showPct: boolean }) {
+function GroupTable({ block, showPct, slug }: { block: GroupBlock; showPct: boolean; slug: string }) {
   const cols = ["#", "Team", "GP", "W", "L", "T", "Pts", "RF", "RA", "RD", ...(showPct ? ["PCT"] : [])];
   return (
     <div>
@@ -71,10 +71,10 @@ function GroupTable({ block, showPct }: { block: GroupBlock; showPct: boolean })
                 <tr key={s.name} style={{ borderBottom: i < block.rows.length - 1 ? "1px solid var(--pub-border2)" : "none", background: s.rank === 1 ? "var(--pub-accent-subtle)" : "transparent" }}>
                   <td style={{ padding: "10px 10px", textAlign: "center", color: s.rank === 1 ? "var(--pub-gold)" : "var(--pub-accent)", fontWeight: 700, fontSize: 13 }}>{s.rank}</td>
                   <td style={{ padding: "10px 10px", color: "var(--pub-text)", fontWeight: 600 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Link href={`/league/${slug}/team/${s.id}/public`} style={{ display: "flex", alignItems: "center", gap: 8, color: "inherit", textDecoration: "none" }}>
                       <TeamLogo name={s.name} logoUrl={s.logoUrl} />
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-                    </div>
+                    </Link>
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.gp}</td>
                   <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-accent)", fontWeight: 700 }}>{s.w}</td>
@@ -152,14 +152,14 @@ export default async function LeaguePublicPage({ params }: PageProps) {
     ]);
 
     type StatEntry = {
-      name: string; logoUrl: string | null; group: string | null;
+      id: string; name: string; logoUrl: string | null; group: string | null;
       gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number;
     };
 
     // Accumulate stats
     const statsMap = new Map<string, StatEntry>();
     for (const t of seasonTeams) {
-      statsMap.set(t.id, { name: t.name, logoUrl: t.logoUrl ?? null, group: t.group ?? null, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+      statsMap.set(t.id, { id: t.id, name: t.name, logoUrl: t.logoUrl ?? null, group: t.group ?? null, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
     }
     for (const g of completedGames) {
       const hs = g.homeScore ?? 0, as_ = g.awayScore ?? 0;
@@ -350,15 +350,15 @@ export default async function LeaguePublicPage({ params }: PageProps) {
               <div className="pub-sg">
                 {/* Left column: first half (A,B with 4 groups → A|C, B|D layout) */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {leftCol.map(g => <GroupTable key={g.group ?? "l"} block={g} showPct={showPct} />)}
+                  {leftCol.map(g => <GroupTable key={g.group ?? "l"} block={g} showPct={showPct} slug={slug} />)}
                 </div>
                 {/* Right column: second half */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {rightCol.map(g => <GroupTable key={g.group ?? "r"} block={g} showPct={showPct} />)}
+                  {rightCol.map(g => <GroupTable key={g.group ?? "r"} block={g} showPct={showPct} slug={slug} />)}
                 </div>
               </div>
             ) : (
-              <GroupTable block={groupedStandings[0]} showPct={showPct} />
+              <GroupTable block={groupedStandings[0]} showPct={showPct} slug={slug} />
             )}
           </section>
         )}
@@ -366,29 +366,6 @@ export default async function LeaguePublicPage({ params }: PageProps) {
         {/* Schedule (upcoming + results tabs) */}
         {cfg.showSchedule && (
           <ScheduleSection upcoming={upcoming} past={past} seasonTeams={scheduleTeams} />
-        )}
-
-        {/* Teams */}
-        {cfg.showTeams && league.teams.length > 0 && (
-          <section>
-            <h2 style={sectionTitle}>👥 Teams</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-              {league.teams.map(t => (
-                <Link key={t.id} href={`/league/${slug}/team/${t.id}/public`}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 12, border: "1px solid var(--pub-border)", background: "var(--pub-bg-card)", textDecoration: "none" }}>
-                  {t.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={t.logoUrl} alt={t.name} style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontWeight: 700, fontSize: 14 }}>
-                      {t.name.charAt(0)}
-                    </div>
-                  )}
-                  <span style={{ color: "var(--pub-text)", fontWeight: 600, fontSize: 14 }}>{t.name}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
         )}
 
         {/* Footer */}
