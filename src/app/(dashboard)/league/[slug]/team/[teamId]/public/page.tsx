@@ -1,10 +1,12 @@
+import type React from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { flagUrl } from "@/lib/countries";
 import { computeSeasonStats, type BatterRow } from "@/lib/stats";
-import { TeamResultsSection } from "@/components/public/TeamResultsSection";
-import type { TeamPastGame } from "@/components/public/TeamResultsSection";
+import { PublicPageWrapper } from "@/components/public/PublicPageWrapper";
+import { ScheduleSection } from "@/components/public/ScheduleSection";
+import type { UpcomingGame, PastGame } from "@/components/public/ScheduleSection";
 
 interface PageProps { params: Promise<{ slug: string; teamId: string }> }
 
@@ -45,7 +47,6 @@ export default async function TeamPublicPage({ params }: PageProps) {
 
   // ── Standings ────────────────────────────────────────────────────────────────
   let groupRows: StandingRow[] = [];
-  let teamRank: number | null = null;
 
   if (team.seasonId) {
     const [seasonCfg, allTeams, completedGames] = await Promise.all([
@@ -86,7 +87,6 @@ export default async function TeamPublicPage({ params }: PageProps) {
         else               { home.t++; home.pts += pT; away.t++; away.pts += pT; }
       }
 
-      // Filter to this team's group
       const thisTeam = allTeams.find(t => t.id === teamId);
       const myGroup = thisTeam?.group ?? null;
       const groupTeamIds = new Set(allTeams.filter(t => (t.group ?? null) === myGroup).map(t => t.id));
@@ -113,7 +113,6 @@ export default async function TeamPublicPage({ params }: PageProps) {
         }
         return { ...e, rank, pct: e.gp > 0 ? (e.w / e.gp).toFixed(3).replace(/^0/, "") : ".000" };
       });
-      teamRank = groupRows.find(r => r.teamId === teamId)?.rank ?? null;
     }
   }
 
@@ -143,19 +142,41 @@ export default async function TeamPublicPage({ params }: PageProps) {
   }
 
   // ── Upcoming games ───────────────────────────────────────────────────────────
-  let upcoming: { id: string; scheduledAt: string; homeTeam: string; awayTeam: string; seasonId: string }[] = [];
+  let upcoming: UpcomingGame[] = [];
   if (cfg.showSchedule) {
     const games = await prisma.game.findMany({
       where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
       orderBy: { scheduledAt: "asc" },
-      take: 6,
-      select: { id: true, scheduledAt: true, seasonId: true, homeTeam: { select: { name: true } }, awayTeam: { select: { name: true } } },
+      take: 20,
+      select: {
+        id: true, scheduledAt: true, startedAt: true, status: true,
+        homeTeamId: true, awayTeamId: true,
+        homeTeam: { select: { name: true, logoUrl: true } },
+        awayTeam: { select: { name: true, logoUrl: true } },
+        field:    { select: { name: true } },
+        season:   { select: { defaultGameDurationMins: true } },
+        officials: { where: { role: "SCOREKEEPER" }, select: { user: { select: { name: true } } }, take: 1 },
+      },
     });
-    upcoming = games.map(g => ({ id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId, homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name }));
+    upcoming = games.map(g => ({
+      id: g.id,
+      scheduledAt: g.scheduledAt.toISOString(),
+      startedAt: g.startedAt?.toISOString() ?? null,
+      status: g.status,
+      homeTeamId: g.homeTeamId,
+      awayTeamId: g.awayTeamId,
+      homeTeam: g.homeTeam.name,
+      awayTeam: g.awayTeam.name,
+      homeLogoUrl: g.homeTeam.logoUrl ?? null,
+      awayLogoUrl: g.awayTeam.logoUrl ?? null,
+      fieldName: g.field?.name ?? null,
+      scorekeeper: g.officials[0]?.user.name ?? null,
+      defaultGameDurationMins: g.season?.defaultGameDurationMins ?? null,
+    }));
   }
 
   // ── Completed games ──────────────────────────────────────────────────────────
-  let pastGames: TeamPastGame[] = [];
+  let pastGames: PastGame[] = [];
   {
     const games = await prisma.game.findMany({
       where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: "COMPLETED" },
@@ -163,7 +184,6 @@ export default async function TeamPublicPage({ params }: PageProps) {
       take: 20,
       select: {
         id: true, scheduledAt: true, homeScore: true, awayScore: true,
-        homeTeamId: true, awayTeamId: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         field:    { select: { name: true } },
@@ -172,12 +192,10 @@ export default async function TeamPublicPage({ params }: PageProps) {
     pastGames = games.map(g => ({
       id: g.id,
       scheduledAt: g.scheduledAt.toISOString(),
-      homeTeamId: g.homeTeamId,
-      awayTeamId: g.awayTeamId,
       homeTeam: g.homeTeam.name,
       awayTeam: g.awayTeam.name,
-      homeLogoUrl: g.homeTeam.logoUrl,
-      awayLogoUrl: g.awayTeam.logoUrl,
+      homeLogoUrl: g.homeTeam.logoUrl ?? null,
+      awayLogoUrl: g.awayTeam.logoUrl ?? null,
       homeScore: g.homeScore ?? 0,
       awayScore: g.awayScore ?? 0,
       fieldName: g.field?.name ?? null,
@@ -188,8 +206,8 @@ export default async function TeamPublicPage({ params }: PageProps) {
   const myRow = groupRows.find(r => r.teamId === teamId);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0f0a", color: "#f0fdf4", fontFamily: "sans-serif" }}>
-      {/* Hero */}
+    <PublicPageWrapper>
+      {/* Hero — colors stay hardcoded (always on dark gradient overlay) */}
       <div style={{ position: "relative", overflow: "hidden", minHeight: 240, display: "flex", alignItems: "flex-end" }}>
         {logoUrl && (
           <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${logoUrl})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(50px)", transform: "scale(1.3)", opacity: 0.3 }} />
@@ -212,7 +230,6 @@ export default async function TeamPublicPage({ params }: PageProps) {
               <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f0fdf4", margin: 0 }}>{team.name}</h1>
               <p style={{ color: "#86efac", fontSize: 13, margin: "4px 0 0" }}>{team.league.name}</p>
             </div>
-            {/* Standing badge in hero */}
             {myRow && (
               <div style={{ marginLeft: "auto", textAlign: "center", padding: "10px 20px", borderRadius: 12, border: "1px solid rgba(74,222,128,0.3)", background: "rgba(74,222,128,0.07)" }}>
                 <div style={{ fontSize: 11, color: "#4ade80", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>Standing</div>
@@ -228,7 +245,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px", display: "flex", flexDirection: "column", gap: 32 }}>
 
         {cfg.description && (
-          <p style={{ color: "#86efac", fontSize: 15, lineHeight: 1.7 }}>{cfg.description}</p>
+          <p style={{ color: "var(--pub-text2)", fontSize: 15, lineHeight: 1.7 }}>{cfg.description}</p>
         )}
 
         {hasSocial && (
@@ -244,12 +261,12 @@ export default async function TeamPublicPage({ params }: PageProps) {
         {groupRows.length > 0 && (
           <section>
             <h2 style={sectionTitle}>🏆 Standings</h2>
-            <div style={{ border: "1px solid #1a3a1a", borderRadius: 12, overflow: "hidden", background: "#0d1a0d" }}>
+            <div style={{ border: "1px solid var(--pub-border)", borderRadius: 12, overflow: "hidden", background: "var(--pub-bg-card)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #1a3a1a" }}>
+                  <tr style={{ borderBottom: "1px solid var(--pub-border)" }}>
                     {["#", "Team", "GP", "W", "L", "T", "Pts", "RD"].map(h => (
-                      <th key={h} style={{ padding: "10px 10px", color: "#4ade80", fontWeight: 700, fontSize: 11, textTransform: "uppercase", textAlign: h === "Team" ? "left" : "center" }}>{h}</th>
+                      <th key={h} style={{ padding: "10px 10px", color: "var(--pub-accent)", fontWeight: 700, fontSize: 11, textTransform: "uppercase", textAlign: h === "Team" ? "left" : "center" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -257,28 +274,28 @@ export default async function TeamPublicPage({ params }: PageProps) {
                   {groupRows.map((r, i) => {
                     const isMe = r.teamId === teamId;
                     const rd = r.rf - r.ra;
-                    const rdColor = rd > 0 ? "#4ade80" : rd < 0 ? "#f87171" : "#86efac";
+                    const rdColor = rd > 0 ? "var(--pub-accent)" : rd < 0 ? "var(--pub-danger)" : "var(--pub-text2)";
                     const rdText  = rd > 0 ? `+${rd}` : String(rd);
                     return (
-                      <tr key={r.teamId} style={{ borderBottom: i < groupRows.length - 1 ? "1px solid #111c11" : "none", background: isMe ? "rgba(74,222,128,0.07)" : "transparent" }}>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>{r.rank}</td>
+                      <tr key={r.teamId} style={{ borderBottom: i < groupRows.length - 1 ? "1px solid var(--pub-border2)" : "none", background: isMe ? "var(--pub-accent-subtle)" : "transparent" }}>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-accent)", fontWeight: 700 }}>{r.rank}</td>
                         <td style={{ padding: "9px 10px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {r.logoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={r.logoUrl} alt={r.name} style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
                             ) : (
-                              <div style={{ width: 22, height: 22, borderRadius: 4, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{r.name.charAt(0)}</div>
+                              <div style={{ width: 22, height: 22, borderRadius: 4, background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{r.name.charAt(0)}</div>
                             )}
-                            <span style={{ color: isMe ? "#4ade80" : "#f0fdf4", fontWeight: isMe ? 700 : 500 }}>{r.name}</span>
-                            {isMe && <span style={{ fontSize: 10, color: "#4ade80", background: "rgba(74,222,128,0.15)", borderRadius: 10, padding: "1px 7px", fontWeight: 700 }}>YOU</span>}
+                            <span style={{ color: isMe ? "var(--pub-accent)" : "var(--pub-text)", fontWeight: isMe ? 700 : 500 }}>{r.name}</span>
+                            {isMe && <span style={{ fontSize: 10, color: "var(--pub-accent)", background: "var(--pub-accent-a10)", borderRadius: 10, padding: "1px 7px", fontWeight: 700 }}>YOU</span>}
                           </div>
                         </td>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{r.gp}</td>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#4ade80", fontWeight: 600 }}>{r.w}</td>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{r.l}</td>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{r.t}</td>
-                        <td style={{ padding: "9px 10px", textAlign: "center", color: "#f0fdf4", fontWeight: 700 }}>{r.pts}</td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{r.gp}</td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-accent)", fontWeight: 600 }}>{r.w}</td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{r.l}</td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{r.t}</td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text)", fontWeight: 700 }}>{r.pts}</td>
                         <td style={{ padding: "9px 10px", textAlign: "center", color: rdColor, fontWeight: 600 }}>{rdText}</td>
                       </tr>
                     );
@@ -298,12 +315,12 @@ export default async function TeamPublicPage({ params }: PageProps) {
                 const isManager   = !!team.managerId   && p.userId === team.managerId;
                 const isAssistant = !!team.assistantId && p.userId === team.assistantId;
                 return (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, border: `1px solid ${isManager ? "rgba(74,222,128,0.4)" : isAssistant ? "rgba(147,197,253,0.35)" : "#1a3a1a"}`, background: isManager ? "rgba(74,222,128,0.06)" : isAssistant ? "rgba(147,197,253,0.05)" : "#0d1a0d" }}>
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, border: `1px solid ${isManager ? "rgba(74,222,128,0.4)" : isAssistant ? "rgba(147,197,253,0.35)" : "var(--pub-border)"}`, background: isManager ? "var(--pub-accent-subtle)" : isAssistant ? "rgba(147,197,253,0.05)" : "var(--pub-bg-card)" }}>
                     {p.photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.photoUrl} alt={p.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: isManager ? "#14532d" : isAssistant ? "#1e3a5f" : "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: isAssistant ? "#93c5fd" : "#4ade80", fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: isAssistant ? "#1e3a5f" : "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: isAssistant ? "#93c5fd" : "var(--pub-accent)", fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
                         {p.name.charAt(0)}
                       </div>
                     )}
@@ -313,11 +330,11 @@ export default async function TeamPublicPage({ params }: PageProps) {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={flagUrl(p.nationality)} alt={p.nationality} style={{ width: 18, height: 13, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
                         )}
-                        <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                        <span style={{ color: "var(--pub-text)", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
-                        {p.jerseyNumber && <span style={{ color: "#4ade80", fontSize: 12 }}>#{p.jerseyNumber}</span>}
-                        {isManager   && <span style={{ fontSize: 10, fontWeight: 700, color: "#4ade80",  background: "rgba(74,222,128,0.15)",  borderRadius: 8, padding: "1px 7px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Manager</span>}
+                        {p.jerseyNumber && <span style={{ color: "var(--pub-accent)", fontSize: 12 }}>#{p.jerseyNumber}</span>}
+                        {isManager   && <span style={{ fontSize: 10, fontWeight: 700, color: "var(--pub-accent)",  background: "var(--pub-accent-a10)",           borderRadius: 8, padding: "1px 7px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Manager</span>}
                         {isAssistant && <span style={{ fontSize: 10, fontWeight: 700, color: "#93c5fd", background: "rgba(147,197,253,0.15)", borderRadius: 8, padding: "1px 7px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Assistant</span>}
                       </div>
                     </div>
@@ -331,39 +348,42 @@ export default async function TeamPublicPage({ params }: PageProps) {
         {/* Stats */}
         {cfg.showStats && seasonStats.length > 0 && (
           <section>
-            <h2 style={sectionTitle}>📊 Season Stats <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.6, fontWeight: 400 }}>Unofficial</span></h2>
-            <div style={{ border: "1px solid #1a3a1a", borderRadius: 12, overflow: "hidden", background: "#0d1a0d" }}>
+            <h2 style={sectionTitle}>📊 Season Stats <span style={{ fontSize: 11, color: "var(--pub-accent)", opacity: 0.6, fontWeight: 400 }}>Unofficial</span></h2>
+            <div style={{ border: "1px solid var(--pub-border)", borderRadius: 12, overflow: "hidden", background: "var(--pub-bg-card)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #1a3a1a" }}>
+                  <tr style={{ borderBottom: "1px solid var(--pub-border)" }}>
                     {["#", "Player", "AB", "H", "1B", "2B", "3B", "HR", "BA"].map(h => (
-                      <th key={h} style={{ padding: "10px 10px", color: "#4ade80", fontWeight: 700, fontSize: 11, textTransform: "uppercase", textAlign: h === "Player" ? "left" : "center" }}>{h}</th>
+                      <th key={h} style={{ padding: "10px 10px", color: "var(--pub-accent)", fontWeight: 700, fontSize: 11, textTransform: "uppercase", textAlign: h === "Player" ? "left" : "center" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {seasonStats.map((s, i) => (
-                    <tr key={s.playerId} style={{ borderBottom: i < seasonStats.length - 1 ? "1px solid #111c11" : "none" }}>
-                      <td style={{ padding: "9px 10px", color: "#4ade80", fontWeight: 700, textAlign: "center" }}>{s.jerseyNumber ? `#${s.jerseyNumber}` : "—"}</td>
+                    <tr key={s.playerId} style={{ borderBottom: i < seasonStats.length - 1 ? "1px solid var(--pub-border2)" : "none" }}>
+                      <td style={{ padding: "9px 10px", color: "var(--pub-accent)", fontWeight: 700, textAlign: "center" }}>{s.jerseyNumber ? `#${s.jerseyNumber}` : "—"}</td>
                       <td style={{ padding: "9px 10px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {s.photoUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={s.photoUrl} alt={s.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
                           ) : (
-                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontSize: 12, fontWeight: 700 }}>{s.name.charAt(0)}</div>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontSize: 12, fontWeight: 700 }}>{s.name.charAt(0)}</div>
                           )}
-                          {s.nationality && <img src={flagUrl(s.nationality)} alt={s.nationality} style={{ width: 16, height: 11, objectFit: "cover", borderRadius: 2 }} />}
-                          <span style={{ color: "#f0fdf4", fontWeight: 600 }}>{s.name}</span>
+                          {s.nationality && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={flagUrl(s.nationality)} alt={s.nationality} style={{ width: 16, height: 11, objectFit: "cover", borderRadius: 2 }} />
+                          )}
+                          <span style={{ color: "var(--pub-text)", fontWeight: 600 }}>{s.name}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{s.ab}</td>
-                      <td style={{ padding: "9px 10px", textAlign: "center", color: "#4ade80", fontWeight: 600 }}>{s.h}</td>
-                      <td style={{ padding: "9px 10px", textAlign: "center", color: "#86efac" }}>{s.singles}</td>
+                      <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.ab}</td>
+                      <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-accent)", fontWeight: 600 }}>{s.h}</td>
+                      <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.singles}</td>
                       <td style={{ padding: "9px 10px", textAlign: "center", color: "#93c5fd" }}>{s.doubles}</td>
                       <td style={{ padding: "9px 10px", textAlign: "center", color: "#a78bfa" }}>{s.triples}</td>
-                      <td style={{ padding: "9px 10px", textAlign: "center", color: "#fcd34d", fontWeight: 600 }}>{s.hr}</td>
-                      <td style={{ padding: "9px 10px", textAlign: "center", color: "#f0fdf4", fontWeight: 700 }}>{s.ba}</td>
+                      <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-gold)", fontWeight: 600 }}>{s.hr}</td>
+                      <td style={{ padding: "9px 10px", textAlign: "center", color: "var(--pub-text)", fontWeight: 700 }}>{s.ba}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -372,39 +392,18 @@ export default async function TeamPublicPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Schedule */}
-        {cfg.showSchedule && upcoming.length > 0 && (
-          <section>
-            <h2 style={sectionTitle}>📅 Upcoming Games</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {upcoming.map(g => {
-                const d = new Date(g.scheduledAt);
-                return (
-                  <div key={g.id} style={gameCard}>
-                    <span style={{ color: "#4ade80", fontSize: 13, minWidth: 130 }}>
-                      {d.toLocaleDateString()} {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                    <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14 }}>
-                      {g.homeTeam} <span style={{ color: "#4ade80", fontWeight: 400 }}>vs</span> {g.awayTeam}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+        {/* Schedule — same rich cards as the league public page */}
+        {cfg.showSchedule && (
+          <ScheduleSection upcoming={upcoming} past={pastGames} />
         )}
 
-        {/* Results — client component so times render in the browser's timezone */}
-        <TeamResultsSection games={pastGames} teamId={teamId} />
-
-        <footer style={{ borderTop: "1px solid #1a3a1a", paddingTop: 20, color: "#4ade80", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
+        <footer style={{ borderTop: "1px solid var(--pub-border)", paddingTop: 20, color: "var(--pub-accent)", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
           Powered by Softball Helper
         </footer>
       </div>
-    </div>
+    </PublicPageWrapper>
   );
 }
 
-const sectionTitle: React.CSSProperties = { fontSize: 18, fontWeight: 700, color: "#4ade80", marginBottom: 12 };
-const gameCard: React.CSSProperties = { display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", borderRadius: 10, border: "1px solid #1a3a1a", background: "#0d1a0d", flexWrap: "wrap" };
-const socialBtn: React.CSSProperties = { display: "inline-block", padding: "8px 16px", borderRadius: 8, border: "1px solid #1a3a1a", background: "#0d1a0d", color: "#4ade80", textDecoration: "none", fontSize: 13, fontWeight: 600 };
+const sectionTitle: React.CSSProperties = { fontSize: 18, fontWeight: 700, color: "var(--pub-accent)", marginBottom: 12 };
+const socialBtn: React.CSSProperties = { display: "inline-block", padding: "8px 16px", borderRadius: 8, border: "1px solid var(--pub-border)", background: "var(--pub-bg-card)", color: "var(--pub-accent)", textDecoration: "none", fontSize: 13, fontWeight: 600 };
