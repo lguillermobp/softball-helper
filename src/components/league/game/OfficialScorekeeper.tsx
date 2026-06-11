@@ -218,10 +218,24 @@ export function OfficialScorekeeper({
   const currentBatterIdx = effectiveBatting.length > 0
     ? (startIdx + currentHalfABs.length) % effectiveBatting.length
     : 0;
-  const currentBatter = effectiveBatting[currentBatterIdx];
-  const onDeckBatter  = effectiveBatting.length > 1
+  const currentBatter  = effectiveBatting[currentBatterIdx];
+  const onDeckBatter   = effectiveBatting.length > 1
     ? effectiveBatting[(currentBatterIdx + 1) % effectiveBatting.length]
     : null;
+  const inHoleBatter   = effectiveBatting.length > 2
+    ? effectiveBatting[(currentBatterIdx + 2) % effectiveBatting.length]
+    : null;
+
+  // Per-player game stats derived from all at-bats so far
+  function playerStats(playerId: string) {
+    const pABs = atBats.filter(ab => ab.batterId === playerId);
+    const hits  = pABs.filter(ab => ["SINGLE","DOUBLE","TRIPLE","HOME_RUN"].includes(ab.outcome)).length;
+    const ab    = pABs.filter(ab => !["WALK"].includes(ab.outcome)).length;
+    const bb    = pABs.filter(ab => ab.outcome === "WALK").length;
+    const k     = pABs.filter(ab => ab.outcome === "STRIKEOUT").length;
+    const hr    = pABs.filter(ab => ab.outcome === "HOME_RUN").length;
+    return { ab, hits, bb, k, hr };
+  }
 
   const needsPitchers = !stints.some(s => s.isHome === true)
                      || !stints.some(s => s.isHome === false);
@@ -611,52 +625,107 @@ export function OfficialScorekeeper({
                 <div className="text-xs font-semibold uppercase mb-0.5" style={dim}>
                   At bat · {currentInning.isTop ? awayTeam.name : homeTeam.name}
                 </div>
-                {currentBatter ? (
-                  <div className="flex items-center gap-2">
-                    <PlayerAvatar
-                      player={currentBatter.player}
-                      size={56}
-                      onClick={currentBatter.player.photoUrl ? () => setEnlargedPhoto({ url: currentBatter.player.photoUrl!, name: currentBatter.player.name }) : undefined}
-                    />
-                    <div>
-                      <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
-                      {currentBatter.player.jerseyNumber && (
-                        <span className="text-sm ml-1" style={dim}>#{currentBatter.player.jerseyNumber}</span>
-                      )}
-                      <span className="text-xs ml-1 px-1.5 py-0.5 rounded" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-muted)" }}>
-                        #{currentBatter.battingOrder}
-                      </span>
+                {currentBatter ? (() => {
+                  const st = playerStats(currentBatter.player.id);
+                  const statLine = `${st.hits}-${st.ab}${st.bb ? ` · ${st.bb} BB` : ""}${st.k ? ` · ${st.k} K` : ""}${st.hr ? ` · ${st.hr} HR` : ""}`;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <PlayerAvatar
+                        player={currentBatter.player}
+                        size={56}
+                        onClick={currentBatter.player.photoUrl ? () => setEnlargedPhoto({ url: currentBatter.player.photoUrl!, name: currentBatter.player.name }) : undefined}
+                      />
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
+                          {currentBatter.player.jerseyNumber && (
+                            <span className="text-sm" style={dim}>#{currentBatter.player.jerseyNumber}</span>
+                          )}
+                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-muted)" }}>
+                            #{currentBatter.battingOrder}
+                          </span>
+                        </div>
+                        {st.ab > 0 && (
+                          <div className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>{statLine}</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <span className="text-sm" style={dim}>No lineup</span>
                 )}
-                {onDeckBatter && (
-                  <div className="text-xs mt-1" style={dim}>
-                    On deck: {onDeckBatter.player.name}
-                    {onDeckBatter.player.jerseyNumber ? ` #${onDeckBatter.player.jerseyNumber}` : ""}
+                {/* On deck + in the hole */}
+                {(onDeckBatter || inHoleBatter) && (
+                  <div className="flex items-center gap-3 mt-1 pt-2" style={{ borderTop: "1px solid var(--sh-border)" }}>
+                    {onDeckBatter && (() => {
+                      const st = playerStats(onDeckBatter.player.id);
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <PlayerAvatar
+                            player={onDeckBatter.player}
+                            size={44}
+                            onClick={onDeckBatter.player.photoUrl ? () => setEnlargedPhoto({ url: onDeckBatter.player.photoUrl!, name: onDeckBatter.player.name }) : undefined}
+                          />
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--sh-muted)", fontSize: 9 }}>On deck</div>
+                            <div className="text-sm font-semibold" style={{ color: "var(--sh-text)" }}>
+                              {onDeckBatter.player.name}
+                              {onDeckBatter.player.jerseyNumber && <span className="ml-1 font-normal" style={dim}>#{onDeckBatter.player.jerseyNumber}</span>}
+                            </div>
+                            {st.ab > 0 && <div className="text-xs" style={{ color: "var(--sh-muted)" }}>{st.hits}-{st.ab}{st.bb ? ` · ${st.bb}BB` : ""}</div>}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {inHoleBatter && (() => {
+                      const st = playerStats(inHoleBatter.player.id);
+                      return (
+                        <div className="flex items-center gap-1.5 opacity-70">
+                          <PlayerAvatar
+                            player={inHoleBatter.player}
+                            size={36}
+                            onClick={inHoleBatter.player.photoUrl ? () => setEnlargedPhoto({ url: inHoleBatter.player.photoUrl!, name: inHoleBatter.player.name }) : undefined}
+                          />
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--sh-muted)", fontSize: 9 }}>In the hole</div>
+                            <div className="text-xs font-semibold" style={{ color: "var(--sh-text)" }}>
+                              {inHoleBatter.player.name}
+                              {inHoleBatter.player.jerseyNumber && <span className="ml-1 font-normal" style={dim}>#{inHoleBatter.player.jerseyNumber}</span>}
+                            </div>
+                            {st.ab > 0 && <div className="text-xs" style={{ color: "var(--sh-muted)" }}>{st.hits}-{st.ab}</div>}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
               <div className="text-right">
                 <div className="text-xs font-semibold uppercase mb-0.5" style={dim}>Pitching</div>
-                {activePitcher ? (
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="text-right">
-                      <div className="text-sm font-semibold" style={{ color: "var(--sh-secondary)" }}>
-                        {activePitcher.pitcher.name}
+                {activePitcher ? (() => {
+                  const pst = playerStats(activePitcher.pitcher.id);
+                  const pitchStat = `${pst.ab + pst.bb} BF · ${pst.k} K`;
+                  return (
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="text-right">
+                        <div className="text-sm font-semibold" style={{ color: "var(--sh-secondary)" }}>
+                          {activePitcher.pitcher.name}
+                        </div>
+                        {activePitcher.pitcher.jerseyNumber && (
+                          <div className="text-xs" style={dim}>#{activePitcher.pitcher.jerseyNumber}</div>
+                        )}
+                        {(pst.ab + pst.bb) > 0 && (
+                          <div className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>{pitchStat}</div>
+                        )}
                       </div>
-                      {activePitcher.pitcher.jerseyNumber && (
-                        <div className="text-xs" style={dim}>#{activePitcher.pitcher.jerseyNumber}</div>
-                      )}
+                      <PlayerAvatar
+                        player={activePitcherFull ?? activePitcher.pitcher}
+                        size={56}
+                        onClick={(activePitcherFull?.photoUrl) ? () => setEnlargedPhoto({ url: activePitcherFull!.photoUrl!, name: activePitcherFull!.name }) : undefined}
+                      />
                     </div>
-                    <PlayerAvatar
-                      player={activePitcherFull ?? activePitcher.pitcher}
-                      size={56}
-                      onClick={(activePitcherFull?.photoUrl) ? () => setEnlargedPhoto({ url: activePitcherFull!.photoUrl!, name: activePitcherFull!.name }) : undefined}
-                    />
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <span className="text-xs" style={{ color: "var(--sh-danger)" }}>No pitcher</span>
                 )}
               </div>
