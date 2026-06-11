@@ -80,6 +80,30 @@ function isOut(outcome: string) {
   return outcome === "OUT" || outcome === "STRIKEOUT" || outcome === "DOUBLE_PLAY" || outcome === "TRIPLE_PLAY";
 }
 
+function PlayerAvatar({ player, size = 36 }: { player: { name: string; jerseyNumber?: string | null; photoUrl?: string | null }; size?: number }) {
+  const initials = player.jerseyNumber ? `#${player.jerseyNumber}` : player.name.charAt(0).toUpperCase();
+  if (player.photoUrl) {
+    return (
+      <img
+        src={player.photoUrl}
+        alt={player.name}
+        width={size} height={size}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid var(--sh-border)" }}
+      />
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: "var(--sh-bg-card2)", border: "2px solid var(--sh-border)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.35, fontWeight: 700, color: "var(--sh-muted)",
+    }}>
+      {initials}
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function OfficialScorekeeper({
@@ -153,6 +177,10 @@ export function OfficialScorekeeper({
   const currentOuts = currentHalfABs.filter(ab => isOut(ab.outcome)).length;
 
   const activePitcher = stints.find(s => s.isHome === pitchingIsHome && s.outsAtEnd == null);
+  const pitchingTeam  = pitchingIsHome ? homeTeam : awayTeam;
+  const activePitcherFull = activePitcher
+    ? pitchingTeam.players.find(p => p.id === activePitcher.pitcher.id) ?? null
+    : null;
 
   const currentBatterIdx = effectiveBatting.length > 0
     ? currentHalfABs.length % effectiveBatting.length
@@ -493,13 +521,16 @@ export function OfficialScorekeeper({
                 </div>
                 {currentBatter ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
-                    {currentBatter.player.jerseyNumber && (
-                      <span className="text-sm" style={dim}>#{currentBatter.player.jerseyNumber}</span>
-                    )}
-                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-muted)" }}>
-                      #{currentBatter.battingOrder}
-                    </span>
+                    <PlayerAvatar player={currentBatter.player} size={40} />
+                    <div>
+                      <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
+                      {currentBatter.player.jerseyNumber && (
+                        <span className="text-sm ml-1" style={dim}>#{currentBatter.player.jerseyNumber}</span>
+                      )}
+                      <span className="text-xs ml-1 px-1.5 py-0.5 rounded" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-muted)" }}>
+                        #{currentBatter.battingOrder}
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <span className="text-sm" style={dim}>No lineup</span>
@@ -514,9 +545,16 @@ export function OfficialScorekeeper({
               <div className="text-right">
                 <div className="text-xs font-semibold uppercase mb-0.5" style={dim}>Pitching</div>
                 {activePitcher ? (
-                  <div className="text-sm font-semibold" style={{ color: "var(--sh-secondary)" }}>
-                    {activePitcher.pitcher.name}
-                    {activePitcher.pitcher.jerseyNumber ? ` #${activePitcher.pitcher.jerseyNumber}` : ""}
+                  <div className="flex items-center justify-end gap-2">
+                    <div className="text-right">
+                      <div className="text-sm font-semibold" style={{ color: "var(--sh-secondary)" }}>
+                        {activePitcher.pitcher.name}
+                      </div>
+                      {activePitcher.pitcher.jerseyNumber && (
+                        <div className="text-xs" style={dim}>#{activePitcher.pitcher.jerseyNumber}</div>
+                      )}
+                    </div>
+                    <PlayerAvatar player={activePitcherFull ?? activePitcher.pitcher} size={40} />
                   </div>
                 ) : (
                   <span className="text-xs" style={{ color: "var(--sh-danger)" }}>No pitcher</span>
