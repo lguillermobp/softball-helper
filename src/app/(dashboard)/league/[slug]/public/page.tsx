@@ -226,11 +226,13 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       orderBy: { scheduledAt: "asc" },
       take: 50,
       select: {
-        id: true, scheduledAt: true, seasonId: true,
+        id: true, scheduledAt: true, startedAt: true, status: true, seasonId: true,
         homeTeamId: true, awayTeamId: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         field:    { select: { name: true } },
+        season:   { select: { defaultGameDurationMins: true } },
+        officials: { where: { role: "SCOREKEEPER" }, select: { user: { select: { name: true } } }, take: 1 },
       },
     });
 
@@ -256,12 +258,17 @@ export default async function LeaguePublicPage({ params }: PageProps) {
     }
 
     upcoming = upcomingGames.map(g => ({
-      id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId,
+      id: g.id, scheduledAt: g.scheduledAt.toISOString(),
+      startedAt: g.startedAt?.toISOString() ?? null,
+      status: g.status,
+      seasonId: g.seasonId,
       homeTeamId: g.homeTeamId, awayTeamId: g.awayTeamId,
       homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name,
       homeLogoUrl: g.homeTeam.logoUrl ?? null,
       awayLogoUrl: g.awayTeam.logoUrl ?? null,
       fieldName: g.field?.name ?? null,
+      scorekeeper: g.officials[0]?.user.name ?? null,
+      defaultGameDurationMins: g.season?.defaultGameDurationMins ?? null,
     }));
 
     past = pastGames.map(g => ({

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface UpcomingGame {
   id: string; scheduledAt: string;
+  startedAt: string | null;
+  status: string;
   homeTeamId: string; awayTeamId: string;
   homeTeam: string; awayTeam: string;
   homeLogoUrl: string | null; awayLogoUrl: string | null;
   fieldName: string | null;
+  scorekeeper: string | null;
+  defaultGameDurationMins: number | null;
 }
 
 export interface SeasonTeam { id: string; name: string }
@@ -134,31 +138,70 @@ function Matchup({ game }: { game: UpcomingGame }) {
   );
 }
 
-// Card inside a day group — time block on left, no redundant date
-function GroupedUpcomingCard({ game }: { game: UpcomingGame }) {
+function LiveInfoBar({ game, now }: { game: UpcomingGame; now: Date }) {
+  const startedAt = new Date(game.startedAt ?? game.scheduledAt);
+  const endAt     = new Date(startedAt.getTime() + (game.defaultGameDurationMins ?? 60) * 60_000);
+  const remainMs  = endAt.getTime() - now.getTime();
+  const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
+  const isOvertime = remainMs < 0;
   return (
-    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", overflow: "hidden" }}>
-      <TimeBlock iso={game.scheduledAt} />
-      <Matchup game={game} />
+    <div style={{ padding: "6px 14px", borderTop: "1px solid #1a3a1a", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 11, color: "#86efac" }}>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      <span style={{ fontSize: 11, color: "#86efac" }}>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: isOvertime || remainMins <= 10 ? "#f87171" : "#86efac" }}>
+        {isOvertime ? "Overtime" : `${remainMins}min left`}
+      </span>
+      {game.scorekeeper && <span style={{ fontSize: 11, color: "#86efac" }}>📋 {game.scorekeeper}</span>}
+    </div>
+  );
+}
+
+// Card inside a day group — time block on left, no redundant date
+function GroupedUpcomingCard({ game, now }: { game: UpcomingGame; now: Date }) {
+  const isLive = game.status === "IN_PROGRESS";
+  return (
+    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "#4ade80" : "#1a3a1a"}`, background: "#0d1a0d", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+        <TimeBlock iso={game.scheduledAt} />
+        <Matchup game={game} />
+        {isLive && <div style={{ padding: "0 12px", display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em" }}>● LIVE</span>
+        </div>}
+        {!isLive && game.scorekeeper && <div style={{ padding: "0 12px", display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: "#86efac" }}>📋 {game.scorekeeper}</span>
+        </div>}
+      </div>
+      {isLive && <LiveInfoBar game={game} now={now} />}
     </div>
   );
 }
 
 // Standalone card (ungrouped fallback) — full date + time + optional field
-function StandaloneUpcomingCard({ game }: { game: UpcomingGame }) {
+function StandaloneUpcomingCard({ game, now }: { game: UpcomingGame; now: Date }) {
+  const isLive = game.status === "IN_PROGRESS";
   const time = new Date(game.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return (
-    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", overflow: "hidden" }}>
-      <DateBlock iso={game.scheduledAt} />
-      <Matchup game={game} />
-      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, gap: 3, minWidth: 70 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#86efac" }}>{time}</span>
-        {game.fieldName && (
-          <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            📍 {game.fieldName}
-          </span>
-        )}
+    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "#4ade80" : "#1a3a1a"}`, background: "#0d1a0d", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+        <DateBlock iso={game.scheduledAt} />
+        <Matchup game={game} />
+        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, gap: 3, minWidth: 70 }}>
+          {isLive
+            ? <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em" }}>● LIVE</span>
+            : <span style={{ fontSize: 13, fontWeight: 700, color: "#86efac" }}>{time}</span>}
+          {game.fieldName && (
+            <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              📍 {game.fieldName}
+            </span>
+          )}
+          {!isLive && game.scorekeeper && (
+            <span style={{ fontSize: 11, color: "#86efac", maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              📋 {game.scorekeeper}
+            </span>
+          )}
+        </div>
       </div>
+      {isLive && <LiveInfoBar game={game} now={now} />}
     </div>
   );
 }
@@ -211,6 +254,12 @@ function currentWeekBounds(): { monday: Date; sunday: Date } {
 
 export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming: UpcomingGame[]; past: PastGame[]; seasonTeams?: SeasonTeam[] }) {
   const [tab, setTab] = useState<"upcoming" | "results">("upcoming");
+
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const dayGroups = buildDayGroups(upcoming, seasonTeams);
 
@@ -299,14 +348,14 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
                                 📍 {field ?? "No field assigned"}
                               </p>
                               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                                {games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
+                                {games.map(g => <GroupedUpcomingCard key={g.id} game={g} now={now} />)}
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                          {fieldGroups[0].games.map(g => <GroupedUpcomingCard key={g.id} game={g} />)}
+                          {fieldGroups[0].games.map(g => <GroupedUpcomingCard key={g.id} game={g} now={now} />)}
                         </div>
                       )}
 
