@@ -441,6 +441,8 @@ export function OfficialScorekeeper({
       ...prev.filter(i => !(i.inningNumber === currentInning.number && i.isTop === currentInning.isTop)),
       optimistic,
     ]);
+    // Remove runner outs for the completed half-inning so the new inning starts at 0 outs
+    setRunnerOuts(prev => prev.filter(ro => !(ro.inningNumber === body.inningNumber && ro.isTop === body.isTop)));
     setPendingRuns(null);
     setPendingCarryOver(null);
     const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/inning`, "POST", body);
