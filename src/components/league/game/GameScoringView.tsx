@@ -268,6 +268,14 @@ export function GameScoringView({ slug, seasonId, game, fields, umpireOptions, s
       { key: "home-official-stats" as Tab, label: `📋 ${game.homeTeam.name}` },
       { key: "away-official-stats" as Tab, label: `📋 ${game.awayTeam.name}` },
     ] : []),
+    ...(showHomeScorebookTab && permissions.canEditHomeScorebook ? [
+      { key: "home-book"  as Tab, label: `📓 ${game.homeTeam.name}` },
+      { key: "home-stats" as Tab, label: `📊 ${game.homeTeam.name}` },
+    ] : []),
+    ...(showAwayScorebookTab && permissions.canEditAwayScorebook ? [
+      { key: "away-book"  as Tab, label: `📓 ${game.awayTeam.name}` },
+      { key: "away-stats" as Tab, label: `📊 ${game.awayTeam.name}` },
+    ] : []),
   ];
 
   // Build batter rows from lineups (sorted by battingOrder)
