@@ -88,25 +88,32 @@ function isOut(outcome: string) {
   return outcome === "OUT" || outcome === "STRIKEOUT" || outcome === "DOUBLE_PLAY" || outcome === "TRIPLE_PLAY";
 }
 
-function PlayerAvatar({ player, size = 36 }: { player: { name: string; jerseyNumber?: string | null; photoUrl?: string | null }; size?: number }) {
+function PlayerAvatar({ player, size = 36, onClick }: { player: { name: string; jerseyNumber?: string | null; photoUrl?: string | null }; size?: number; onClick?: () => void }) {
   const initials = player.jerseyNumber ? `#${player.jerseyNumber}` : player.name.charAt(0).toUpperCase();
+  const cursor = onClick ? "cursor-zoom-in" : "";
   if (player.photoUrl) {
     return (
       <img
         src={player.photoUrl}
         alt={player.name}
         width={size} height={size}
+        className={cursor}
+        onClick={onClick}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid var(--sh-border)" }}
       />
     );
   }
   return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: "var(--sh-bg-card2)", border: "2px solid var(--sh-border)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size * 0.35, fontWeight: 700, color: "var(--sh-muted)",
-    }}>
+    <div
+      className={cursor}
+      onClick={onClick}
+      style={{
+        width: size, height: size, borderRadius: "50%", flexShrink: 0,
+        background: "var(--sh-bg-card2)", border: "2px solid var(--sh-border)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.35, fontWeight: 700, color: "var(--sh-muted)",
+      }}
+    >
       {initials}
     </div>
   );
@@ -134,6 +141,7 @@ export function OfficialScorekeeper({
   );
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState("");
+  const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
 
   const { isOnline, queueLength, syncing, syncError, clearSyncError, enqueue } = useOfflineQueue(gameId);
 
@@ -605,7 +613,11 @@ export function OfficialScorekeeper({
                 </div>
                 {currentBatter ? (
                   <div className="flex items-center gap-2">
-                    <PlayerAvatar player={currentBatter.player} size={56} />
+                    <PlayerAvatar
+                      player={currentBatter.player}
+                      size={56}
+                      onClick={currentBatter.player.photoUrl ? () => setEnlargedPhoto({ url: currentBatter.player.photoUrl!, name: currentBatter.player.name }) : undefined}
+                    />
                     <div>
                       <span className="text-xl font-bold" style={{ color: "var(--sh-text)" }}>{currentBatter.player.name}</span>
                       {currentBatter.player.jerseyNumber && (
@@ -638,7 +650,11 @@ export function OfficialScorekeeper({
                         <div className="text-xs" style={dim}>#{activePitcher.pitcher.jerseyNumber}</div>
                       )}
                     </div>
-                    <PlayerAvatar player={activePitcherFull ?? activePitcher.pitcher} size={56} />
+                    <PlayerAvatar
+                      player={activePitcherFull ?? activePitcher.pitcher}
+                      size={56}
+                      onClick={(activePitcherFull?.photoUrl) ? () => setEnlargedPhoto({ url: activePitcherFull!.photoUrl!, name: activePitcherFull!.name }) : undefined}
+                    />
                   </div>
                 ) : (
                   <span className="text-xs" style={{ color: "var(--sh-danger)" }}>No pitcher</span>
@@ -892,6 +908,33 @@ export function OfficialScorekeeper({
             </div>
             {error && <p className="text-xs" style={{ color: "var(--sh-danger)" }}>{error}</p>}
           </div>
+        </div>
+      )}
+
+      {/* Photo lightbox */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.85)" }}
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <img
+            src={enlargedPhoto.url}
+            alt={enlargedPhoto.name}
+            className="rounded-2xl object-contain shadow-2xl"
+            style={{ maxHeight: "80vh", maxWidth: "80vw" }}
+            onClick={e => e.stopPropagation()}
+          />
+          <div className="absolute bottom-6 left-0 right-0 text-center">
+            <span className="text-white font-semibold text-lg drop-shadow">{enlargedPhoto.name}</span>
+          </div>
+          <button
+            onClick={() => setEnlargedPhoto(null)}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold transition-opacity hover:opacity-80"
+            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
