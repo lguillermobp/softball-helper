@@ -80,7 +80,7 @@ function Logo({ name, logoUrl, size = 30 }: { name: string; logoUrl: string | nu
     return <img src={logoUrl} alt={name} style={{ width: size, height: size, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />;
   }
   return (
-    <div style={{ width: size, height: size, borderRadius: 6, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontWeight: 700, fontSize: Math.round(size * 0.43), flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 6, background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontWeight: 700, fontSize: Math.round(size * 0.43), flexShrink: 0 }}>
       {name.charAt(0)}
     </div>
   );
@@ -90,10 +90,10 @@ function Logo({ name, logoUrl, size = 30 }: { name: string; logoUrl: string | nu
 function DateBlock({ iso }: { iso: string }) {
   const d = new Date(iso);
   return (
-    <div style={{ padding: "12px 14px", background: "#111c11", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
-      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80" }}>{SDOW[d.getDay()]}</span>
-      <span style={{ fontSize: 22, fontWeight: 800, color: "#f0fdf4", lineHeight: 1 }}>{d.getDate()}</span>
-      <span style={{ fontSize: 10, textTransform: "uppercase", color: "#86efac" }}>{SMON[d.getMonth()]}</span>
+    <div style={{ padding: "12px 14px", background: "var(--pub-bg-card2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--pub-accent)" }}>{SDOW[d.getDay()]}</span>
+      <span style={{ fontSize: 22, fontWeight: 800, color: "var(--pub-text)", lineHeight: 1 }}>{d.getDate()}</span>
+      <span style={{ fontSize: 10, textTransform: "uppercase", color: "var(--pub-text2)" }}>{SMON[d.getMonth()]}</span>
     </div>
   );
 }
@@ -103,11 +103,11 @@ function DateTimeBlock({ iso }: { iso: string }) {
   const d = new Date(iso);
   const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return (
-    <div style={{ padding: "12px 14px", background: "#111c11", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
-      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80" }}>{SDOW[d.getDay()]}</span>
-      <span style={{ fontSize: 20, fontWeight: 800, color: "#f0fdf4", lineHeight: 1 }}>{d.getDate()}</span>
-      <span style={{ fontSize: 10, textTransform: "uppercase", color: "#86efac" }}>{SMON[d.getMonth()]}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "#86efac", marginTop: 3 }}>{time}</span>
+    <div style={{ padding: "12px 14px", background: "var(--pub-bg-card2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0, gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--pub-accent)" }}>{SDOW[d.getDay()]}</span>
+      <span style={{ fontSize: 20, fontWeight: 800, color: "var(--pub-text)", lineHeight: 1 }}>{d.getDate()}</span>
+      <span style={{ fontSize: 10, textTransform: "uppercase", color: "var(--pub-text2)" }}>{SMON[d.getMonth()]}</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--pub-text2)", marginTop: 3 }}>{time}</span>
     </div>
   );
 }
@@ -116,8 +116,8 @@ function DateTimeBlock({ iso }: { iso: string }) {
 function TimeBlock({ iso }: { iso: string }) {
   const time = new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return (
-    <div style={{ padding: "0 16px", background: "#111c11", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0 }}>
-      <span style={{ fontSize: 14, fontWeight: 700, color: "#86efac" }}>{time}</span>
+    <div style={{ padding: "0 16px", background: "var(--pub-bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 64, flexShrink: 0 }}>
+      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--pub-text2)" }}>{time}</span>
     </div>
   );
 }
@@ -126,13 +126,13 @@ function Matchup({ game }: { game: UpcomingGame }) {
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 16px", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", overflow: "hidden" }}>
-        <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
+        <span style={{ color: "var(--pub-text)", fontWeight: 600, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
         <Logo name={game.homeTeam} logoUrl={game.homeLogoUrl} />
       </div>
-      <span style={{ fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.1em", flexShrink: 0, padding: "0 4px" }}>VS</span>
+      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--pub-accent)", letterSpacing: "0.1em", flexShrink: 0, padding: "0 4px" }}>VS</span>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" }}>
         <Logo name={game.awayTeam} logoUrl={game.awayLogoUrl} />
-        <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
+        <span style={{ color: "var(--pub-text)", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
       </div>
     </div>
   );
@@ -145,13 +145,13 @@ function LiveInfoBar({ game, now }: { game: UpcomingGame; now: Date }) {
   const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
   const isOvertime = remainMs < 0;
   return (
-    <div style={{ padding: "6px 14px", borderTop: "1px solid #1a3a1a", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-      <span style={{ fontSize: 11, color: "#86efac" }}>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-      <span style={{ fontSize: 11, color: "#86efac" }}>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: isOvertime || remainMins <= 10 ? "#f87171" : "#86efac" }}>
+    <div style={{ padding: "6px 14px", borderTop: "1px solid var(--pub-border)", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 11, color: "var(--pub-text2)" }}>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      <span style={{ fontSize: 11, color: "var(--pub-text2)" }}>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: isOvertime || remainMins <= 10 ? "var(--pub-danger)" : "var(--pub-text2)" }}>
         {isOvertime ? "Overtime" : `${remainMins}min left`}
       </span>
-      {game.scorekeeper && <span style={{ fontSize: 11, color: "#86efac" }}>📋 {game.scorekeeper}</span>}
+      {game.scorekeeper && <span style={{ fontSize: 11, color: "var(--pub-text2)" }}>📋 {game.scorekeeper}</span>}
     </div>
   );
 }
@@ -160,15 +160,15 @@ function LiveInfoBar({ game, now }: { game: UpcomingGame; now: Date }) {
 function GroupedUpcomingCard({ game, now }: { game: UpcomingGame; now: Date }) {
   const isLive = game.status === "IN_PROGRESS";
   return (
-    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "#4ade80" : "#1a3a1a"}`, background: "#0d1a0d", overflow: "hidden" }}>
+    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "var(--pub-accent)" : "var(--pub-border)"}`, background: "var(--pub-bg-card)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "stretch" }}>
         <TimeBlock iso={game.scheduledAt} />
         <Matchup game={game} />
         {isLive && <div style={{ padding: "0 12px", display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em" }}>● LIVE</span>
+          <span style={{ fontSize: 10, fontWeight: 800, color: "var(--pub-accent)", letterSpacing: "0.08em" }}>● LIVE</span>
         </div>}
         {!isLive && game.scorekeeper && <div style={{ padding: "0 12px", display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: "#86efac" }}>📋 {game.scorekeeper}</span>
+          <span style={{ fontSize: 11, color: "var(--pub-text2)" }}>📋 {game.scorekeeper}</span>
         </div>}
       </div>
       {isLive && <LiveInfoBar game={game} now={now} />}
@@ -181,21 +181,21 @@ function StandaloneUpcomingCard({ game, now }: { game: UpcomingGame; now: Date }
   const isLive = game.status === "IN_PROGRESS";
   const time = new Date(game.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return (
-    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "#4ade80" : "#1a3a1a"}`, background: "#0d1a0d", overflow: "hidden" }}>
+    <div style={{ borderRadius: 12, border: `1px solid ${isLive ? "var(--pub-accent)" : "var(--pub-border)"}`, background: "var(--pub-bg-card)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "stretch" }}>
         <DateBlock iso={game.scheduledAt} />
         <Matchup game={game} />
         <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, gap: 3, minWidth: 70 }}>
           {isLive
-            ? <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em" }}>● LIVE</span>
-            : <span style={{ fontSize: 13, fontWeight: 700, color: "#86efac" }}>{time}</span>}
+            ? <span style={{ fontSize: 11, fontWeight: 800, color: "var(--pub-accent)", letterSpacing: "0.08em" }}>● LIVE</span>
+            : <span style={{ fontSize: 13, fontWeight: 700, color: "var(--pub-text2)" }}>{time}</span>}
           {game.fieldName && (
-            <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 11, color: "var(--pub-accent)", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               📍 {game.fieldName}
             </span>
           )}
           {!isLive && game.scorekeeper && (
-            <span style={{ fontSize: 11, color: "#86efac", maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 11, color: "var(--pub-text2)", maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               📋 {game.scorekeeper}
             </span>
           )}
@@ -210,26 +210,26 @@ function ResultCard({ game }: { game: PastGame }) {
   const homeWon = game.homeScore > game.awayScore;
   const awayWon = game.awayScore > game.homeScore;
   return (
-    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", overflow: "hidden" }}>
+    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: "1px solid var(--pub-border)", background: "var(--pub-bg-card)", overflow: "hidden" }}>
       <DateTimeBlock iso={game.scheduledAt} />
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 16px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", overflow: "hidden" }}>
-          <span style={{ color: homeWon ? "#f0fdf4" : "#9ca3af", fontWeight: homeWon ? 700 : 400, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
+          <span style={{ color: homeWon ? "var(--pub-text)" : "var(--pub-muted)", fontWeight: homeWon ? 700 : 400, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
           <Logo name={game.homeTeam} logoUrl={game.homeLogoUrl} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "5px 14px", borderRadius: 8, background: "#111c11", border: "1px solid #1a3a1a" }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "#f0fdf4" : "#9ca3af", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
-          <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 700 }}>–</span>
-          <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "#f0fdf4" : "#9ca3af", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "5px 14px", borderRadius: 8, background: "var(--pub-bg-card2)", border: "1px solid var(--pub-border)" }}>
+          <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
+          <span style={{ fontSize: 11, color: "var(--pub-accent)", fontWeight: 700 }}>–</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" }}>
           <Logo name={game.awayTeam} logoUrl={game.awayLogoUrl} />
-          <span style={{ color: awayWon ? "#f0fdf4" : "#9ca3af", fontWeight: awayWon ? 700 : 400, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
+          <span style={{ color: awayWon ? "var(--pub-text)" : "var(--pub-muted)", fontWeight: awayWon ? 700 : 400, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
         </div>
       </div>
       {game.fieldName && (
         <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, minWidth: 70 }}>
-          <span style={{ fontSize: 11, color: "#4ade80", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 11, color: "var(--pub-accent)", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             📍 {game.fieldName}
           </span>
         </div>
@@ -289,9 +289,9 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
     padding: "7px 18px",
     borderRadius: 8,
     border: "1px solid",
-    borderColor: active ? "#4ade80" : "#1a3a1a",
-    background: active ? "rgba(74,222,128,0.1)" : "transparent",
-    color: active ? "#4ade80" : "#86efac",
+    borderColor: active ? "var(--pub-accent)" : "var(--pub-border)",
+    background: active ? "var(--pub-accent-a10)" : "transparent",
+    color: active ? "var(--pub-accent)" : "var(--pub-text2)",
     fontWeight: active ? 700 : 400,
     fontSize: 14,
     cursor: "pointer",
@@ -301,7 +301,7 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
     <section>
       {/* Header + tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#4ade80", margin: 0 }}>📅 Schedule</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pub-accent)", margin: 0 }}>📅 Schedule</h2>
         <div style={{ display: "flex", gap: 8 }}>
           <button style={tabBtn(tab === "upcoming")} onClick={() => setTab("upcoming")}>
             Upcoming{upcoming.length > 0 ? ` (${upcoming.length})` : ""}
@@ -315,36 +315,36 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
       {/* ── Upcoming tab ── */}
       {tab === "upcoming" && (
         upcoming.length === 0 ? (
-          <p style={{ color: "#86efac", opacity: 0.6, fontSize: 14, margin: 0 }}>No upcoming games scheduled.</p>
+          <p style={{ color: "var(--pub-text2)", opacity: 0.6, fontSize: 14, margin: 0 }}>No upcoming games scheduled.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {dayGroups.map(({ dayKey, label, total, fieldGroups, byeTeams }) => {
               const multiField = fieldGroups.length > 1;
               const collapsed  = collapsedDays.has(dayKey);
               return (
-                <div key={dayKey} style={{ borderRadius: 12, border: "1px solid #1a3a1a", overflow: "hidden" }}>
+                <div key={dayKey} style={{ borderRadius: 12, border: "1px solid var(--pub-border)", overflow: "hidden" }}>
                   {/* Accordion header */}
                   <button
                     onClick={() => toggleDay(dayKey)}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: collapsed ? "#0d1a0d" : "#101e10", border: "none", cursor: "pointer", textAlign: "left" }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: collapsed ? "var(--pub-bg-card)" : "var(--pub-bg-card2)", border: "none", cursor: "pointer", textAlign: "left" }}
                   >
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f0fdf4", whiteSpace: "nowrap", flex: 1 }}>{label}</span>
-                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 600, background: "rgba(74,222,128,0.1)", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--pub-text)", whiteSpace: "nowrap", flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 11, color: "var(--pub-accent)", fontWeight: 600, background: "var(--pub-accent-a10)", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>
                       {total} game{total !== 1 ? "s" : ""}
                     </span>
-                    <span style={{ color: "#4ade80", fontSize: 16, flexShrink: 0, transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
+                    <span style={{ color: "var(--pub-accent)", fontSize: 16, flexShrink: 0, transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
                       ▾
                     </span>
                   </button>
 
                   {/* Collapsible content */}
                   {!collapsed && (
-                    <div style={{ padding: "12px 16px 14px", borderTop: "1px solid #1a3a1a", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ padding: "12px 16px 14px", borderTop: "1px solid var(--pub-border)", display: "flex", flexDirection: "column", gap: 12 }}>
                       {multiField ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                           {fieldGroups.map(({ field, games }) => (
                             <div key={field ?? "tbd"}>
-                              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 8px", opacity: 0.75 }}>
+                              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--pub-accent)", margin: "0 0 8px", opacity: 0.75 }}>
                                 📍 {field ?? "No field assigned"}
                               </p>
                               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -360,10 +360,10 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
                       )}
 
                       {byeTeams.length > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "rgba(134,239,172,0.04)", border: "1px solid #1a3a1a", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#86efac", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "var(--pub-accent-subtle)", border: "1px solid var(--pub-border)", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--pub-text2)", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
                           {byeTeams.map((t, i) => (
-                            <span key={t.id} style={{ fontSize: 12, color: "#86efac", opacity: 0.6 }}>
+                            <span key={t.id} style={{ fontSize: 12, color: "var(--pub-text2)", opacity: 0.6 }}>
                               {t.name}{i < byeTeams.length - 1 ? "," : ""}
                             </span>
                           ))}
@@ -381,7 +381,7 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
       {/* ── Results tab ── */}
       {tab === "results" && (
         past.length === 0 ? (
-          <p style={{ color: "#86efac", opacity: 0.6, fontSize: 14, margin: 0 }}>No results yet.</p>
+          <p style={{ color: "var(--pub-text2)", opacity: 0.6, fontSize: 14, margin: 0 }}>No results yet.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {past.map(g => <ResultCard key={g.id} game={g} />)}

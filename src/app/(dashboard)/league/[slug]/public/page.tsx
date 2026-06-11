@@ -1,7 +1,9 @@
+import type React from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ScheduleSection } from "@/components/public/ScheduleSection";
+import { PublicPageWrapper } from "@/components/public/PublicPageWrapper";
 import type { UpcomingGame, PastGame, SeasonTeam } from "@/components/public/ScheduleSection";
 
 interface PageProps { params: Promise<{ slug: string }> }
@@ -34,7 +36,7 @@ function TeamLogo({ name, logoUrl, size = 24 }: { name: string; logoUrl: string 
     return <img src={logoUrl} alt={name} style={{ width: size, height: size, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />;
   }
   return (
-    <div style={{ width: size, height: size, borderRadius: 6, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontWeight: 700, fontSize: Math.round(size * 0.43), flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 6, background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontWeight: 700, fontSize: Math.round(size * 0.43), flexShrink: 0 }}>
       {name.charAt(0)}
     </div>
   );
@@ -45,16 +47,16 @@ function GroupTable({ block, showPct }: { block: GroupBlock; showPct: boolean })
   return (
     <div>
       {block.group && (
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4ade80", margin: "0 0 10px", opacity: 0.8 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--pub-accent)", margin: "0 0 10px", opacity: 0.8 }}>
           Group {block.group}
         </p>
       )}
-      <div style={{ border: "1px solid #1a3a1a", borderRadius: 12, overflow: "hidden", background: "#0d1a0d" }}>
+      <div style={{ border: "1px solid var(--pub-border)", borderRadius: 12, overflow: "hidden", background: "var(--pub-bg-card)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #1a3a1a" }}>
+            <tr style={{ borderBottom: "1px solid var(--pub-border)" }}>
               {cols.map(h => (
-                <th key={h} style={{ padding: "10px 10px", color: "#4ade80", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: h === "Team" ? "left" : "center" }}>
+                <th key={h} style={{ padding: "10px 10px", color: "var(--pub-accent)", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: h === "Team" ? "left" : "center" }}>
                   {h}
                 </th>
               ))}
@@ -63,26 +65,26 @@ function GroupTable({ block, showPct }: { block: GroupBlock; showPct: boolean })
           <tbody>
             {block.rows.map((s, i) => {
               const rd = s.rf - s.ra;
-              const rdColor = rd > 0 ? "#4ade80" : rd < 0 ? "#f87171" : "#86efac";
+              const rdColor = rd > 0 ? "var(--pub-accent)" : rd < 0 ? "var(--pub-danger)" : "var(--pub-text2)";
               const rdText  = rd > 0 ? `+${rd}` : String(rd);
               return (
-                <tr key={s.name} style={{ borderBottom: i < block.rows.length - 1 ? "1px solid #0f1a0f" : "none", background: s.rank === 1 ? "rgba(74,222,128,0.04)" : "transparent" }}>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: s.rank === 1 ? "#fbbf24" : "#4ade80", fontWeight: 700, fontSize: 13 }}>{s.rank}</td>
-                  <td style={{ padding: "10px 10px", color: "#f0fdf4", fontWeight: 600 }}>
+                <tr key={s.name} style={{ borderBottom: i < block.rows.length - 1 ? "1px solid var(--pub-border2)" : "none", background: s.rank === 1 ? "var(--pub-accent-subtle)" : "transparent" }}>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: s.rank === 1 ? "var(--pub-gold)" : "var(--pub-accent)", fontWeight: 700, fontSize: 13 }}>{s.rank}</td>
+                  <td style={{ padding: "10px 10px", color: "var(--pub-text)", fontWeight: 600 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <TeamLogo name={s.name} logoUrl={s.logoUrl} />
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
                     </div>
                   </td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.gp}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>{s.w}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#f87171" }}>{s.l}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.t}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#f0fdf4", fontWeight: 700 }}>{s.pts}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.rf}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac" }}>{s.ra}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.gp}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-accent)", fontWeight: 700 }}>{s.w}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-danger)" }}>{s.l}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.t}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text)", fontWeight: 700 }}>{s.pts}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.rf}</td>
+                  <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)" }}>{s.ra}</td>
                   <td style={{ padding: "10px 10px", textAlign: "center", color: rdColor, fontWeight: 600 }}>{rdText}</td>
-                  {showPct && <td style={{ padding: "10px 10px", textAlign: "center", color: "#86efac", fontSize: 13 }}>{s.pct}</td>}
+                  {showPct && <td style={{ padding: "10px 10px", textAlign: "center", color: "var(--pub-text2)", fontSize: 13 }}>{s.pct}</td>}
                 </tr>
               );
             })}
@@ -291,7 +293,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
   const rightCol = groupedStandings.slice(half);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0f0a", color: "#f0fdf4", fontFamily: "sans-serif" }}>
+    <PublicPageWrapper>
       {/* Responsive grid for multi-group standings */}
       <style>{`
         .pub-sg { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
@@ -327,7 +329,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
         {/* Description */}
         {cfg.description && (
-          <p style={{ color: "#86efac", fontSize: 15, lineHeight: 1.7, maxWidth: 700, margin: 0 }}>{cfg.description}</p>
+          <p style={{ color: "var(--pub-text2)", fontSize: 15, lineHeight: 1.7, maxWidth: 700, margin: 0 }}>{cfg.description}</p>
         )}
 
         {/* Social */}
@@ -373,16 +375,16 @@ export default async function LeaguePublicPage({ params }: PageProps) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
               {league.teams.map(t => (
                 <Link key={t.id} href={`/league/${slug}/team/${t.id}/public`}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 12, border: "1px solid #1a3a1a", background: "#0d1a0d", textDecoration: "none" }}>
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 12, border: "1px solid var(--pub-border)", background: "var(--pub-bg-card)", textDecoration: "none" }}>
                   {t.logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={t.logoUrl} alt={t.name} style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover" }} />
                   ) : (
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontWeight: 700, fontSize: 14 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--pub-logo-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--pub-accent)", fontWeight: 700, fontSize: 14 }}>
                       {t.name.charAt(0)}
                     </div>
                   )}
-                  <span style={{ color: "#f0fdf4", fontWeight: 600, fontSize: 14 }}>{t.name}</span>
+                  <span style={{ color: "var(--pub-text)", fontWeight: 600, fontSize: 14 }}>{t.name}</span>
                 </Link>
               ))}
             </div>
@@ -390,13 +392,13 @@ export default async function LeaguePublicPage({ params }: PageProps) {
         )}
 
         {/* Footer */}
-        <footer style={{ borderTop: "1px solid #1a3a1a", paddingTop: 20, color: "#4ade80", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
+        <footer style={{ borderTop: "1px solid var(--pub-border)", paddingTop: 20, color: "var(--pub-accent)", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
           Powered by Softball Helper
         </footer>
       </div>
-    </div>
+    </PublicPageWrapper>
   );
 }
 
-const sectionTitle = { fontSize: 18, fontWeight: 700, color: "#4ade80", margin: "0 0 16px 0" };
-const socialBtn    = { display: "inline-block", padding: "8px 16px", borderRadius: 8, border: "1px solid #1a3a1a", background: "#0d1a0d", color: "#4ade80", textDecoration: "none", fontSize: 13, fontWeight: 600 };
+const sectionTitle = { fontSize: 18, fontWeight: 700, color: "var(--pub-accent)", margin: "0 0 16px 0" } as React.CSSProperties;
+const socialBtn    = { display: "inline-block", padding: "8px 16px", borderRadius: 8, border: "1px solid var(--pub-border)", background: "var(--pub-bg-card)", color: "var(--pub-accent)", textDecoration: "none", fontSize: 13, fontWeight: 600 } as React.CSSProperties;
