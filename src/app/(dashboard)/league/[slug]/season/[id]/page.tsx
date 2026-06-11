@@ -48,6 +48,7 @@ export default async function SeasonPage({ params }: PageProps) {
       category:        { select: { id: true, name: true } },
       field:           { select: { id: true, name: true } },
       rescheduledFrom: { select: { id: true, scheduledAt: true } },
+      officials: { include: { user: { select: { name: true } } } },
     },
     orderBy: { scheduledAt: "asc" },
   });
@@ -136,6 +137,8 @@ export default async function SeasonPage({ params }: PageProps) {
   const serializedGames = games.map((g) => ({
     ...g,
     scheduledAt: g.scheduledAt.toISOString(),
+    startedAt: g.startedAt?.toISOString() ?? null,
+    officials: g.officials.map(o => ({ role: o.role, user: { name: o.user.name } })),
     rescheduledFrom: g.rescheduledFrom
       ? { id: g.rescheduledFrom.id, scheduledAt: g.rescheduledFrom.scheduledAt.toISOString() }
       : null,

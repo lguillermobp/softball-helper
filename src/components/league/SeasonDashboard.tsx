@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
@@ -39,6 +39,8 @@ interface Game {
   field: { id: string; name: string } | null;
   rescheduledFromId: string | null;
   rescheduledFrom: { id: string; scheduledAt: string } | null;
+  startedAt: string | null;
+  officials: { role: string; user: { name: string | null } }[];
 }
 
 interface Standing {
@@ -130,6 +132,12 @@ export function SeasonDashboard({
 
   // Live copies used by the rest of the UI (updated on save)
   const [liveConfig, setLiveConfig] = useState(seasonConfig);
+
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   function openConfig() {
     setCfgWin(liveConfig.pointsWin); setCfgTie(liveConfig.pointsTie); setCfgLoss(liveConfig.pointsLoss);
@@ -757,6 +765,7 @@ ${body}
                             const awayGroup = teams.find((t) => t.id === game.awayTeamId)?.group;
                             const gameGroup = homeGroup && homeGroup === awayGroup ? homeGroup : null;
                             const date = new Date(game.scheduledAt);
+                            const isActive = game.status === "IN_PROGRESS";
                             return (
                               <div key={game.id} className="rounded-xl border p-4" style={card}>
                                 {gameError[game.id] && (
@@ -863,6 +872,25 @@ ${body}
                                     )}
                                   </div>
                                 </div>
+                                {isActive && (() => {
+                                  const startedAt = new Date(game.startedAt ?? game.scheduledAt);
+                                  const endAt = new Date(startedAt.getTime() + liveConfig.defaultGameDurationMins * 60_000);
+                                  const remainMs = endAt.getTime() - now.getTime();
+                                  const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
+                                  const isOvertime = remainMs < 0;
+                                  const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
+                                  return (
+                                    <div className="mt-2 pt-2 border-t flex items-center gap-4 flex-wrap text-xs"
+                                      style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)" }}>
+                                      <span>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                                      <span>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                                      <span style={{ color: isOvertime || remainMins <= 10 ? "var(--sh-danger)" : "var(--sh-muted)" }}>
+                                        {isOvertime ? "Overtime" : `${remainMins}min left`}
+                                      </span>
+                                      {scorekeeper && <span>📋 {scorekeeper.user.name}</span>}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })}
@@ -904,6 +932,24 @@ ${body}
                         {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         {game.field && ` · 🏟️ ${game.field.name}`}
                       </p>
+                      {isActive && (() => {
+                        const startedAt = new Date(game.startedAt ?? game.scheduledAt);
+                        const endAt = new Date(startedAt.getTime() + liveConfig.defaultGameDurationMins * 60_000);
+                        const remainMs = endAt.getTime() - now.getTime();
+                        const remainMins = Math.max(0, Math.floor(remainMs / 60_000));
+                        const isOvertime = remainMs < 0;
+                        const scorekeeper = game.officials.find(o => o.role === "SCOREKEEPER");
+                        return (
+                          <div className="flex items-center gap-3 flex-wrap text-xs mt-1" style={{ color: "var(--sh-muted)" }}>
+                            <span>▶ {startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>⏹ {endAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span style={{ color: isOvertime || remainMins <= 10 ? "var(--sh-danger)" : "var(--sh-muted)" }}>
+                              {isOvertime ? "Overtime" : `${remainMins}min left`}
+                            </span>
+                            {scorekeeper && <span>📋 {scorekeeper.user.name}</span>}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <Link
                       href={`/league/${slug}/season/${seasonId}/game/${game.id}`}
