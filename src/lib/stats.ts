@@ -108,9 +108,9 @@ export function computeOfficialPitching(
       outs: 0, ip: "0.0", h: 0, bb: 0, k: 0,
     };
 
-    const isOut = ab.outcome === "OUT" || ab.outcome === "STRIKEOUT";
+    const outCount = ab.outcome === "DOUBLE_PLAY" ? 2 : ab.outcome === "TRIPLE_PLAY" ? 3 : (ab.outcome === "OUT" || ab.outcome === "STRIKEOUT") ? 1 : 0;
     const isHit = ["SINGLE","DOUBLE","TRIPLE","HOME_RUN"].includes(ab.outcome);
-    const newOuts = prev.outs + (isOut ? 1 : 0);
+    const newOuts = prev.outs + outCount;
 
     acc.set(ab.pitcherId, {
       ...prev,
