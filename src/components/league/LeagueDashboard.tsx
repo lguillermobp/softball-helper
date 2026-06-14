@@ -180,8 +180,7 @@ function SubscriptionPanel({ slug, league, isAdmin }: {
   }
 
   return (
-    <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
-      <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--sh-muted)" }}>Billing</p>
+    <>
       {status && (
         <p className="text-sm mb-2" style={{ color: "var(--sh-text)" }}>
           Status: <span className="font-semibold capitalize" style={{ color: statusColor }}>{status.replace("_", " ")}</span>
@@ -207,7 +206,7 @@ function SubscriptionPanel({ slug, league, isAdmin }: {
           {loading ? "Loading…" : "Subscribe"}
         </button>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -470,6 +469,8 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
           />
         )}
       </div>
+
+      {/* Top row: slim info card + stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="col-span-2 sm:col-span-1 rounded-2xl border p-5" style={card}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>{tl.overview.info}</p>
@@ -479,7 +480,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
           <p className="text-sm mb-1" style={muted}>
             📋 {tl.overview.plan}: <span className="font-semibold" style={head}>{league.plan.name}</span>
           </p>
-          <p className="text-sm mb-3" style={muted}>
+          <p className="text-sm" style={muted}>
             🔖 {tl.overview.status}:{" "}
             <span className="font-semibold capitalize" style={{
               color: league.status === "ACTIVE" ? "var(--sh-primary)" : league.status === "SUSPENDED" ? "var(--sh-danger)" : "var(--sh-inactive)",
@@ -487,30 +488,91 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               {league.status === "ACTIVE" ? tl.overview.active : league.status === "SUSPENDED" ? tl.overview.suspended : tl.overview.archived}
             </span>
           </p>
-          {isAdmin && (
-            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>League Logo</p>
-              <LeagueLogoUpload
-                slug={slug}
-                leagueName={league.name}
-                currentLogoUrl={leagueLogoUrl}
-                onUpdated={(url) => setLeagueLogoUrl(url)}
-              />
-            </div>
-          )}
-          {isAdmin && (
-            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>League Banner</p>
+        </div>
+        {[
+          { label: tl.overview.seasons,     value: seasons.length },
+          { label: tl.overview.activeTeams, value: activeTeams.length },
+          { label: tl.overview.categories,  value: categories.length },
+          { label: tl.overview.fields,      value: fields.length },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-2xl border p-5 flex flex-col justify-between" style={card}>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>{stat.label}</p>
+            <p className="text-4xl font-bold mt-2" style={muted}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Admin settings cards */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Branding */}
+          <div className="rounded-2xl border p-5" style={card}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={dim}>🎨 Branding</p>
+            <p className="text-xs font-semibold mb-2" style={{ color: "var(--sh-muted)" }}>League Logo</p>
+            <LeagueLogoUpload
+              slug={slug}
+              leagueName={league.name}
+              currentLogoUrl={leagueLogoUrl}
+              onUpdated={(url) => setLeagueLogoUrl(url)}
+            />
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: "var(--sh-muted)" }}>League Banner</p>
               <LeagueBannerUpload
                 slug={slug}
                 currentBannerUrl={leagueBannerUrl}
                 onUpdated={(url) => setLeagueBannerUrl(url)}
               />
             </div>
-          )}
+          </div>
+
+          {/* Notifications */}
+          <div className="rounded-2xl border p-5" style={card}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={dim}>📧 Notifications</p>
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={notifyOn}
+                onChange={e => setNotifyOn(e.target.checked)}
+                className="w-4 h-4 accent-green-500"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify when a game ends</span>
+            </label>
+            {notifyOn && (
+              <input
+                type="email"
+                placeholder="admin@softballhelper.com"
+                value={notifyEmail}
+                onChange={e => setNotifyEmail(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+              />
+            )}
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={notifyManagers}
+                onChange={e => setNotifyManagers(e.target.checked)}
+                className="w-4 h-4 accent-green-500"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify team managers &amp; assistants</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={saveNotifications}
+                disabled={savingNotify}
+                className="text-xs px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+              >
+                {savingNotify ? "Saving…" : "Save"}
+              </button>
+              {notifyMsg && <span className="text-xs" style={{ color: notifyMsg.includes("✓") ? "var(--sh-primary)" : "#f87171" }}>{notifyMsg}</span>}
+            </div>
+          </div>
+
+          {/* Technician — master admin only */}
           {isMasterAdmin && (
-            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={dim}>🎫 Support Technician</p>
+            <div className="rounded-2xl border p-5" style={card}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={dim}>🎫 Support Technician</p>
               {technician ? (
                 <p className="text-sm mb-2" style={{ color: "var(--sh-primary)" }}>
                   {technician.name ?? technician.email}
@@ -543,64 +605,14 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               )}
             </div>
           )}
-          {isAdmin && (
-            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>📧 Game End Notifications</p>
-              <label className="flex items-center gap-2 cursor-pointer mb-3">
-                <input
-                  type="checkbox"
-                  checked={notifyOn}
-                  onChange={e => setNotifyOn(e.target.checked)}
-                  className="w-4 h-4 accent-green-500"
-                />
-                <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify when a game ends</span>
-              </label>
-              {notifyOn && (
-                <input
-                  type="email"
-                  placeholder="admin@softballhelper.com"
-                  value={notifyEmail}
-                  onChange={e => setNotifyEmail(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
-                />
-              )}
-              <label className="flex items-center gap-2 cursor-pointer mb-3">
-                <input
-                  type="checkbox"
-                  checked={notifyManagers}
-                  onChange={e => setNotifyManagers(e.target.checked)}
-                  className="w-4 h-4 accent-green-500"
-                />
-                <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify team managers &amp; assistants</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={saveNotifications}
-                  disabled={savingNotify}
-                  className="text-xs px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
-                >
-                  {savingNotify ? "Saving…" : "Save"}
-                </button>
-                {notifyMsg && <span className="text-xs" style={{ color: notifyMsg.includes("✓") ? "var(--sh-primary)" : "#f87171" }}>{notifyMsg}</span>}
-              </div>
-            </div>
-          )}
-          <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />
-        </div>
-        {[
-          { label: tl.overview.seasons,     value: seasons.length },
-          { label: tl.overview.activeTeams, value: activeTeams.length },
-          { label: tl.overview.categories,  value: categories.length },
-          { label: tl.overview.fields,      value: fields.length },
-        ].map((stat) => (
-          <div key={stat.label} className="rounded-2xl border p-5 flex flex-col justify-between" style={card}>
-            <p className="text-xs font-semibold uppercase tracking-wider" style={dim}>{stat.label}</p>
-            <p className="text-4xl font-bold mt-2" style={muted}>{stat.value}</p>
+
+          {/* Billing */}
+          <div className="rounded-2xl border p-5" style={card}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>💳 Billing</p>
+            <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 
