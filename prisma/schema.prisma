@@ -118,6 +118,9 @@ model League {
   technicianId         String?
   technician           User?            @relation("LeagueTechnician", fields: [technicianId], references: [id])
 
+  notifyGameEnd        Boolean          @default(false)
+  notifyEmail          String?
+
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]
   seasons     Season[]

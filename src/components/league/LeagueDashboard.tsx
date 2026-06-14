@@ -107,7 +107,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -317,6 +317,30 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [selectedTechId, setSelectedTechId] = useState(initialTechnician?.id ?? "");
   const [savingTech, setSavingTech]       = useState(false);
 
+  const [notifyOn,    setNotifyOn]    = useState(league.notifyGameEnd);
+  const [notifyEmail, setNotifyEmail] = useState(league.notifyEmail ?? "");
+  const [savingNotify, setSavingNotify] = useState(false);
+  const [notifyMsg,   setNotifyMsg]   = useState<string | null>(null);
+
+  async function saveNotifications() {
+    setSavingNotify(true); setNotifyMsg(null);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/notifications`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNotifyMsg(data.error ?? "Failed to save"); return; }
+      setNotifyOn(data.notifyGameEnd);
+      setNotifyEmail(data.notifyEmail ?? "");
+      setNotifyMsg("Saved ✓");
+      setTimeout(() => setNotifyMsg(null), 2500);
+    } finally {
+      setSavingNotify(false);
+    }
+  }
+
   async function saveTechnician() {
     setSavingTech(true);
     const res = await fetch(`/api/leagues/${slug}/set-technician`, {
@@ -515,6 +539,41 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                   </button>
                 </div>
               )}
+            </div>
+          )}
+          {isAdmin && (
+            <div className="pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>📧 Game End Notifications</p>
+              <label className="flex items-center gap-2 cursor-pointer mb-3">
+                <input
+                  type="checkbox"
+                  checked={notifyOn}
+                  onChange={e => setNotifyOn(e.target.checked)}
+                  className="w-4 h-4 accent-green-500"
+                />
+                <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify when a game ends</span>
+              </label>
+              {notifyOn && (
+                <input
+                  type="email"
+                  placeholder="admin@softballhelper.com"
+                  value={notifyEmail}
+                  onChange={e => setNotifyEmail(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                />
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveNotifications}
+                  disabled={savingNotify}
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
+                >
+                  {savingNotify ? "Saving…" : "Save"}
+                </button>
+                {notifyMsg && <span className="text-xs" style={{ color: notifyMsg.includes("✓") ? "var(--sh-primary)" : "#f87171" }}>{notifyMsg}</span>}
+              </div>
             </div>
           )}
           <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />

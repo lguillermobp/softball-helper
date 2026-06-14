@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendGameEndNotification } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string; gameId: string }> }
 
@@ -14,7 +15,11 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    include: { userRoles: { where: { userId } } },
+    select: {
+      id: true, name: true,
+      notifyGameEnd: true, notifyEmail: true,
+      userRoles: { where: { userId }, select: { role: true } },
+    },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -25,6 +30,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     include: {
       innings:   true,
       officials: { select: { userId: true, role: true } },
+      homeTeam:  { select: { name: true } },
+      awayTeam:  { select: { name: true } },
+      field:     { select: { name: true } },
     },
   });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
@@ -54,13 +62,22 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   await prisma.game.update({
     where: { id: gameId },
-    data: {
-      status: "COMPLETED",
-      hasStats: true,
+    data: { status: "COMPLETED", hasStats: true, homeScore: homeRuns, awayScore: awayRuns },
+  });
+
+  // Fire notification (non-blocking — failure must not break the response)
+  if (league.notifyGameEnd && league.notifyEmail) {
+    sendGameEndNotification({
+      to: league.notifyEmail,
+      leagueName: league.name,
+      homeTeam: game.homeTeam.name,
+      awayTeam: game.awayTeam.name,
       homeScore: homeRuns,
       awayScore: awayRuns,
-    },
-  });
+      scheduledAt: game.scheduledAt,
+      fieldName: game.field?.name ?? null,
+    }).catch(err => console.error("[notify] game end email failed:", err));
+  }
 
   return NextResponse.json({ ok: true, status: "COMPLETED", homeScore: homeRuns, awayScore: awayRuns });
 }
