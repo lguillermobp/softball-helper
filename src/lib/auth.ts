@@ -12,9 +12,9 @@ import { logAudit } from "./audit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   logger: {
-    error(code, ...message) {
-      if (code === "CredentialsSignin") return;
-      console.error(code, ...message);
+    error(error: Error) {
+      if (error.name === "CredentialsSignin") return;
+      console.error(error);
     },
   },
   session: { strategy: "jwt" },
