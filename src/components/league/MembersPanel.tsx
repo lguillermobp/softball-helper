@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { UserDetailsPanel } from "@/components/admin/UserDetailsPanel";
 
 interface Member {
   id: string; role: string;
@@ -34,6 +35,12 @@ interface Props { slug: string; members: Member[] }
 
 export function MembersPanel({ slug, members }: Props) {
   const router = useRouter();
+
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const detailFetchUrl = useCallback(
+    (uid: string) => `/api/leagues/${slug}/members/${uid}/details`,
+    [slug]
+  );
 
   // ── Search + pagination ────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -134,6 +141,7 @@ export function MembersPanel({ slug, members }: Props) {
 
   return (
     <div className="space-y-4">
+      <UserDetailsPanel userId={detailUserId} onClose={() => setDetailUserId(null)} fetchUrl={detailFetchUrl} />
 
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -293,6 +301,10 @@ export function MembersPanel({ slug, members }: Props) {
                         </>
                       ) : (
                         <>
+                          <button onClick={() => setDetailUserId(m.user.id)} className={btnSm}
+                            style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+                            Details
+                          </button>
                           <button onClick={() => startEdit(m)} className={btnSm}
                             style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
                             Edit

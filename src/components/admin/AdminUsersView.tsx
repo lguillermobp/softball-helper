@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { EditUserDialog } from "./EditUserDialog";
 import { SetPasswordDialog } from "./SetPasswordDialog";
 import { UserAuditDialog } from "./UserAuditDialog";
+import { UserDetailsPanel } from "./UserDetailsPanel";
 
 export interface AdminUser {
   id: string; name: string | null; email: string; phone: string | null;
@@ -21,6 +22,8 @@ export function AdminUsersView({ initialUsers }: Props) {
   const [users,    setUsers]    = useState<AdminUser[]>(initialUsers);
   const [query,    setQuery]    = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const detailFetchUrl = useCallback((id: string) => `/api/admin/users/${id}/details`, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -62,6 +65,7 @@ export function AdminUsersView({ initialUsers }: Props) {
 
   return (
     <div className="space-y-5">
+      <UserDetailsPanel userId={detailId} onClose={() => setDetailId(null)} fetchUrl={detailFetchUrl} />
       <div className="flex items-center gap-3">
         <input
           value={query}
@@ -144,6 +148,13 @@ export function AdminUsersView({ initialUsers }: Props) {
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => setDetailId(user.id)}
+                          className="text-xs px-2 py-1 rounded-md border hover:opacity-80"
+                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                        >
+                          Details
+                        </button>
                         <EditUserDialog
                           user={user}
                           onUpdated={(updated) => setUsers((prev) => prev.map((u) => u.id === user.id ? updated : u))}
