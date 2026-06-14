@@ -107,7 +107,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -317,10 +317,11 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [selectedTechId, setSelectedTechId] = useState(initialTechnician?.id ?? "");
   const [savingTech, setSavingTech]       = useState(false);
 
-  const [notifyOn,    setNotifyOn]    = useState(league.notifyGameEnd);
-  const [notifyEmail, setNotifyEmail] = useState(league.notifyEmail ?? "");
-  const [savingNotify, setSavingNotify] = useState(false);
-  const [notifyMsg,   setNotifyMsg]   = useState<string | null>(null);
+  const [notifyOn,       setNotifyOn]       = useState(league.notifyGameEnd);
+  const [notifyEmail,    setNotifyEmail]    = useState(league.notifyEmail ?? "");
+  const [notifyManagers, setNotifyManagers] = useState(league.notifyManagers);
+  const [savingNotify,   setSavingNotify]   = useState(false);
+  const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
 
   async function saveNotifications() {
     setSavingNotify(true); setNotifyMsg(null);
@@ -328,12 +329,13 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       const res = await fetch(`/api/leagues/${slug}/notifications`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail }),
+        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers }),
       });
       const data = await res.json();
       if (!res.ok) { setNotifyMsg(data.error ?? "Failed to save"); return; }
       setNotifyOn(data.notifyGameEnd);
       setNotifyEmail(data.notifyEmail ?? "");
+      setNotifyManagers(data.notifyManagers);
       setNotifyMsg("Saved ✓");
       setTimeout(() => setNotifyMsg(null), 2500);
     } finally {
@@ -563,6 +565,15 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                   style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
                 />
               )}
+              <label className="flex items-center gap-2 cursor-pointer mb-3">
+                <input
+                  type="checkbox"
+                  checked={notifyManagers}
+                  onChange={e => setNotifyManagers(e.target.checked)}
+                  className="w-4 h-4 accent-green-500"
+                />
+                <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify team managers &amp; assistants</span>
+              </label>
               <div className="flex items-center gap-2">
                 <button
                   onClick={saveNotifications}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit, getRequestMeta } from "@/lib/audit";
-import { sendGameEndNotification } from "@/lib/email";
+import { sendGameEndNotification, sendManagerGameEndNotification } from "@/lib/email";
 
 interface Params { params: Promise<{ slug: string; gameId: string }> }
 
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: {
       id: true, name: true,
       notifyGameEnd: true, notifyEmail: true,
+      notifyManagers: true,
       userRoles: { where: { userId }, select: { role: true } },
     },
   });
@@ -32,8 +33,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const game = await prisma.game.findFirst({
     where: { id: gameId, leagueId: league.id },
     include: {
-      homeTeam: { select: { name: true } },
-      awayTeam: { select: { name: true } },
+      homeTeam: { select: { name: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
+      awayTeam: { select: { name: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       field:    { select: { name: true } },
     },
   });
@@ -71,6 +72,28 @@ export async function POST(req: NextRequest, { params }: Params) {
       scheduledAt: game.scheduledAt,
       fieldName: game.field?.name ?? null,
     }).catch(err => console.error("[notify] game end email failed:", err));
+  }
+
+  if (league.notifyManagers) {
+    const staffToNotify: { email: string; name: string | null; myTeam: string; opponentTeam: string; myScore: number; opponentScore: number }[] = [];
+    if (game.homeTeam.manager?.email) staffToNotify.push({ email: game.homeTeam.manager.email, name: game.homeTeam.manager.name, myTeam: game.homeTeam.name, opponentTeam: game.awayTeam.name, myScore: homeScore, opponentScore: awayScore });
+    if (game.homeTeam.assistant?.email) staffToNotify.push({ email: game.homeTeam.assistant.email, name: game.homeTeam.assistant.name, myTeam: game.homeTeam.name, opponentTeam: game.awayTeam.name, myScore: homeScore, opponentScore: awayScore });
+    if (game.awayTeam.manager?.email) staffToNotify.push({ email: game.awayTeam.manager.email, name: game.awayTeam.manager.name, myTeam: game.awayTeam.name, opponentTeam: game.homeTeam.name, myScore: awayScore, opponentScore: homeScore });
+    if (game.awayTeam.assistant?.email) staffToNotify.push({ email: game.awayTeam.assistant.email, name: game.awayTeam.assistant.name, myTeam: game.awayTeam.name, opponentTeam: game.homeTeam.name, myScore: awayScore, opponentScore: homeScore });
+
+    for (const s of staffToNotify) {
+      sendManagerGameEndNotification({
+        to: s.email,
+        managerName: s.name,
+        leagueName: league.name,
+        myTeam: s.myTeam,
+        opponentTeam: s.opponentTeam,
+        myScore: s.myScore,
+        opponentScore: s.opponentScore,
+        scheduledAt: game.scheduledAt,
+        fieldName: game.field?.name ?? null,
+      }).catch(err => console.error("[notify] manager email failed:", err));
+    }
   }
 
   return NextResponse.json(updated);

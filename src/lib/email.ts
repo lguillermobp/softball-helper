@@ -253,6 +253,57 @@ export async function sendGameEndNotification(opts: {
   });
 }
 
+// ─── Manager game end notification ───────────────────────────────────────────
+
+export async function sendManagerGameEndNotification(opts: {
+  to: string;
+  managerName: string | null;
+  leagueName: string;
+  myTeam: string;
+  opponentTeam: string;
+  myScore: number;
+  opponentScore: number;
+  scheduledAt: Date;
+  fieldName: string | null;
+}) {
+  const date = opts.scheduledAt.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const time = opts.scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const outcome = opts.myScore > opts.opponentScore ? "🏆 Win" : opts.myScore < opts.opponentScore ? "Loss" : "Tie";
+  const outcomeColor = opts.myScore > opts.opponentScore ? "#4ade80" : opts.myScore < opts.opponentScore ? "#f87171" : "#fbbf24";
+
+  await getResend().emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Game result: ${opts.myTeam} vs ${opts.opponentTeam} — ${opts.leagueName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
+        <p style="color:#4ade80;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">⚾ Game Result — ${opts.leagueName}</p>
+        <h1 style="color:#f0fdf4;font-size:22px;font-weight:800;margin:0 0 4px;">${opts.myTeam}</h1>
+        <p style="color:#86efac;font-size:13px;margin:0 0 20px;">vs ${opts.opponentTeam}</p>
+        <div style="background:#1a3320;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:24px;">
+            <div>
+              <p style="color:#86efac;font-size:12px;margin:0 0 4px;">${opts.myTeam}</p>
+              <p style="color:#f0fdf4;font-size:48px;font-weight:900;margin:0;line-height:1;">${opts.myScore}</p>
+            </div>
+            <p style="color:#4ade80;font-size:18px;font-weight:700;margin:0;">–</p>
+            <div>
+              <p style="color:#86efac;font-size:12px;margin:0 0 4px;">${opts.opponentTeam}</p>
+              <p style="color:#f0fdf4;font-size:48px;font-weight:900;margin:0;line-height:1;">${opts.opponentScore}</p>
+            </div>
+          </div>
+          <p style="font-size:16px;font-weight:800;margin:16px 0 0;color:${outcomeColor};">${outcome}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr><td style="color:#4ade80;padding:4px 0;width:80px;">📅 Date</td><td style="color:#f0fdf4;">${date} at ${time}</td></tr>
+          ${opts.fieldName ? `<tr><td style="color:#4ade80;padding:4px 0;">📍 Field</td><td style="color:#f0fdf4;">${opts.fieldName}</td></tr>` : ""}
+        </table>
+        <p style="color:#4ade80;font-size:11px;margin-top:24px;opacity:0.6;">Softball Helper · Team notification</p>
+      </div>
+    `,
+  });
+}
+
 // ─── Support ticket emails ────────────────────────────────────────────────────
 
 function ticketCard(title: string, body: string, meta: Record<string, string>, ticketUrl: string, actionLabel: string) {
