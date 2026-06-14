@@ -145,7 +145,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
   let upcoming: UpcomingGame[] = [];
   if (cfg.showSchedule) {
     const games = await prisma.game.findMany({
-      where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledAt: { gte: new Date() } },
+      where: { OR: [{ homeTeamId: teamId, status: "SCHEDULED", scheduledAt: { gte: new Date() } }, { awayTeamId: teamId, status: "SCHEDULED", scheduledAt: { gte: new Date() } }, { homeTeamId: teamId, status: "IN_PROGRESS" }, { awayTeamId: teamId, status: "IN_PROGRESS" }] },
       orderBy: { scheduledAt: "asc" },
       take: 20,
       select: {
