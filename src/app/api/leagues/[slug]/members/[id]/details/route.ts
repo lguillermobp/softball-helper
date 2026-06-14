@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-interface Params { params: Promise<{ slug: string; userId: string }> }
+interface Params { params: Promise<{ slug: string; id: string }> }
 
 const HITS = new Set(["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN"]);
 
@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: Params) {
   const me = session?.user as any;
   if (!me?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { slug, userId } = await params;
+  const { slug, id: userId } = await params;
 
   // Caller must be master admin or a league admin of this league
   const league = await prisma.league.findUnique({
