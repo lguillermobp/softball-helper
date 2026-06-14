@@ -179,7 +179,15 @@ export default async function TeamPublicPage({ params }: PageProps) {
   let pastGames: PastGame[] = [];
   {
     const games = await prisma.game.findMany({
-      where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: { in: ["COMPLETED", "IN_PROGRESS"] } },
+      where: {
+        AND: [
+          { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }] },
+          { OR: [
+            { status: { in: ["COMPLETED", "IN_PROGRESS"] } },
+            { status: "SCHEDULED", scheduledAt: { lt: new Date() } },
+          ]},
+        ],
+      },
       orderBy: { scheduledAt: "desc" },
       take: 20,
       select: {
@@ -204,6 +212,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
       awayScore: g.awayScore ?? 0,
       fieldName: g.field?.name ?? null,
       isLive: g.status === "IN_PROGRESS",
+      isPending: g.status === "SCHEDULED",
     }));
   }
 

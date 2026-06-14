@@ -24,6 +24,7 @@ export interface PastGame {
   homeScore: number; awayScore: number;
   fieldName: string | null;
   isLive?: boolean;
+  isPending?: boolean;
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -220,22 +221,30 @@ function StandaloneUpcomingCard({ game, now }: { game: UpcomingGame; now: Date }
 }
 
 function ResultCard({ game }: { game: PastGame }) {
-  const isLive = game.isLive ?? false;
-  const homeWon = !isLive && game.homeScore > game.awayScore;
-  const awayWon = !isLive && game.awayScore > game.homeScore;
+  const isLive    = game.isLive    ?? false;
+  const isPending = game.isPending ?? false;
+  const homeWon = !isLive && !isPending && game.homeScore > game.awayScore;
+  const awayWon = !isLive && !isPending && game.awayScore > game.homeScore;
+  const borderColor = isLive ? "var(--pub-accent)" : isPending ? "rgba(251,191,36,0.35)" : "var(--pub-border)";
   return (
-    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: `1px solid ${isLive ? "var(--pub-accent)" : "var(--pub-border)"}`, background: "var(--pub-bg-card)", overflow: "hidden" }}>
+    <div style={{ display: "flex", alignItems: "stretch", borderRadius: 12, border: `1px solid ${borderColor}`, background: "var(--pub-bg-card)", overflow: "hidden" }}>
       <DateTimeBlock iso={game.scheduledAt} />
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 16px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", overflow: "hidden" }}>
           <span style={{ color: homeWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", fontWeight: homeWon || isLive ? 600 : 400, fontSize: 14, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.homeTeam}</span>
           <Logo name={game.homeTeam} logoUrl={game.homeLogoUrl} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "5px 14px", borderRadius: 8, background: "var(--pub-bg-card2)", border: `1px solid ${isLive ? "var(--pub-accent)" : "var(--pub-border)"}` }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
-          <span style={{ fontSize: 11, color: "var(--pub-accent)", fontWeight: 700 }}>–</span>
-          <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
-        </div>
+        {isPending ? (
+          <div style={{ display: "flex", alignItems: "center", flexShrink: 0, padding: "5px 10px", borderRadius: 8, background: "var(--pub-bg-card2)", border: "1px solid rgba(251,191,36,0.3)" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(251,191,36,0.85)", whiteSpace: "nowrap" }}>⏳ Pending</span>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "5px 14px", borderRadius: 8, background: "var(--pub-bg-card2)", border: `1px solid ${isLive ? "var(--pub-accent)" : "var(--pub-border)"}` }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: homeWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.homeScore}</span>
+            <span style={{ fontSize: 11, color: "var(--pub-accent)", fontWeight: 700 }}>–</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: awayWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", minWidth: 22, textAlign: "center" }}>{game.awayScore}</span>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" }}>
           <Logo name={game.awayTeam} logoUrl={game.awayLogoUrl} />
           <span style={{ color: awayWon ? "var(--pub-text)" : isLive ? "var(--pub-text)" : "var(--pub-muted)", fontWeight: awayWon || isLive ? 600 : 400, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.awayTeam}</span>
@@ -244,6 +253,9 @@ function ResultCard({ game }: { game: PastGame }) {
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, minWidth: 70, gap: 4 }}>
         {isLive && (
           <span style={{ fontSize: 10, fontWeight: 800, color: "var(--pub-accent)", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>● LIVE</span>
+        )}
+        {isPending && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(251,191,36,0.85)", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>PENDING</span>
         )}
         {game.fieldName && (
           <span style={{ fontSize: 11, color: "var(--pub-accent)", opacity: 0.65, maxWidth: 110, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -270,13 +282,14 @@ function currentWeekBounds(): { monday: Date; sunday: Date } {
 }
 
 export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming: UpcomingGame[]; past: PastGame[]; seasonTeams?: SeasonTeam[] }) {
-  const liveGames = past.filter(g => g.isLive);
-  const liveCount = liveGames.length;
-  // Live games pinned to top of Results list
-  const sortedPast = [...liveGames, ...past.filter(g => !g.isLive)];
-  // Auto-open Results when there are live games and nothing upcoming
+  const liveGames    = past.filter(g => g.isLive);
+  const pendingGames = past.filter(g => g.isPending);
+  const liveCount    = liveGames.length;
+  // Live → pending → completed
+  const sortedPast = [...liveGames, ...pendingGames, ...past.filter(g => !g.isLive && !g.isPending)];
+  // Auto-open Results when there are live/pending games and nothing upcoming
   const [tab, setTab] = useState<"upcoming" | "results">(() =>
-    liveCount > 0 && upcoming.length === 0 ? "results" : "upcoming"
+    (liveCount > 0 || pendingGames.length > 0) && upcoming.length === 0 ? "results" : "upcoming"
   );
 
   const [now, setNow] = useState(() => new Date());
@@ -285,7 +298,8 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
     return () => clearInterval(timer);
   }, []);
 
-  const dayGroups = buildDayGroups(upcoming, seasonTeams, liveGames);
+  // Pass all past games so completed/live/pending teams are excluded from bye calculation
+  const dayGroups = buildDayGroups(upcoming, seasonTeams, past);
 
   // Collapse all days outside the current Mon–Sun window
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
@@ -396,7 +410,7 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
                         </div>
                       )}
 
-                      {byeTeams.length > 0 && (
+                      {byeTeams.length > 0 && byeTeams.length < seasonTeams.length / 2 && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "var(--pub-accent-subtle)", border: "1px solid var(--pub-border)", flexWrap: "wrap" }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--pub-text2)", opacity: 0.7, whiteSpace: "nowrap" }}>🏖️ Bye:</span>
                           {byeTeams.map((t, i) => (
