@@ -19,6 +19,7 @@ export interface SeasonTeam { id: string; name: string }
 export interface PastGame {
   id: string; scheduledAt: string;
   homeTeam: string; awayTeam: string;
+  homeTeamId?: string; awayTeamId?: string;
   homeLogoUrl: string | null; awayLogoUrl: string | null;
   homeScore: number; awayScore: number;
   fieldName: string | null;
@@ -37,13 +38,23 @@ const SMON   = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV
 const FDOW   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as const;
 const FMON   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] as const;
 
-function buildDayGroups(games: UpcomingGame[], seasonTeams: SeasonTeam[]): DayGroup[] {
+function buildDayGroups(games: UpcomingGame[], seasonTeams: SeasonTeam[], liveGames: PastGame[] = []): DayGroup[] {
   const dayMap = new Map<string, UpcomingGame[]>();
   for (const g of games) {
     const d = new Date(g.scheduledAt);
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     if (!dayMap.has(key)) dayMap.set(key, []);
     dayMap.get(key)!.push(g);
+  }
+
+  // Pre-build a map of dayKey → live team IDs so bye calculation excludes them
+  const liveByDay = new Map<string, Set<string>>();
+  for (const g of liveGames) {
+    const d = new Date(g.scheduledAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    if (!liveByDay.has(key)) liveByDay.set(key, new Set());
+    if (g.homeTeamId) liveByDay.get(key)!.add(g.homeTeamId);
+    if (g.awayTeamId) liveByDay.get(key)!.add(g.awayTeamId);
   }
 
   return [...dayMap.keys()].sort().map(dayKey => {
@@ -65,9 +76,10 @@ function buildDayGroups(games: UpcomingGame[], seasonTeams: SeasonTeam[]): DayGr
     const date = new Date(y, mo - 1, d, 12); // noon avoids DST edge
     const label = `${FDOW[date.getDay()]} · ${FMON[date.getMonth()]} ${d}`;
 
-    // Bye teams: active season teams not playing this day
+    // Bye teams: exclude teams playing scheduled games AND teams in live games today
     const playingIds = new Set(dayGames.flatMap(g => [g.homeTeamId, g.awayTeamId]));
-    const byeTeams = seasonTeams.filter(t => !playingIds.has(t.id));
+    const liveIds = liveByDay.get(dayKey) ?? new Set<string>();
+    const byeTeams = seasonTeams.filter(t => !playingIds.has(t.id) && !liveIds.has(t.id));
 
     return { dayKey, label, total: dayGames.length, fieldGroups, byeTeams };
   });
@@ -258,9 +270,10 @@ function currentWeekBounds(): { monday: Date; sunday: Date } {
 }
 
 export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming: UpcomingGame[]; past: PastGame[]; seasonTeams?: SeasonTeam[] }) {
-  const liveCount = past.filter(g => g.isLive).length;
+  const liveGames = past.filter(g => g.isLive);
+  const liveCount = liveGames.length;
   // Live games pinned to top of Results list
-  const sortedPast = [...past.filter(g => g.isLive), ...past.filter(g => !g.isLive)];
+  const sortedPast = [...liveGames, ...past.filter(g => !g.isLive)];
   // Auto-open Results when there are live games and nothing upcoming
   const [tab, setTab] = useState<"upcoming" | "results">(() =>
     liveCount > 0 && upcoming.length === 0 ? "results" : "upcoming"
@@ -272,7 +285,7 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
     return () => clearInterval(timer);
   }, []);
 
-  const dayGroups = buildDayGroups(upcoming, seasonTeams);
+  const dayGroups = buildDayGroups(upcoming, seasonTeams, liveGames);
 
   // Collapse all days outside the current Mon–Sun window
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
@@ -310,6 +323,19 @@ export function ScheduleSection({ upcoming, past, seasonTeams = [] }: { upcoming
 
   return (
     <section>
+      {/* Live games banner — always visible above the tabs */}
+      {liveCount > 0 && (
+        <div
+          onClick={() => setTab("results")}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 16px", borderRadius: 10, border: "1px solid var(--pub-accent)", background: "var(--pub-accent-a10)", marginBottom: 14, cursor: "pointer" }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--pub-accent)" }}>
+            ● {liveCount} game{liveCount !== 1 ? "s" : ""} live right now
+          </span>
+          <span style={{ fontSize: 12, color: "var(--pub-accent)", opacity: 0.75 }}>View Results →</span>
+        </div>
+      )}
+
       {/* Header + tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pub-accent)", margin: 0 }}>📅 Schedule</h2>

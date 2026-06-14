@@ -244,6 +244,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       take: 30,
       select: {
         id: true, scheduledAt: true, seasonId: true, status: true,
+        homeTeamId: true, awayTeamId: true,
         homeScore: true, awayScore: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
@@ -276,6 +277,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
     past = pastGames.map(g => ({
       id: g.id, scheduledAt: g.scheduledAt.toISOString(), seasonId: g.seasonId,
       homeTeam: g.homeTeam.name, awayTeam: g.awayTeam.name,
+      homeTeamId: g.homeTeamId, awayTeamId: g.awayTeamId,
       homeLogoUrl: g.homeTeam.logoUrl ?? null,
       awayLogoUrl: g.awayTeam.logoUrl ?? null,
       homeScore: g.homeScore ?? 0,
