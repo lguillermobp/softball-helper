@@ -224,7 +224,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
   if (cfg.showSchedule) {
     const upcomingGames = await prisma.game.findMany({
-      where: { leagueId: league.id, status: "SCHEDULED", scheduledAt: { gte: new Date() } },
+      where: { leagueId: league.id, isPractice: false, status: "SCHEDULED", scheduledAt: { gte: new Date() } },
       orderBy: { scheduledAt: "asc" },
       take: 50,
       select: {
@@ -241,6 +241,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
     const pastGames = await prisma.game.findMany({
       where: {
         leagueId: league.id,
+        isPractice: false,
         OR: [
           { status: { in: ["COMPLETED", "IN_PROGRESS"] } },
           { status: "SCHEDULED", scheduledAt: { lt: new Date() } },
