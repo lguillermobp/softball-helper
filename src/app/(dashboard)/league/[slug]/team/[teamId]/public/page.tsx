@@ -145,7 +145,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
   let upcoming: UpcomingGame[] = [];
   if (cfg.showSchedule) {
     const games = await prisma.game.findMany({
-      where: { OR: [{ homeTeamId: teamId, status: "SCHEDULED", scheduledAt: { gte: new Date() } }, { awayTeamId: teamId, status: "SCHEDULED", scheduledAt: { gte: new Date() } }, { homeTeamId: teamId, status: "IN_PROGRESS" }, { awayTeamId: teamId, status: "IN_PROGRESS" }] },
+      where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: "SCHEDULED", scheduledAt: { gte: new Date() } },
       orderBy: { scheduledAt: "asc" },
       take: 20,
       select: {
@@ -179,11 +179,11 @@ export default async function TeamPublicPage({ params }: PageProps) {
   let pastGames: PastGame[] = [];
   {
     const games = await prisma.game.findMany({
-      where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: "COMPLETED" },
+      where: { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }], status: { in: ["COMPLETED", "IN_PROGRESS"] } },
       orderBy: { scheduledAt: "desc" },
       take: 20,
       select: {
-        id: true, scheduledAt: true, homeScore: true, awayScore: true,
+        id: true, scheduledAt: true, status: true, homeScore: true, awayScore: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         field:    { select: { name: true } },
@@ -199,6 +199,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
       homeScore: g.homeScore ?? 0,
       awayScore: g.awayScore ?? 0,
       fieldName: g.field?.name ?? null,
+      isLive: g.status === "IN_PROGRESS",
     }));
   }
 
