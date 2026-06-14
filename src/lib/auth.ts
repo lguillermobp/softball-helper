@@ -11,6 +11,12 @@ import { logAudit } from "./audit";
 // Users are created directly via prisma.user.create() in the register flow.
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  logger: {
+    error(code, ...message) {
+      if (code === "CredentialsSignin") return;
+      console.error(code, ...message);
+    },
+  },
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
