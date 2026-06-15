@@ -6,7 +6,7 @@ interface Params { params: Promise<{ slug: string }> }
 
 const IG_USER_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID!;
 const IG_TOKEN   = process.env.INSTAGRAM_ACCESS_TOKEN!;
-const BASE_URL   = (process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://softballhelper.com").replace(/\/$/, "");
+const BASE_URL   = (process.env.SOFTBALL_APP_URL ?? process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://softballhelper.com").replace(/\/$/, "");
 
 function igApi(path: string, body: Record<string, string>) {
   return fetch(`https://graph.facebook.com/v25.0${path}`, {
@@ -137,6 +137,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  console.log("[instagram] imageUrl:", imageUrl);
+
   // Step 1: Create media container
   const container = await igApi(`/${IG_USER_ID}/media`, {
     image_url: imageUrl,
@@ -145,7 +147,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!container.id) {
     console.error("[instagram] container error:", container);
-    return NextResponse.json({ error: "Failed to create media container", detail: container }, { status: 502 });
+    return NextResponse.json({ error: "Failed to create media container", imageUrl, detail: container }, { status: 502 });
   }
 
   // Wait for container to be ready (Instagram needs a moment to process the image)
