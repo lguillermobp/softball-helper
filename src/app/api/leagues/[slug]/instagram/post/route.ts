@@ -215,20 +215,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const imageUrl = `${IMAGE_BASE_URL}/api/ig-img/${img.id}`;
   console.log("[instagram] imageUrl:", imageUrl);
 
-  // Verify the image is reachable and returns a valid JPEG before handing to Instagram
-  try {
-    const probe = await fetch(imageUrl);
-    const ct = probe.headers.get("content-type") ?? "";
-    const buf = Buffer.from(await probe.arrayBuffer());
-    console.log("[instagram] probe status:", probe.status, "content-type:", ct, "size:", buf.length, "magic:", buf[0]?.toString(16), buf[1]?.toString(16));
-    if (!probe.ok || !ct.includes("image/jpeg") || buf[0] !== 0xff || buf[1] !== 0xd8) {
-      return NextResponse.json({ error: "Image URL is not serving a valid JPEG", imageUrl, status: probe.status, contentType: ct, bodyPreview: buf.slice(0, 200).toString("utf8") }, { status: 502 });
-    }
-  } catch (e) {
-    console.error("[instagram] probe failed:", e);
-    return NextResponse.json({ error: "Could not reach imageUrl from server", imageUrl }, { status: 502 });
-  }
-
   // Clean up old cached images (keep last 20)
   const old = await prisma.igImage.findMany({ orderBy: { createdAt: "asc" }, skip: 20 });
   if (old.length > 0) await prisma.igImage.deleteMany({ where: { id: { in: old.map(o => o.id) } } });
