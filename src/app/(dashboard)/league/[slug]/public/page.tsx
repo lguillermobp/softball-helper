@@ -146,7 +146,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
         orderBy: { name: "asc" },
       }),
       prisma.game.findMany({
-        where: { seasonId: latestSeason.id, status: "COMPLETED" },
+        where: { seasonId: latestSeason.id, status: "COMPLETED", isPractice: false },
         select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
       }),
     ]);
