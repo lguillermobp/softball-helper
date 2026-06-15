@@ -65,7 +65,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const game = await prisma.game.findFirst({
       where: { id: body.gameId, leagueId: league.id, status: "COMPLETED" },
       select: {
-        homeScore: true, awayScore: true,
+        homeScore: true, awayScore: true, scheduledAt: true,
         homeTeam: { select: { name: true } },
         awayTeam: { select: { name: true } },
         season:   { select: { name: true } },
@@ -74,15 +74,64 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!game || game.homeScore === null || game.awayScore === null) {
       return NextResponse.json({ error: "Game not found or not completed" }, { status: 404 });
     }
-    imageUrl = `${BASE_URL}/api/og/game-result/${body.gameId}`;
+    const date = new Date(game.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const params = new URLSearchParams({
+      home: game.homeTeam.name,
+      away: game.awayTeam.name,
+      hs: String(game.homeScore),
+      as: String(game.awayScore),
+      league: league.name,
+      season: game.season.name,
+      date,
+    });
+    imageUrl = `${BASE_URL}/api/og/game-result/${body.gameId}?${params}`;
     caption  = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
   } else if (body.type === "standings" && body.seasonId) {
     const season = await prisma.season.findFirst({
       where: { id: body.seasonId, leagueId: league.id },
-      select: { name: true },
+      select: {
+        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true,
+        teams: { select: { id: true, name: true } },
+        games: {
+          where: { status: "COMPLETED", isPractice: false },
+          select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, homeTeam: { select: { id: true, name: true } }, awayTeam: { select: { id: true, name: true } } },
+        },
+      },
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
-    imageUrl = `${BASE_URL}/api/og/standings/${body.seasonId}`;
+
+    // Compute standings server-side
+    type Row = { name: string; gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number };
+    const map = new Map<string, Row>();
+    for (const t of season.teams) map.set(t.id, { name: t.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+    for (const g of season.games) {
+      if (g.homeScore === null || g.awayScore === null) continue;
+      if (!map.has(g.homeTeamId)) map.set(g.homeTeamId, { name: g.homeTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+      if (!map.has(g.awayTeamId)) map.set(g.awayTeamId, { name: g.awayTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+      const h = map.get(g.homeTeamId)!; const a = map.get(g.awayTeamId)!;
+      h.gp++; a.gp++;
+      h.rf += g.homeScore; h.ra += g.awayScore;
+      a.rf += g.awayScore; a.ra += g.homeScore;
+      if (g.homeScore > g.awayScore) { h.w++; h.pts += season.pointsWin; a.l++; a.pts += season.pointsLoss; }
+      else if (g.awayScore > g.homeScore) { a.w++; a.pts += season.pointsWin; h.l++; h.pts += season.pointsLoss; }
+      else { h.t++; h.pts += season.pointsTie; a.t++; a.pts += season.pointsTie; }
+    }
+    const tbs = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
+    const rows = Array.from(map.values()).sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      for (const tb of tbs) {
+        let d = 0;
+        if (tb === "RD") d = (b.rf - b.ra) - (a.rf - a.ra);
+        else if (tb === "RF") d = b.rf - a.rf;
+        else if (tb === "RA") d = a.ra - b.ra;
+        else if (tb === "W")  d = b.w - a.w;
+        if (d !== 0) return d;
+      }
+      return 0;
+    });
+
+    const params = new URLSearchParams({ league: league.name, season: season.name, rows: JSON.stringify(rows) });
+    imageUrl = `${BASE_URL}/api/og/standings/${body.seasonId}?${params}`;
     caption  = standingsCaption(league.name, season.name);
   } else {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
