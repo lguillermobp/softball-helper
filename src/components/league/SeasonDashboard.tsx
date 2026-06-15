@@ -172,6 +172,27 @@ export function SeasonDashboard({
     setConfigOpen(false);
     router.refresh();
   }
+  const [igPosting, setIgPosting] = useState<string | null>(null); // gameId or "standings"
+  const [igResult, setIgResult]   = useState<{ id: string; ok: boolean } | null>(null);
+
+  async function postToInstagram(type: "game" | "standings", id: string) {
+    const key = type === "game" ? id : "standings";
+    setIgPosting(key); setIgResult(null);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/instagram/post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(type === "game" ? { type: "game", gameId: id } : { type: "standings", seasonId: id }),
+      });
+      const data = await res.json();
+      setIgResult({ id: key, ok: res.ok && !!data.ok });
+    } catch {
+      setIgResult({ id: key, ok: false });
+    } finally {
+      setIgPosting(null);
+    }
+  }
+
   const [assignDialog, setAssignDialog] = useState<{ dayKey: string; label: string } | null>(null);
   const [assignFieldId, setAssignFieldId]         = useState("");
   const [assignUmpireId, setAssignUmpireId]       = useState("");
@@ -859,6 +880,17 @@ ${body}
                                           {isAdmin ? "View / Edit" : "View"}
                                         </Link>
                                       )}
+                                      {game.status === "COMPLETED" && isAdmin && (
+                                        <button
+                                          onClick={() => postToInstagram("game", game.id)}
+                                          disabled={igPosting === game.id}
+                                          title={igResult?.id === game.id && igResult.ok ? "Posted!" : "Post result to Instagram"}
+                                          className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80 disabled:opacity-40"
+                                          style={{ background: "var(--sh-bg-card2)", color: igResult?.id === game.id && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
+                                        >
+                                          {igPosting === game.id ? "…" : igResult?.id === game.id && igResult.ok ? "✓ Posted" : "📸 IG"}
+                                        </button>
+                                      )}
                                     </div>
                                     <p className="text-xs" style={dim}>
                                       {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -973,7 +1005,17 @@ ${body}
       {tab === "standings" && (
         <div className="space-y-6">
           {standings.length > 0 && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {isAdmin && (
+                <button
+                  onClick={() => postToInstagram("standings", seasonId)}
+                  disabled={igPosting === "standings"}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
+                  style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
+                >
+                  {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
+                </button>
+              )}
               <button
                 onClick={printStandings}
                 className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
