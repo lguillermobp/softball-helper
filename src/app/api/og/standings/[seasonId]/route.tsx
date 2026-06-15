@@ -6,10 +6,15 @@ export const runtime = "nodejs";
 type Row = { name: string; gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number };
 
 function escSvg(s: string) {
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  // Replace curly quotes / fancy chars that librsvg may not have fonts for
+  return String(s)
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function truncate(text: string, max: number) {
-  return text.length > max ? text.slice(0, max - 1) + "…" : text;
+  return text.length > max ? text.slice(0, max - 1) + "..." : text;
 }
 
 export async function GET(req: NextRequest) {
@@ -72,7 +77,7 @@ export async function GET(req: NextRequest) {
 
   <!-- Header -->
   <text x="60" y="90" font-family="system-ui,sans-serif" font-size="22"
-        fill="rgba(255,255,255,0.5)" font-weight="600" letter-spacing="2">🥎 ${escSvg(truncate(league, 36))}</text>
+        fill="rgba(255,255,255,0.5)" font-weight="600" letter-spacing="2">${escSvg(truncate(league, 36))}</text>
   <text x="60" y="155" font-family="system-ui,sans-serif" font-size="52"
         fill="#ffffff" font-weight="800">Standings</text>
   <text x="60" y="200" font-family="system-ui,sans-serif" font-size="24"

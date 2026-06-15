@@ -55,10 +55,10 @@ export async function GET(req: NextRequest) {
   <circle cx="980" cy="-100" r="300" fill="rgba(34,197,94,0.04)"/>
   <circle cx="100" cy="1000" r="200" fill="rgba(34,197,94,0.04)"/>
 
-  <!-- Header: emoji + league name -->
+  <!-- Header: league name -->
   <text x="540" y="110" text-anchor="middle" font-family="system-ui,sans-serif"
         font-size="36" fill="rgba(255,255,255,0.6)" font-weight="600"
-        letter-spacing="2">🥎 ${escSvg(leagueLabel)}</text>
+        letter-spacing="2">${escSvg(leagueLabel)}</text>
 
   <!-- FINAL badge -->
   <rect x="415" y="140" width="250" height="44" rx="22"
@@ -111,5 +111,9 @@ export async function GET(req: NextRequest) {
 }
 
 function escSvg(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return String(s)
+    .replace(/['']/g, "'")
+    .replace(/[""]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
