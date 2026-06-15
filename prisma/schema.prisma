@@ -576,6 +576,16 @@ model TeamPublicPage {
   @@map("team_public_pages")
 }
 
+// ─── Instagram image cache (short-lived PNG blobs for posting) ───────────────
+
+model IgImage {
+  id        String   @id @default(cuid())
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("ig_images")
+}
+
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 
 model AuditLog {
