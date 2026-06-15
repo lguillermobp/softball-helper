@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     const headerRow = headers.map((h, i) =>
       `<text x="${firstColX + i * colW + colW / 2}" y="270" text-anchor="middle"
-        font-family="system-ui,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)"
+        font-family="DejaVu Sans,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)"
         font-weight="600" letter-spacing="1">${h}</text>`
     ).join("\n");
 
@@ -53,15 +53,15 @@ export async function GET(req: NextRequest) {
         const fill = j === 4 ? "#4ade80" : "rgba(255,255,255,0.7)";
         const fw = j === 4 ? "700" : "400";
         return `<text x="${firstColX + j * colW + colW / 2}" y="${y + ROW_H / 2 + 8}"
-          text-anchor="middle" font-family="system-ui,sans-serif" font-size="20"
+          text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="20"
           fill="${fill}" font-weight="${fw}">${v}</text>`;
       }).join("\n");
       return `${bg}
         <line x1="0" y1="${y + ROW_H}" x2="1080" y2="${y + ROW_H}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
         <text x="50" y="${y + ROW_H / 2 + 8}" text-anchor="middle"
-          font-family="system-ui,sans-serif" font-size="18" fill="${rankColor}" font-weight="700">${i + 1}</text>
+          font-family="DejaVu Sans,sans-serif" font-size="18" fill="${rankColor}" font-weight="700">${i + 1}</text>
         <text x="${nameX}" y="${y + ROW_H / 2 + 8}"
-          font-family="system-ui,sans-serif" font-size="${nameFontSize}" fill="${nameColor}" font-weight="${isFirst ? 700 : 500}">${escSvg(truncate(row.name, 28))}</text>
+          font-family="DejaVu Sans,sans-serif" font-size="${nameFontSize}" fill="${nameColor}" font-weight="${isFirst ? 700 : 500}">${escSvg(truncate(row.name, 28))}</text>
         ${cells}`;
     }).join("\n");
 
@@ -76,18 +76,18 @@ export async function GET(req: NextRequest) {
   <rect width="1080" height="${svgHeight}" fill="url(#bg)"/>
 
   <!-- Header -->
-  <text x="60" y="90" font-family="system-ui,sans-serif" font-size="22"
+  <text x="60" y="90" font-family="DejaVu Sans,sans-serif" font-size="22"
         fill="rgba(255,255,255,0.5)" font-weight="600" letter-spacing="2">${escSvg(truncate(league, 36))}</text>
-  <text x="60" y="155" font-family="system-ui,sans-serif" font-size="52"
+  <text x="60" y="155" font-family="DejaVu Sans,sans-serif" font-size="52"
         fill="#ffffff" font-weight="800">Standings</text>
-  <text x="60" y="200" font-family="system-ui,sans-serif" font-size="24"
+  <text x="60" y="200" font-family="DejaVu Sans,sans-serif" font-size="24"
         fill="#4ade80" font-weight="500">${escSvg(truncate(season, 40))}</text>
 
   <!-- Table header line -->
   <line x1="0" y1="280" x2="1080" y2="280" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
-  <text x="50" y="270" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="50" y="270" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="16" fill="rgba(255,255,255,0.3)" font-weight="600">#</text>
-  <text x="${nameX}" y="270" font-family="system-ui,sans-serif"
+  <text x="${nameX}" y="270" font-family="DejaVu Sans,sans-serif"
         font-size="16" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="1">TEAM</text>
   ${headerRow}
 
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
   ${dataRows}
 
   <!-- Footer -->
-  <text x="1060" y="${svgHeight - 20}" text-anchor="end" font-family="system-ui,sans-serif"
+  <text x="1060" y="${svgHeight - 20}" text-anchor="end" font-family="DejaVu Sans,sans-serif"
         font-size="18" fill="rgba(34,197,94,0.4)" letter-spacing="1">softballhelper.com</text>
 </svg>`;
 

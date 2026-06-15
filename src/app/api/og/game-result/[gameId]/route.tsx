@@ -56,43 +56,43 @@ export async function GET(req: NextRequest) {
   <circle cx="100" cy="1000" r="200" fill="rgba(34,197,94,0.04)"/>
 
   <!-- Header: league name -->
-  <text x="540" y="110" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="540" y="110" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="36" fill="rgba(255,255,255,0.6)" font-weight="600"
         letter-spacing="2">${escSvg(leagueLabel)}</text>
 
   <!-- FINAL badge -->
   <rect x="415" y="140" width="250" height="44" rx="22"
         fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.4)" stroke-width="1"/>
-  <text x="540" y="168" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="540" y="168" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="18" fill="#4ade80" font-weight="700" letter-spacing="4">FINAL</text>
 
   <!-- Away team name -->
-  <text x="270" y="480" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="270" y="480" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="${awayWins ? 50 : 40}" fill="${awayFill}" font-weight="800">${escSvg(awayLabel)}</text>
-  <text x="270" y="520" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="270" y="520" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="18" fill="rgba(255,255,255,0.3)" letter-spacing="2">AWAY</text>
 
   <!-- Scores -->
-  <text x="430" y="570" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="430" y="570" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="${awayWins ? 130 : 100}" fill="${aScoreFill}" font-weight="900">${as_}</text>
-  <text x="540" y="560" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="540" y="560" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="48" fill="rgba(255,255,255,0.2)" font-weight="300">–</text>
-  <text x="650" y="570" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="650" y="570" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="${homeWins ? 130 : 100}" fill="${hScoreFill}" font-weight="900">${hs}</text>
 
   <!-- Home team name -->
-  <text x="810" y="480" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="810" y="480" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="${homeWins ? 50 : 40}" fill="${homeFill}" font-weight="800">${escSvg(homeLabel)}</text>
-  <text x="810" y="520" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="810" y="520" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="18" fill="rgba(255,255,255,0.3)" letter-spacing="2">HOME</text>
 
   <!-- Divider line -->
   <line x1="480" y1="920" x2="600" y2="920" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
 
   <!-- Footer -->
-  <text x="540" y="955" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="540" y="955" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="20" fill="rgba(255,255,255,0.35)">${escSvg(footer)}</text>
-  <text x="540" y="990" text-anchor="middle" font-family="system-ui,sans-serif"
+  <text x="540" y="990" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="18" fill="rgba(34,197,94,0.5)" letter-spacing="1">softballhelper.com</text>
 </svg>`;
 

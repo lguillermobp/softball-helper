@@ -1,5 +1,6 @@
 [build]
 buildCommand = "npm run build"
+nixpacksPlan = "nixpacks.toml"
 
 [deploy]
 startCommand = "timeout 30 npx prisma migrate deploy; npm run start"
