@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { logAudit } from "./audit";
@@ -23,6 +24,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -61,11 +66,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ account, profile }) {
+      if (account?.provider === "google") {
+        if (!profile?.email) return false;
+        const existing = await prisma.user.findFirst({
+          where: { email: { equals: profile.email, mode: "insensitive" } },
+        });
+        // Block disabled accounts from logging in via Google
+        if (existing && !existing.isActive) return false;
+        return true;
+      }
+      return true;
+    },
+    async jwt({ token, user, account, profile }) {
       if (user) {
+        // Credentials login — user object is populated by authorize()
         token.id = user.id;
         token.isMasterAdmin = (user as any).isMasterAdmin;
         token.isSupportTechnician = (user as any).isSupportTechnician;
+      }
+      if (account?.provider === "google" && profile?.email) {
+        // Google login — find or create the user in our DB
+        let dbUser = await prisma.user.findFirst({
+          where: { email: { equals: profile.email, mode: "insensitive" } },
+        });
+        if (!dbUser) {
+          dbUser = await prisma.user.create({
+            data: {
+              email: profile.email,
+              name: (profile as any).name ?? null,
+              emailVerified: new Date(),
+            },
+          });
+        }
+        token.id = dbUser.id;
+        token.isMasterAdmin = dbUser.isMasterAdmin;
+        token.isSupportTechnician = dbUser.isSupportTechnician;
       }
       return token;
     },
