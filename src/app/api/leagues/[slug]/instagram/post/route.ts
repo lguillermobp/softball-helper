@@ -106,6 +106,7 @@ type ScheduleGame = {
   time: string; away: string; home: string;
   awayLogo: string | null; homeLogo: string | null;
   homeScore: number | null; awayScore: number | null; status: string;
+  protestStatus: string | null;
 };
 type ScheduleGroup = { field: string | null; games: ScheduleGame[] };
 
@@ -138,10 +139,15 @@ function buildScheduleSvg(
       const homeWins = done && g.homeScore! > g.awayScore!;
       const awLogo = logoCircle(g.awayLogo, 165, cy, 20, `awC${idx}`, g.away[0] ?? "A");
       const hmLogo = logoCircle(g.homeLogo, 915, cy, 20, `hmC${idx}`, g.home[0] ?? "H");
+      const protestPill = (g.protestStatus === "FILED" || g.protestStatus === "UPHELD")
+        ? `<rect x="495" y="${textY + 5}" width="90" height="15" rx="7" fill="${g.protestStatus === "UPHELD" ? "rgba(249,115,22,0.30)" : "rgba(234,179,8,0.30)"}"/>
+           <text x="540" y="${textY + 16}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="${g.protestStatus === "UPHELD" ? "#fb923c" : "#facc15"}" font-weight="bold">${g.protestStatus === "UPHELD" ? "UPHELD" : "PROTEST"}</text>`
+        : "";
       const middle = done
         ? `<text x="478" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${awayWins ? C.green : C.muted}" font-weight="bold">${g.awayScore}</text>
            <text x="540" y="${textY - 2}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.dim}">—</text>
-           <text x="602" y="${textY}" text-anchor="start" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${homeWins ? C.green : C.muted}" font-weight="bold">${g.homeScore}</text>`
+           <text x="602" y="${textY}" text-anchor="start" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${homeWins ? C.green : C.muted}" font-weight="bold">${g.homeScore}</text>
+           ${protestPill}`
         : `<text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}">vs</text>`;
       const awayFill = done ? (awayWins ? C.white : C.muted) : C.text;
       const homeFill = done ? (homeWins ? C.white : C.muted) : C.text;
@@ -504,7 +510,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const dbGames = await prisma.game.findMany({
       where: { id: { in: body.gameIds }, leagueId: league.id },
       select: {
-        scheduledAt: true, status: true, homeScore: true, awayScore: true,
+        scheduledAt: true, status: true, homeScore: true, awayScore: true, protestStatus: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         field:    { select: { id: true, name: true } },
@@ -538,14 +544,15 @@ export async function POST(req: NextRequest, { params }: Params) {
       const gs = byField.get(fk)!;
       const fieldName = showFieldHeaders ? (gs[0].field?.name ?? null) : null;
       const games: ScheduleGame[] = await Promise.all(gs.map(async g => ({
-        time:      new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }),
-        away:      g.awayTeam.name,
-        home:      g.homeTeam.name,
-        awayLogo:  await fetchLogoAsDataUri(g.awayTeam.logoUrl),
-        homeLogo:  await fetchLogoAsDataUri(g.homeTeam.logoUrl),
-        homeScore: g.homeScore,
-        awayScore: g.awayScore,
-        status:    g.status,
+        time:          new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }),
+        away:          g.awayTeam.name,
+        home:          g.homeTeam.name,
+        awayLogo:      await fetchLogoAsDataUri(g.awayTeam.logoUrl),
+        homeLogo:      await fetchLogoAsDataUri(g.homeTeam.logoUrl),
+        homeScore:     g.homeScore,
+        awayScore:     g.awayScore,
+        status:        g.status,
+        protestStatus: g.protestStatus,
       })));
       return { field: fieldName, games };
     }));
