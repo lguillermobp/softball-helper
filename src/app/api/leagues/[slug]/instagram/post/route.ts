@@ -8,9 +8,9 @@ interface Params { params: Promise<{ slug: string }> }
 const IG_USER_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID!;
 const IG_TOKEN   = process.env.INSTAGRAM_ACCESS_TOKEN!;
 const BASE_URL      = (process.env.SOFTBALL_APP_URL ?? process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://softballhelper.com").replace(/\/$/, "");
-// Use the raw Railway URL (no Cloudflare) when sending image URLs to Instagram,
-// because Cloudflare bot protection blocks Instagram's crawler.
-const IMAGE_BASE_URL = (process.env.SOFTBALL_RAILWAY_URL ?? BASE_URL).replace(/\/$/, "");
+// Use the custom domain (softballhelper.com) — a Cloudflare WAF rule bypasses
+// bot protection for /api/ig-img/* so Instagram's crawler can reach the image.
+const IMAGE_BASE_URL = BASE_URL;
 
 function igApi(path: string, body: Record<string, string>) {
   return fetch(`https://graph.facebook.com/v25.0${path}`, {
