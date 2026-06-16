@@ -202,10 +202,10 @@ async function buildGameSvg(
   const aScoreFill = awayWins ? C.green : C.muted;
   const footer = [trunc(season, 30), date].filter(Boolean).join(" · ");
   const protestBadge = protestStatus === "FILED"
-    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.5"/>
-       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#facc15" font-weight="bold" letter-spacing="2">⚠ BAJO PROTESTA / UNDER PROTEST</text>`
+    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(234,179,8,0.30)" stroke="rgba(234,179,8,0.70)" stroke-width="1.5"/>
+       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#facc15" font-weight="bold" letter-spacing="2">BAJO PROTESTA / UNDER PROTEST</text>`
     : protestStatus === "UPHELD"
-    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.5"/>
+    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(249,115,22,0.30)" stroke="rgba(249,115,22,0.70)" stroke-width="1.5"/>
        <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#fb923c" font-weight="bold" letter-spacing="2">PROTESTA ACEPTADA / PROTEST UPHELD</text>`
     : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
