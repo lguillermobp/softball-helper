@@ -114,7 +114,7 @@ function buildScheduleSvg(
   league: string, season: string, dateLabel: string,
   groups: ScheduleGroup[], leagueLogo: string | null = null,
 ): string {
-  const FIELD_H = 36; const GAME_H = 78; const HEADER_H = 202;
+  const FIELD_H = 40; const GAME_H = 90; const HEADER_H = 210;
   let contentH = 0;
   for (const g of groups) { if (g.field) contentH += FIELD_H; contentH += g.games.length * GAME_H; }
   const svgH = Math.max(1080, HEADER_H + contentH + 52);
@@ -137,8 +137,8 @@ function buildScheduleSvg(
       const done = g.status === "COMPLETED" && g.homeScore !== null && g.awayScore !== null;
       const awayWins = done && g.awayScore! > g.homeScore!;
       const homeWins = done && g.homeScore! > g.awayScore!;
-      const awLogo = logoCircle(g.awayLogo, 165, cy, 20, `awC${idx}`, g.away[0] ?? "A");
-      const hmLogo = logoCircle(g.homeLogo, 915, cy, 20, `hmC${idx}`, g.home[0] ?? "H");
+      const awLogo = logoCircle(g.awayLogo, 168, cy, 24, `awC${idx}`, g.away[0] ?? "A");
+      const hmLogo = logoCircle(g.homeLogo, 912, cy, 24, `hmC${idx}`, g.home[0] ?? "H");
       const protestPill = (() => {
         if (!g.protestStatus || g.protestStatus === "DENIED") return "";
         const upheld = g.protestStatus === "UPHELD";
@@ -147,26 +147,26 @@ function buildScheduleSvg(
           : "PROTEST FILED";
         const fill = upheld ? "rgba(249,115,22,0.30)" : "rgba(234,179,8,0.30)";
         const textFill = upheld ? "#fb923c" : "#facc15";
-        return `<rect x="390" y="${textY + 5}" width="300" height="15" rx="7" fill="${fill}"/>
-           <text x="540" y="${textY + 16}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="${textFill}" font-weight="bold">${esc(label)}</text>`;
+        return `<rect x="390" y="${textY + 6}" width="300" height="17" rx="8" fill="${fill}"/>
+           <text x="540" y="${textY + 18}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${textFill}" font-weight="bold">${esc(label)}</text>`;
       })();
       const middle = done
-        ? `<text x="478" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${awayWins ? C.green : C.muted}" font-weight="bold">${g.awayScore}</text>
-           <text x="540" y="${textY - 2}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.dim}">—</text>
-           <text x="602" y="${textY}" text-anchor="start" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${homeWins ? C.green : C.muted}" font-weight="bold">${g.homeScore}</text>
+        ? `<text x="472" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="34" fill="${awayWins ? C.green : C.muted}" font-weight="bold">${g.awayScore}</text>
+           <text x="540" y="${textY - 2}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}">—</text>
+           <text x="608" y="${textY}" text-anchor="start" font-family="DejaVu Sans,sans-serif" font-size="34" fill="${homeWins ? C.green : C.muted}" font-weight="bold">${g.homeScore}</text>
            ${protestPill}`
-        : `<text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}">vs</text>`;
+        : `<text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="${C.muted}">vs</text>`;
       const awayFill = done ? (awayWins ? C.white : C.muted) : C.text;
       const homeFill = done ? (homeWins ? C.white : C.muted) : C.text;
-      const nameSz   = done ? 17 : 19;
+      const nameSz   = done ? 19 : 21;
       body += `${idx % 2 === 1 ? `<rect x="0" y="${y}" width="1080" height="${GAME_H}" fill="rgba(255,255,255,0.018)"/>` : ""}
         <line x1="0" y1="${y + GAME_H}" x2="1080" y2="${y + GAME_H}" stroke="${C.divider}" stroke-width="1"/>
-        <text x="64" y="${textY - 4}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
-        <line x1="120" y1="${y + 10}" x2="120" y2="${y + GAME_H - 10}" stroke="${C.divider}" stroke-width="1"/>
+        <text x="64" y="${textY - 4}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
+        <line x1="120" y1="${y + 12}" x2="120" y2="${y + GAME_H - 12}" stroke="${C.divider}" stroke-width="1"/>
         ${awLogo}
-        <text x="196" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${awayFill}" font-weight="${awayWins ? "bold" : "normal"}">${esc(trunc(g.away, 14))}</text>
+        <text x="200" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${awayFill}" font-weight="${awayWins ? "bold" : "normal"}">${esc(trunc(g.away, 14))}</text>
         ${middle}
-        <text x="884" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${homeFill}" font-weight="${homeWins ? "bold" : "normal"}">${esc(trunc(g.home, 14))}</text>
+        <text x="880" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${homeFill}" font-weight="${homeWins ? "bold" : "normal"}">${esc(trunc(g.home, 14))}</text>
         ${hmLogo}`;
       y += GAME_H;
       idx++;
@@ -334,28 +334,41 @@ function buildStandingsSvg(
   rows: StandingRow[], showPct: boolean, leagueLogo: string | null = null,
 ): string {
   const display = rows.slice(0, 12);
-  const ROW_H = 62; const HEADER_H = 242;
-  const COL_HDR_Y = HEADER_H + 26;
-  const TABLE_TOP = HEADER_H + 42;
+  const HEADER_H = 252;
+  const COL_HDR_H = 48;
+  const TABLE_TOP = HEADER_H + COL_HDR_H;
+  // Scale row height to fill the canvas — bigger when few teams, smaller when many
+  const availH = 1080 - TABLE_TOP - 52;
+  const ROW_H = Math.max(62, Math.min(96, Math.floor(availH / Math.max(display.length, 1))));
   const svgH = Math.max(1080, TABLE_TOP + display.length * ROW_H + 52);
 
+  // Scale logo and font sizes with row height (baseline 62px → reference sizes)
+  const scale    = ROW_H / 62;
+  const LOGO_R   = Math.round(20 * scale);
+  const LOGO_CX  = 70;
+  const NAME_X   = LOGO_CX + LOGO_R + 12;
+  const nameFontBase = Math.round(19 * scale);
+  const cellFont = Math.round(20 * scale);
+  const rankFont = Math.round(17 * scale);
+
+  const COL_HDR_Y = HEADER_H + 28;
   const STATS = showPct
     ? ["GP","W","L","T","Pts","RF","RA","RD","PCT"]
     : ["GP","W","L","T","Pts","RF","RA","RD"];
-  const TEAM_END = 408; const STAT_RIGHT = 1058;
+  const TEAM_END = Math.round(NAME_X + 18 * 14); const STAT_RIGHT = 1058;
   const colW = (STAT_RIGHT - TEAM_END) / STATS.length;
   const cx = (i: number) => TEAM_END + (i + 0.5) * colW;
 
-  const RANK_CX = 30; const LOGO_CX = 66; const LOGO_R = 19; const NAME_X = 96;
+  const RANK_CX = 28;
 
   const headerCols = STATS.map((h, i) =>
-    `<text x="${cx(i)}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold" letter-spacing="0.5">${h}</text>`
+    `<text x="${cx(i)}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold" letter-spacing="0.5">${h}</text>`
   ).join("");
 
   const dataRows = display.map((row, i) => {
     const y = TABLE_TOP + i * ROW_H;
     const mid = y + ROW_H / 2;
-    const textY = mid + 7;
+    const textY = mid + Math.round(rankFont * 0.38);
     const isTop = row.rank === 1;
     const bg = isTop ? `<rect x="0" y="${y}" width="1080" height="${ROW_H}" fill="rgba(34,197,94,0.07)"/>` : "";
     const rd = row.rf - row.ra;
@@ -369,34 +382,35 @@ function buildStandingsSvg(
       : [C.muted, C.green, C.red, C.muted, C.white, C.muted, C.muted, rdColor];
     const bolds = [false, true, false, false, true, false, false, true, false];
     const cells = vals.map((v, j) =>
-      `<text x="${cx(j)}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${fills[j]}" font-weight="${bolds[j] ? "bold" : "normal"}">${v}</text>`
+      `<text x="${cx(j)}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${cellFont}" fill="${fills[j]}" font-weight="${bolds[j] ? "bold" : "normal"}">${v}</text>`
     ).join("");
     const tLogo = logoCircle(row.logoUri ?? null, LOGO_CX, mid, LOGO_R, `tClip${i}`, row.name[0] ?? "T");
+    const nameFont = isTop ? nameFontBase + 2 : nameFontBase;
     return `${bg}
       <line x1="24" y1="${y + ROW_H}" x2="1056" y2="${y + ROW_H}" stroke="${C.divider}" stroke-width="1"/>
-      <text x="${RANK_CX}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${isTop ? C.green : C.muted}" font-weight="${isTop ? "bold" : "normal"}">${row.rank}</text>
+      <text x="${RANK_CX}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${rankFont}" fill="${isTop ? C.green : C.muted}" font-weight="${isTop ? "bold" : "normal"}">${row.rank}</text>
       ${tLogo}
-      <text x="${NAME_X}" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${isTop ? 20 : 18}" fill="${isTop ? C.white : C.text}" font-weight="${isTop ? "bold" : "normal"}">${esc(trunc(row.name, 24))}</text>
+      <text x="${NAME_X}" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameFont}" fill="${isTop ? C.white : C.text}" font-weight="${isTop ? "bold" : "normal"}">${esc(trunc(row.name, 22))}</text>
       ${cells}`;
   }).join("");
 
   const groupBadge = groupName
-    ? `<rect x="160" y="210" width="${groupName.length * 12 + 80}" height="28" rx="14" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.3)" stroke-width="1"/>
-       <text x="200" y="229" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.green}" font-weight="bold" letter-spacing="1">GROUP ${esc(groupName.toUpperCase())}</text>`
+    ? `<rect x="160" y="214" width="${groupName.length * 13 + 88}" height="30" rx="15" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.3)" stroke-width="1"/>
+       <text x="202" y="234" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.green}" font-weight="bold" letter-spacing="1">GROUP ${esc(groupName.toUpperCase())}</text>`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
   ${getFontStyle()}
   <rect width="1080" height="${svgH}" fill="${C.bg}"/>
   <circle cx="1080" cy="0" r="500" fill="rgba(34,197,94,0.02)"/>
-  ${logoCircle(leagueLogo, 80, 122, 55, "lgClip", league[0] ?? "L")}
-  <text x="154" y="84" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
-  <text x="154" y="144" font-family="DejaVu Sans,sans-serif" font-size="50" fill="${C.white}" font-weight="bold">Standings</text>
-  <text x="154" y="190" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
+  ${logoCircle(leagueLogo, 80, 126, 58, "lgClip", league[0] ?? "L")}
+  <text x="158" y="86" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="158" y="152" font-family="DejaVu Sans,sans-serif" font-size="56" fill="${C.white}" font-weight="bold">Standings</text>
+  <text x="158" y="202" font-family="DejaVu Sans,sans-serif" font-size="24" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
   ${groupBadge}
   <line x1="24" y1="${HEADER_H}" x2="1056" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="${RANK_CX}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold">#</text>
-  <text x="${NAME_X}" y="${COL_HDR_Y}" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold">TEAM</text>
+  <text x="${RANK_CX}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold">#</text>
+  <text x="${NAME_X}" y="${COL_HDR_Y}" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold">TEAM</text>
   ${headerCols}
   ${dataRows}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
