@@ -1237,54 +1237,27 @@ ${body}
       {tab === "standings" && (
         <div className="space-y-6">
           {standings.length > 0 && (
-            <div className="flex flex-wrap justify-end gap-2">
-              {isAdmin && (
-                hasGroups ? groupKeys.map(g => {
-                  const label = g || "—";
-                  const previewKey = `standings-${g}`;
-                  const posted = igResult?.id === previewKey && igResult.ok;
-                  return (
-                    <div key={g} className="flex gap-1">
-                      <a
-                        href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}&group=${encodeURIComponent(g)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs px-2.5 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                        style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.5)", background: "transparent" }}
-                      >
-                        🖼 {label}
-                      </a>
-                      <button
-                        onClick={() => postToInstagram("standings", seasonId, g)}
-                        disabled={!!igPosting}
-                        className="text-xs px-2.5 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                        style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
-                      >
-                        {igPosting === previewKey ? "…" : posted ? `✓ ${label}` : `📸 ${label}`}
-                      </button>
-                    </div>
-                  );
-                }) : (
-                  <>
-                    <a
-                      href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                      style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.5)", background: "transparent" }}
-                    >
-                      🖼 Preview standings
-                    </a>
-                    <button
-                      onClick={() => postToInstagram("standings", seasonId)}
-                      disabled={!!igPosting}
-                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                      style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
-                    >
-                      {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
-                    </button>
-                  </>
-                )
+            <div className="flex justify-end gap-2">
+              {isAdmin && !hasGroups && (
+                <>
+                  <a
+                    href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.5)", background: "transparent" }}
+                  >
+                    🖼 Preview standings
+                  </a>
+                  <button
+                    onClick={() => postToInstagram("standings", seasonId)}
+                    disabled={!!igPosting}
+                    className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
+                    style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
+                  >
+                    {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
+                  </button>
+                </>
               )}
               <button
                 onClick={printStandings}
@@ -1304,11 +1277,36 @@ ${body}
             groupKeys.map((g) => {
               const rows = standings.filter((s) => (s.team.group ?? "") === g);
               const label = g ? `${tg.groupStandings} ${g}` : tg.ungrouped;
+              const previewKey = `standings-${g}`;
+              const posted = igResult?.id === previewKey && igResult.ok;
               return (
                 <div key={g} className="space-y-2">
-                  <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: "var(--sh-primary)" }}>
-                    {label}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold uppercase tracking-widest flex-1" style={{ color: "var(--sh-primary)" }}>
+                      {label}
+                    </h3>
+                    {isAdmin && (
+                      <>
+                        <a
+                          href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}&group=${encodeURIComponent(g)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80"
+                          style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.45)", background: "transparent" }}
+                        >
+                          🖼
+                        </a>
+                        <button
+                          onClick={() => postToInstagram("standings", seasonId, g)}
+                          disabled={!!igPosting}
+                          className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
+                          style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "rgba(255,255,255,0.45)", background: "transparent" }}
+                        >
+                          {igPosting === previewKey ? "…" : posted ? "✓" : "📸"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                   <StandingsTable rows={rows} />
                 </div>
               );

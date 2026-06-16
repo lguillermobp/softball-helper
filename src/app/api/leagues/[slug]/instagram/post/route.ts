@@ -352,7 +352,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
       fetchLogoAsDataUri(game.awayTeam.logoUrl),
     ]);
-    const date = new Date(game.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const _d = new Date(game.scheduledAt);
+    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
     const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
     const result = await postOneImage(svg, cap);
@@ -447,7 +449,9 @@ export async function GET(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
       fetchLogoAsDataUri(game.awayTeam.logoUrl),
     ]);
-    const date = new Date(game.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const _d = new Date(game.scheduledAt);
+    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
   } else if (type === "standings" && seasonId) {
     const season = await prisma.season.findFirst({
