@@ -86,9 +86,21 @@ function gameCaption(homeTeam: string, awayTeam: string, homeScore: number, away
   const en = tie ? `It's a tie! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}` : `${winner} wins! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}`;
   return `${es}\n${en}\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #beisbol`;
 }
-function standingsCaption(leagueName: string, seasonName: string) {
-  return `Clasificacion actualizada / Updated standings\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #standings #clasificacion`;
+function standingsCaption(leagueName: string, seasonName: string, group: string | null = null) {
+  const g = group ? ` — Group ${group}` : "";
+  return `Clasificacion actualizada / Updated standings${g}\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #standings #clasificacion`;
 }
+
+const C = {
+  bg:    "#111827",
+  white: "#f8fafc",
+  text:  "#e2e8f0",
+  muted: "#94a3b8",
+  dim:   "#64748b",
+  green: "#4ade80",
+  red:   "#f87171",
+  divider: "rgba(148,163,184,0.15)",
+} as const;
 
 async function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
@@ -96,85 +108,189 @@ async function buildGameSvg(
   homeLogo: string | null, awayLogo: string | null, leagueLogo: string | null,
 ) {
   const homeWins = hs > as_; const awayWins = as_ > hs;
-  const homeFill   = homeWins ? "#ffffff" : awayWins ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.75)";
-  const awayFill   = awayWins ? "#ffffff" : homeWins ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.75)";
-  const hScoreFill = homeWins ? "#4ade80" : "rgba(255,255,255,0.6)";
-  const aScoreFill = awayWins ? "#4ade80" : "rgba(255,255,255,0.6)";
-  const footer = [trunc(season, 30), date].filter(Boolean).join(" - ");
+  const homeFill   = homeWins ? C.white : awayWins ? C.muted : C.text;
+  const awayFill   = awayWins ? C.white : homeWins ? C.muted : C.text;
+  const hScoreFill = homeWins ? C.green : C.muted;
+  const aScoreFill = awayWins ? C.green : C.muted;
+  const footer = [trunc(season, 30), date].filter(Boolean).join(" · ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
   ${getFontStyle()}
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a1a0a"/><stop offset="50%" stop-color="#0f2a0f"/><stop offset="100%" stop-color="#0a1a0a"/>
-    </linearGradient>
-  </defs>
-  <rect width="1080" height="1080" fill="url(#bg)"/>
-  <circle cx="980" cy="-100" r="300" fill="rgba(34,197,94,0.04)"/>
-  <circle cx="100" cy="1000" r="200" fill="rgba(34,197,94,0.04)"/>
+  <rect width="1080" height="1080" fill="${C.bg}"/>
+  <circle cx="1080" cy="0" r="480" fill="rgba(34,197,94,0.025)"/>
+  <circle cx="0" cy="1080" r="360" fill="rgba(34,197,94,0.02)"/>
   ${logoCircle(leagueLogo, 540, 82, 48, "lgClip", league[0] ?? "L")}
-  <text x="540" y="162" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="26" fill="rgba(255,255,255,0.6)" font-weight="bold">${esc(trunc(league, 36))}</text>
-  <rect x="415" y="192" width="250" height="44" rx="22" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.4)" stroke-width="1"/>
-  <text x="540" y="220" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="#4ade80" font-weight="bold" letter-spacing="4">FINAL</text>
-  ${logoCircle(awayLogo, 220, 370, 75, "awClip", away[0] ?? "A")}
-  <text x="220" y="500" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 46 : 38}" fill="${awayFill}" font-weight="bold">${esc(trunc(away, 16))}</text>
-  <text x="220" y="532" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)">AWAY</text>
-  <text x="390" y="680" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 115 : 90}" fill="${aScoreFill}" font-weight="bold">${as_}</text>
-  <text x="540" y="665" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="44" fill="rgba(255,255,255,0.2)">-</text>
-  <text x="690" y="680" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 115 : 90}" fill="${hScoreFill}" font-weight="bold">${hs}</text>
-  ${logoCircle(homeLogo, 860, 370, 75, "hmClip", home[0] ?? "H")}
-  <text x="860" y="500" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 46 : 38}" fill="${homeFill}" font-weight="bold">${esc(trunc(home, 16))}</text>
-  <text x="860" y="532" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)">HOME</text>
-  <line x1="480" y1="870" x2="600" y2="870" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
-  <text x="540" y="905" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="rgba(255,255,255,0.35)">${esc(footer)}</text>
-  <text x="540" y="945" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="rgba(34,197,94,0.5)">softballhelper.com</text>
+  <text x="540" y="158" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <rect x="420" y="184" width="240" height="40" rx="20" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.35)" stroke-width="1.5"/>
+  <text x="540" y="210" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold" letter-spacing="4">FINAL</text>
+  ${logoCircle(awayLogo, 220, 368, 75, "awClip", away[0] ?? "A")}
+  <text x="220" y="496" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 44 : 36}" fill="${awayFill}" font-weight="bold">${esc(trunc(away, 16))}</text>
+  <text x="220" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">AWAY</text>
+  <text x="390" y="678" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 114 : 90}" fill="${aScoreFill}" font-weight="bold">${as_}</text>
+  <text x="540" y="660" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="40" fill="${C.dim}">—</text>
+  <text x="690" y="678" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 114 : 90}" fill="${hScoreFill}" font-weight="bold">${hs}</text>
+  ${logoCircle(homeLogo, 860, 368, 75, "hmClip", home[0] ?? "H")}
+  <text x="860" y="496" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 44 : 36}" fill="${homeFill}" font-weight="bold">${esc(trunc(home, 16))}</text>
+  <text x="860" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">HOME</text>
+  <line x1="40" y1="876" x2="1040" y2="876" stroke="${C.divider}" stroke-width="1"/>
+  <text x="540" y="914" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}">${esc(footer)}</text>
+  <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">softballhelper.com</text>
 </svg>`;
 }
 
-type Row = { name: string; logoUri?: string | null; gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number };
-async function buildStandingsSvg(league: string, season: string, rows: Row[], leagueLogo: string | null = null) {
-  const display = rows.slice(0, 10);
-  const ROW_H = 68; const TABLE_TOP = 310;
-  const svgH = Math.max(1080, TABLE_TOP + display.length * ROW_H + 80);
-  const colW = 72; const nameX = 122; const LOGO_R = 24; const LOGO_CX = 88;
-  const headers = ["GP","W","L","T","PTS","RF","RA"];
-  const firstColX = 1080 - headers.length * colW - 20;
-  const headerCols = headers.map((h, i) =>
-    `<text x="${firstColX + i * colW + colW / 2}" y="292" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="rgba(255,255,255,0.3)" font-weight="bold">${h}</text>`
+type StandingRow = {
+  _id?: string; // internal — team id for logo lookup, not rendered
+  name: string; logoUri?: string | null;
+  rank: number; gp: number; w: number; l: number; t: number;
+  pts: number; rf: number; ra: number; pct: string;
+};
+
+type SE = { id: string; name: string; group: string | null; gp: number; w: number; l: number; t: number; pts: number; rf: number; ra: number };
+
+function tbVal(e: SE, key: string): number {
+  return key === "RD" ? e.rf - e.ra : key === "RF" ? e.rf : key === "RA" ? -e.ra : key === "W" ? e.w : 0;
+}
+
+type SeasonData = {
+  name: string; pointsWin: number; pointsTie: number; pointsLoss: number; tiebreakers: string; showPct: boolean;
+  teams: Array<{ id: string; name: string; logoUrl: string | null; group: string | null }>;
+  games: Array<{
+    homeTeamId: string; awayTeamId: string; homeScore: number | null; awayScore: number | null;
+    protestStatus: string | null; protestTeamId: string | null;
+    homeTeam: { id: string; name: string; logoUrl: string | null };
+    awayTeam: { id: string; name: string; logoUrl: string | null };
+  }>;
+};
+
+function computeSeasonStats(season: SeasonData) {
+  const statsMap = new Map<string, SE>();
+  const logoUrlMap = new Map<string, string | null>();
+  for (const t of season.teams) {
+    statsMap.set(t.id, { id: t.id, name: t.name, group: t.group ?? null, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+    logoUrlMap.set(t.id, t.logoUrl ?? null);
+  }
+  for (const g of season.games) {
+    if (g.homeScore === null || g.awayScore === null) continue;
+    const hs = g.homeScore, as_ = g.awayScore;
+    const home = statsMap.get(g.homeTeamId); const away = statsMap.get(g.awayTeamId);
+    if (!home || !away) continue;
+    home.gp++; away.gp++; home.rf += hs; home.ra += as_; away.rf += as_; away.ra += hs;
+    let homeWins: boolean | null = hs > as_ ? true : as_ > hs ? false : null;
+    if (g.protestStatus === "UPHELD" && g.protestTeamId) {
+      const pwbs = (g.protestTeamId === g.homeTeamId && hs > as_) || (g.protestTeamId === g.awayTeamId && as_ > hs);
+      if (!pwbs) homeWins = g.protestTeamId === g.homeTeamId ? true : false;
+    }
+    if (homeWins === true)       { home.w++; home.pts += season.pointsWin;  away.l++; away.pts += season.pointsLoss; }
+    else if (homeWins === false)  { away.w++; away.pts += season.pointsWin;  home.l++; home.pts += season.pointsLoss; }
+    else                          { home.t++; home.pts += season.pointsTie;  away.t++; away.pts += season.pointsTie;  }
+    if (!logoUrlMap.has(g.homeTeamId)) logoUrlMap.set(g.homeTeamId, g.homeTeam.logoUrl ?? null);
+    if (!logoUrlMap.has(g.awayTeamId)) logoUrlMap.set(g.awayTeamId, g.awayTeam.logoUrl ?? null);
+  }
+
+  const groupMap = new Map<string, SE[]>();
+  for (const e of statsMap.values()) {
+    const key = e.group ?? "";
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key)!.push(e);
+  }
+  const sortedGroupKeys = [...groupMap.keys()].sort((a, b) => (!a && b) ? 1 : (a && !b) ? -1 : a.localeCompare(b));
+  const tbs = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
+  return { statsMap, logoUrlMap, groupMap, sortedGroupKeys, tbs };
+}
+
+function toStandingRows(entries: SE[], tbs: string[], _logoUrlMap?: Map<string, string | null>): StandingRow[] {
+  const cmp = (a: SE, b: SE) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    for (const tb of tbs) { const d = tbVal(b, tb) - tbVal(a, tb); if (d) return d; }
+    return a.name.localeCompare(b.name);
+  };
+  return [...entries].sort(cmp).map((e, i, arr) => {
+    let rank = i + 1;
+    for (let j = i - 1; j >= 0; j--) {
+      const p = arr[j]; if (p.pts !== e.pts) break;
+      if (tbs.every(tb => tbVal(p, tb) === tbVal(e, tb))) rank = j + 1; else break;
+    }
+    return { _id: e.id, name: e.name, rank, gp: e.gp, w: e.w, l: e.l, t: e.t, pts: e.pts, rf: e.rf, ra: e.ra,
+      pct: e.gp > 0 ? (e.w / e.gp).toFixed(3).replace(/^0/, "") : ".000" };
+  });
+}
+
+async function cleanupOldImages() {
+  const old = await prisma.igImage.findMany({ orderBy: { createdAt: "asc" }, skip: 20 });
+  if (old.length > 0) await prisma.igImage.deleteMany({ where: { id: { in: old.map(o => o.id) } } });
+}
+
+function buildStandingsSvg(
+  league: string, season: string, groupName: string | null,
+  rows: StandingRow[], showPct: boolean, leagueLogo: string | null = null,
+): string {
+  const display = rows.slice(0, 12);
+  const ROW_H = 62; const HEADER_H = 242;
+  const COL_HDR_Y = HEADER_H + 26;
+  const TABLE_TOP = HEADER_H + 42;
+  const svgH = Math.max(1080, TABLE_TOP + display.length * ROW_H + 52);
+
+  const STATS = showPct
+    ? ["GP","W","L","T","Pts","RF","RA","RD","PCT"]
+    : ["GP","W","L","T","Pts","RF","RA","RD"];
+  const TEAM_END = 408; const STAT_RIGHT = 1058;
+  const colW = (STAT_RIGHT - TEAM_END) / STATS.length;
+  const cx = (i: number) => TEAM_END + (i + 0.5) * colW;
+
+  const RANK_CX = 30; const LOGO_CX = 66; const LOGO_R = 19; const NAME_X = 96;
+
+  const headerCols = STATS.map((h, i) =>
+    `<text x="${cx(i)}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold" letter-spacing="0.5">${h}</text>`
   ).join("");
+
   const dataRows = display.map((row, i) => {
     const y = TABLE_TOP + i * ROW_H;
-    const isFirst = i === 0;
-    const cy = y + ROW_H / 2;
-    const bg = isFirst ? `<rect x="0" y="${y}" width="1080" height="${ROW_H}" fill="rgba(34,197,94,0.06)"/>` : "";
-    const cells = [row.gp, row.w, row.l, row.t, row.pts, row.rf, row.ra].map((v, j) =>
-      `<text x="${firstColX + j * colW + colW / 2}" y="${cy + 8}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${j === 4 ? "#4ade80" : "rgba(255,255,255,0.7)"}" font-weight="${j === 4 ? "bold" : "normal"}">${v}</text>`
+    const mid = y + ROW_H / 2;
+    const textY = mid + 7;
+    const isTop = row.rank === 1;
+    const bg = isTop ? `<rect x="0" y="${y}" width="1080" height="${ROW_H}" fill="rgba(34,197,94,0.07)"/>` : "";
+    const rd = row.rf - row.ra;
+    const rdColor = rd > 0 ? C.green : rd < 0 ? C.red : C.muted;
+    const rdText  = rd > 0 ? `+${rd}` : `${rd}`;
+    const vals = showPct
+      ? [row.gp, row.w, row.l, row.t, row.pts, row.rf, row.ra, rdText, row.pct]
+      : [row.gp, row.w, row.l, row.t, row.pts, row.rf, row.ra, rdText];
+    const fills = showPct
+      ? [C.muted, C.green, C.red, C.muted, C.white, C.muted, C.muted, rdColor, C.muted]
+      : [C.muted, C.green, C.red, C.muted, C.white, C.muted, C.muted, rdColor];
+    const bolds = [false, true, false, false, true, false, false, true, false];
+    const cells = vals.map((v, j) =>
+      `<text x="${cx(j)}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${fills[j]}" font-weight="${bolds[j] ? "bold" : "normal"}">${v}</text>`
     ).join("");
-    const tLogo = logoCircle(row.logoUri ?? null, LOGO_CX, cy, LOGO_R, `tClip${i}`, row.name[0] ?? "T");
+    const tLogo = logoCircle(row.logoUri ?? null, LOGO_CX, mid, LOGO_R, `tClip${i}`, row.name[0] ?? "T");
     return `${bg}
-      <line x1="0" y1="${y + ROW_H}" x2="1080" y2="${y + ROW_H}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-      <text x="38" y="${cy + 8}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${isFirst ? "#4ade80" : "rgba(255,255,255,0.3)"}" font-weight="bold">${i + 1}</text>
+      <line x1="24" y1="${y + ROW_H}" x2="1056" y2="${y + ROW_H}" stroke="${C.divider}" stroke-width="1"/>
+      <text x="${RANK_CX}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${isTop ? C.green : C.muted}" font-weight="${isTop ? "bold" : "normal"}">${row.rank}</text>
       ${tLogo}
-      <text x="${nameX}" y="${cy + 8}" font-family="DejaVu Sans,sans-serif" font-size="${isFirst ? 22 : 20}" fill="${isFirst ? "#ffffff" : "rgba(255,255,255,0.85)"}" font-weight="${isFirst ? "bold" : "normal"}">${esc(trunc(row.name, 26))}</text>
+      <text x="${NAME_X}" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${isTop ? 20 : 18}" fill="${isTop ? C.white : C.text}" font-weight="${isTop ? "bold" : "normal"}">${esc(trunc(row.name, 24))}</text>
       ${cells}`;
   }).join("");
+
+  const groupBadge = groupName
+    ? `<rect x="160" y="210" width="${groupName.length * 12 + 80}" height="28" rx="14" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.3)" stroke-width="1"/>
+       <text x="200" y="229" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.green}" font-weight="bold" letter-spacing="1">GROUP ${esc(groupName.toUpperCase())}</text>`
+    : "";
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
   ${getFontStyle()}
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a1a0a"/><stop offset="50%" stop-color="#0f2a0f"/><stop offset="100%" stop-color="#0a1a0a"/>
-    </linearGradient>
-  </defs>
-  <rect width="1080" height="${svgH}" fill="url(#bg)"/>
-  ${logoCircle(leagueLogo, 85, 130, 62, "lgClip", league[0] ?? "L")}
-  <text x="168" y="92" font-family="DejaVu Sans,sans-serif" font-size="22" fill="rgba(255,255,255,0.5)" font-weight="bold">${esc(trunc(league, 32))}</text>
-  <text x="168" y="157" font-family="DejaVu Sans,sans-serif" font-size="50" fill="#ffffff" font-weight="bold">Standings</text>
-  <text x="168" y="202" font-family="DejaVu Sans,sans-serif" font-size="24" fill="#4ade80" font-weight="bold">${esc(trunc(season, 38))}</text>
-  <line x1="0" y1="302" x2="1080" y2="302" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
-  <text x="38" y="292" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="rgba(255,255,255,0.3)" font-weight="bold">#</text>
-  <text x="${nameX}" y="292" font-family="DejaVu Sans,sans-serif" font-size="15" fill="rgba(255,255,255,0.3)" font-weight="bold">TEAM</text>
+  <rect width="1080" height="${svgH}" fill="${C.bg}"/>
+  <circle cx="1080" cy="0" r="500" fill="rgba(34,197,94,0.02)"/>
+  ${logoCircle(leagueLogo, 80, 122, 55, "lgClip", league[0] ?? "L")}
+  <text x="154" y="84" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="154" y="144" font-family="DejaVu Sans,sans-serif" font-size="50" fill="${C.white}" font-weight="bold">Standings</text>
+  <text x="154" y="190" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
+  ${groupBadge}
+  <line x1="24" y1="${HEADER_H}" x2="1056" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  <text x="${RANK_CX}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold">#</text>
+  <text x="${NAME_X}" y="${COL_HDR_Y}" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.muted}" font-weight="bold">TEAM</text>
   ${headerCols}
   ${dataRows}
-  <text x="1060" y="${svgH - 20}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="16" fill="rgba(34,197,94,0.4)">softballhelper.com</text>
+  <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
+  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
 </svg>`;
 }
 
@@ -203,10 +319,21 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json() as { type: "game" | "standings"; gameId?: string; seasonId?: string };
+  const body = await req.json() as { type: "game" | "standings"; gameId?: string; seasonId?: string; group?: string };
 
-  let svg: string;
-  let caption: string;
+  async function postOneImage(svg: string, caption: string): Promise<{ ok: boolean; postId?: string; error?: string; detail?: unknown }> {
+    const jpeg = await generateJpeg(svg);
+    console.log("[instagram] jpeg size:", jpeg.length, "bytes");
+    const img = await prisma.igImage.create({ data: { data: Buffer.from(jpeg) } });
+    const imageUrl = `${IMAGE_BASE_URL}/api/ig-img/${img.id}`;
+    console.log("[instagram] imageUrl:", imageUrl);
+    const container = await igApi(`/${IG_USER_ID}/media`, { image_url: imageUrl, caption });
+    if (!container.id) { console.error("[instagram] container error:", container); return { ok: false, error: "Failed to create media container", detail: container }; }
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    const publish = await igApi(`/${IG_USER_ID}/media_publish`, { creation_id: container.id });
+    if (!publish.id) { console.error("[instagram] publish error:", publish); return { ok: false, error: "Failed to publish", detail: publish }; }
+    return { ok: true, postId: publish.id };
+  }
 
   if (body.type === "game" && body.gameId) {
     const game = await prisma.game.findFirst({
@@ -218,109 +345,64 @@ export async function POST(req: NextRequest, { params }: Params) {
         season:   { select: { name: true } },
       },
     });
-    if (!game || game.homeScore === null || game.awayScore === null) {
+    if (!game || game.homeScore === null || game.awayScore === null)
       return NextResponse.json({ error: "Game not found or not completed" }, { status: 404 });
-    }
     const [leagueLogo, homeLogo, awayLogo] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
       fetchLogoAsDataUri(game.awayTeam.logoUrl),
     ]);
     const date = new Date(game.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    svg     = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
-    caption = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
+    const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
+    const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
+    const result = await postOneImage(svg, cap);
+    if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
+    await cleanupOldImages();
+    return NextResponse.json({ ok: true, postId: result.postId });
+
   } else if (body.type === "standings" && body.seasonId) {
     const season = await prisma.season.findFirst({
       where: { id: body.seasonId, leagueId: league.id },
       select: {
-        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true,
-        teams: { select: { id: true, name: true, logoUrl: true } },
+        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true, showPct: true,
+        teams: { select: { id: true, name: true, logoUrl: true, group: true } },
         games: {
           where: { status: "COMPLETED", isPractice: false },
-          select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, homeTeam: { select: { id: true, name: true, logoUrl: true } }, awayTeam: { select: { id: true, name: true, logoUrl: true } } },
+          select: {
+            homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true,
+            protestStatus: true, protestTeamId: true,
+            homeTeam: { select: { id: true, name: true, logoUrl: true } },
+            awayTeam: { select: { id: true, name: true, logoUrl: true } },
+          },
         },
       },
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
 
-    const logoUrlMap = new Map<string, string | null>();
-    for (const t of season.teams) logoUrlMap.set(t.id, t.logoUrl ?? null);
-    for (const g of season.games) {
-      if (!logoUrlMap.has(g.homeTeamId)) logoUrlMap.set(g.homeTeamId, g.homeTeam.logoUrl ?? null);
-      if (!logoUrlMap.has(g.awayTeamId)) logoUrlMap.set(g.awayTeamId, g.awayTeam.logoUrl ?? null);
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats(season);
+    const targetKeys = "group" in body
+      ? sortedGroupKeys.filter(k => k === (body.group ?? ""))
+      : sortedGroupKeys;
+    if (targetKeys.length === 0) return NextResponse.json({ error: "Group not found" }, { status: 404 });
+
+    const leagueLogo = await fetchLogoAsDataUri(league.logoUrl);
+    const posts: { group: string | null; postId: string }[] = [];
+    for (const groupKey of targetKeys) {
+      const rows = toStandingRows(groupMap.get(groupKey)!, tbs, logoUrlMap);
+      await Promise.all(rows.map(async (r, i) => { r.logoUri = await fetchLogoAsDataUri(logoUrlMap.get(r._id ?? "") ?? null); }));
+      const groupName = groupKey || null;
+      const svg = buildStandingsSvg(league.name, season.name, groupName, rows, season.showPct, leagueLogo);
+      const cap = standingsCaption(league.name, season.name, groupName);
+      const result = await postOneImage(svg, cap);
+      if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
+      posts.push({ group: groupName, postId: result.postId! });
     }
+    await cleanupOldImages();
+    return NextResponse.json({ ok: true, posts });
 
-    const map = new Map<string, Row>();
-    for (const t of season.teams) map.set(t.id, { name: t.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-    for (const g of season.games) {
-      if (g.homeScore === null || g.awayScore === null) continue;
-      if (!map.has(g.homeTeamId)) map.set(g.homeTeamId, { name: g.homeTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-      if (!map.has(g.awayTeamId)) map.set(g.awayTeamId, { name: g.awayTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-      const h = map.get(g.homeTeamId)!; const a = map.get(g.awayTeamId)!;
-      h.gp++; a.gp++;
-      h.rf += g.homeScore; h.ra += g.awayScore;
-      a.rf += g.awayScore; a.ra += g.homeScore;
-      if (g.homeScore > g.awayScore) { h.w++; h.pts += season.pointsWin; a.l++; a.pts += season.pointsLoss; }
-      else if (g.awayScore > g.homeScore) { a.w++; a.pts += season.pointsWin; h.l++; h.pts += season.pointsLoss; }
-      else { h.t++; h.pts += season.pointsTie; a.t++; a.pts += season.pointsTie; }
-    }
-    const tbs = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
-    const sortedEntries = Array.from(map.entries()).sort(([,a], [,b]) => {
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      for (const tb of tbs) {
-        let d = 0;
-        if (tb === "RD") d = (b.rf - b.ra) - (a.rf - a.ra);
-        else if (tb === "RF") d = b.rf - a.rf;
-        else if (tb === "RA") d = a.ra - b.ra;
-        else if (tb === "W")  d = b.w - a.w;
-        if (d !== 0) return d;
-      }
-      return 0;
-    });
-    const rows = sortedEntries.map(([, row]) => row);
-
-    const [leagueLogo, ...teamLogos] = await Promise.all([
-      fetchLogoAsDataUri(league.logoUrl),
-      ...sortedEntries.map(([id]) => fetchLogoAsDataUri(logoUrlMap.get(id) ?? null)),
-    ]);
-    rows.forEach((row, i) => { row.logoUri = teamLogos[i] ?? null; });
-
-    svg     = await buildStandingsSvg(league.name, season.name, rows, leagueLogo);
-    caption = standingsCaption(league.name, season.name);
   } else {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-
-  // Generate JPEG in-process and store in DB — gives Instagram a short, clean URL
-  const jpeg = await generateJpeg(svg);
-  console.log("[instagram] jpeg size:", jpeg.length, "bytes, magic:", jpeg[0]?.toString(16), jpeg[1]?.toString(16));
-
-  const img  = await prisma.igImage.create({ data: { data: Buffer.from(jpeg) } });
-  const imageUrl = `${IMAGE_BASE_URL}/api/ig-img/${img.id}`;
-  console.log("[instagram] imageUrl:", imageUrl);
-
-  // Clean up old cached images (keep last 20)
-  const old = await prisma.igImage.findMany({ orderBy: { createdAt: "asc" }, skip: 20 });
-  if (old.length > 0) await prisma.igImage.deleteMany({ where: { id: { in: old.map(o => o.id) } } });
-
-  // Step 1: Create media container
-  const container = await igApi(`/${IG_USER_ID}/media`, { image_url: imageUrl, caption });
-  if (!container.id) {
-    console.error("[instagram] container error:", container);
-    return NextResponse.json({ error: "Failed to create media container", imageUrl, detail: container }, { status: 502 });
-  }
-
-  // Wait for Instagram to process the image
-  await new Promise(resolve => setTimeout(resolve, 4000));
-
-  // Step 2: Publish
-  const publish = await igApi(`/${IG_USER_ID}/media_publish`, { creation_id: container.id });
-  if (!publish.id) {
-    console.error("[instagram] publish error:", publish);
-    return NextResponse.json({ error: "Failed to publish", detail: publish }, { status: 502 });
-  }
-
-  return NextResponse.json({ ok: true, postId: publish.id });
 }
 
 // ── Preview: GET /api/leagues/[slug]/instagram/post?type=game&gameId=X
@@ -371,55 +453,33 @@ export async function GET(req: NextRequest, { params }: Params) {
     const season = await prisma.season.findFirst({
       where: { id: seasonId, leagueId: league.id },
       select: {
-        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true,
-        teams: { select: { id: true, name: true, logoUrl: true } },
+        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true, showPct: true,
+        teams: { select: { id: true, name: true, logoUrl: true, group: true } },
         games: {
           where: { status: "COMPLETED", isPractice: false },
-          select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, homeTeam: { select: { id: true, name: true, logoUrl: true } }, awayTeam: { select: { id: true, name: true, logoUrl: true } } },
+          select: {
+            homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true,
+            protestStatus: true, protestTeamId: true,
+            homeTeam: { select: { id: true, name: true, logoUrl: true } },
+            awayTeam: { select: { id: true, name: true, logoUrl: true } },
+          },
         },
       },
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
-    const logoUrlMap = new Map<string, string | null>();
-    for (const t of season.teams) logoUrlMap.set(t.id, t.logoUrl ?? null);
-    for (const g of season.games) {
-      if (!logoUrlMap.has(g.homeTeamId)) logoUrlMap.set(g.homeTeamId, g.homeTeam.logoUrl ?? null);
-      if (!logoUrlMap.has(g.awayTeamId)) logoUrlMap.set(g.awayTeamId, g.awayTeam.logoUrl ?? null);
-    }
-    const map = new Map<string, Row>();
-    for (const t of season.teams) map.set(t.id, { name: t.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-    for (const g of season.games) {
-      if (g.homeScore === null || g.awayScore === null) continue;
-      if (!map.has(g.homeTeamId)) map.set(g.homeTeamId, { name: g.homeTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-      if (!map.has(g.awayTeamId)) map.set(g.awayTeamId, { name: g.awayTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
-      const h = map.get(g.homeTeamId)!; const a = map.get(g.awayTeamId)!;
-      h.gp++; a.gp++;
-      h.rf += g.homeScore; h.ra += g.awayScore;
-      a.rf += g.awayScore; a.ra += g.homeScore;
-      if (g.homeScore > g.awayScore) { h.w++; h.pts += season.pointsWin; a.l++; a.pts += season.pointsLoss; }
-      else if (g.awayScore > g.homeScore) { a.w++; a.pts += season.pointsWin; h.l++; h.pts += season.pointsLoss; }
-      else { h.t++; h.pts += season.pointsTie; a.t++; a.pts += season.pointsTie; }
-    }
-    const tbs = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
-    const sortedEntries = Array.from(map.entries()).sort(([,a], [,b]) => {
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      for (const tb of tbs) {
-        let d = 0;
-        if (tb === "RD") d = (b.rf - b.ra) - (a.rf - a.ra);
-        else if (tb === "RF") d = b.rf - a.rf;
-        else if (tb === "RA") d = a.ra - b.ra;
-        else if (tb === "W")  d = b.w - a.w;
-        if (d !== 0) return d;
-      }
-      return 0;
-    });
-    const rows = sortedEntries.map(([, row]) => row);
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats(season);
+    const requestedGroup = searchParams.get("group");
+    const groupKey = requestedGroup !== null
+      ? sortedGroupKeys.find(k => k === requestedGroup) ?? sortedGroupKeys[0]
+      : sortedGroupKeys[0];
+    if (groupKey === undefined) return NextResponse.json({ error: "No standings data" }, { status: 404 });
+    const rows = toStandingRows(groupMap.get(groupKey)!, tbs);
     const [leagueLogo, ...teamLogos] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
-      ...sortedEntries.map(([id]) => fetchLogoAsDataUri(logoUrlMap.get(id) ?? null)),
+      ...rows.map(r => fetchLogoAsDataUri(logoUrlMap.get(r._id ?? "") ?? null)),
     ]);
-    rows.forEach((row, i) => { row.logoUri = teamLogos[i] ?? null; });
-    svg = await buildStandingsSvg(league.name, season.name, rows, leagueLogo);
+    rows.forEach((r, i) => { r.logoUri = teamLogos[i] ?? null; });
+    svg = buildStandingsSvg(league.name, season.name, groupKey || null, rows, season.showPct, leagueLogo);
   } else {
     return NextResponse.json({ error: "type + gameId or seasonId required" }, { status: 400 });
   }
