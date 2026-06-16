@@ -187,15 +187,21 @@ export function SeasonDashboard({
   const [protestComment, setProtestComment] = useState("");
   const [protestLoading, setProtestLoading] = useState<string | null>(null);
 
-  async function postToInstagram(type: "game" | "standings", id: string, group?: string) {
-    const key = type === "game" ? id : group !== undefined ? `standings-${group}` : "standings";
+  async function postToInstagram(
+    type: "game" | "standings" | "schedule",
+    id: string,
+    opts?: { group?: string; dayKey?: string; gameIds?: string[] },
+  ) {
+    const key = type === "game" ? id
+      : type === "schedule" ? `schedule-${opts?.dayKey}`
+      : opts?.group !== undefined ? `standings-${opts.group}` : "standings";
     setIgPosting(key); setIgResult(null);
     try {
-      const body = type === "game"
-        ? { type: "game", gameId: id }
-        : group !== undefined
-          ? { type: "standings", seasonId: id, group }
-          : { type: "standings", seasonId: id };
+      let body: Record<string, unknown>;
+      if (type === "game")       body = { type: "game", gameId: id };
+      else if (type === "schedule") body = { type: "schedule", seasonId: id, dayKey: opts?.dayKey, gameIds: opts?.gameIds };
+      else if (opts?.group !== undefined) body = { type: "standings", seasonId: id, group: opts.group };
+      else                               body = { type: "standings", seasonId: id };
       const res = await fetch(`/api/leagues/${slug}/instagram/post`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -781,16 +787,32 @@ ${body}
                       📅 {label}
                     </button>
                     <span className="flex items-center gap-2 shrink-0">
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => openAssignDialog(dayKey, label)}
-                          className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity"
-                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
-                        >
-                          👤 Assign
-                        </button>
-                      )}
+                      {isAdmin && (() => {
+                        const dayGameIds = catGroups.flatMap(cg => cg.catGames.map(g => g.id));
+                        const schedKey = `schedule-${dayKey}`;
+                        const schedPosted = igResult?.id === schedKey && igResult.ok;
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openAssignDialog(dayKey, label)}
+                              className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity"
+                              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                            >
+                              👤 Assign
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => postToInstagram("schedule", seasonId, { dayKey, gameIds: dayGameIds })}
+                              disabled={!!igPosting}
+                              className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity disabled:opacity-40"
+                              style={{ borderColor: "var(--sh-border2)", color: schedPosted ? "#4ade80" : "var(--sh-secondary)", background: "transparent" }}
+                            >
+                              {igPosting === schedKey ? "…" : schedPosted ? "✓" : "📸"}
+                            </button>
+                          </>
+                        );
+                      })()}
                       {collapsed && (
                         <span className="text-xs" style={{ color: "var(--sh-muted)" }}>
                           {totalGames} game{totalGames !== 1 ? "s" : ""}
@@ -953,7 +975,7 @@ ${body}
                                             disabled={igPosting === game.id}
                                             title={igResult?.id === game.id && igResult.ok ? "Posted!" : "Post result to Instagram"}
                                             className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80 disabled:opacity-40"
-                                            style={{ background: "var(--sh-bg-card2)", color: igResult?.id === game.id && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
+                                            style={{ background: "var(--sh-bg-card2)", color: igResult?.id === game.id && igResult.ok ? "#4ade80" : "var(--sh-secondary)", border: "1px solid var(--sh-border2)" }}
                                           >
                                             {igPosting === game.id ? "…" : igResult?.id === game.id && igResult.ok ? "✓ Posted" : "📸 IG"}
                                           </button>
@@ -1235,7 +1257,7 @@ ${body}
                     onClick={() => postToInstagram("standings", seasonId)}
                     disabled={!!igPosting}
                     className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                    style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
+                    style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "var(--sh-secondary)", background: "transparent" }}
                   >
                     {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
                   </button>
@@ -1269,10 +1291,10 @@ ${body}
                     </h3>
                     {isAdmin && (
                       <button
-                        onClick={() => postToInstagram("standings", seasonId, g)}
+                        onClick={() => postToInstagram("standings", seasonId, { group: g })}
                         disabled={!!igPosting}
                         className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                        style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "rgba(255,255,255,0.45)", background: "transparent" }}
+                        style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "var(--sh-secondary)", background: "transparent" }}
                       >
                         {igPosting === previewKey ? "…" : posted ? "✓" : "📸"}
                       </button>

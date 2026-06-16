@@ -102,6 +102,59 @@ const C = {
   divider: "rgba(148,163,184,0.15)",
 } as const;
 
+type ScheduleGame = {
+  time: string; away: string; home: string;
+  awayLogo: string | null; homeLogo: string | null; field: string | null;
+};
+
+function buildScheduleSvg(
+  league: string, season: string, dateLabel: string,
+  games: ScheduleGame[], leagueLogo: string | null = null,
+): string {
+  const ROW_H = 82;
+  const HEADER_H = 202;
+  const svgH = Math.max(1080, HEADER_H + games.length * ROW_H + 52);
+  const rows = games.map((g, i) => {
+    const y = HEADER_H + i * ROW_H;
+    const cy = y + ROW_H / 2;
+    const textY = cy + 6;
+    const bg = i % 2 === 1 ? `<rect x="0" y="${y}" width="1080" height="${ROW_H}" fill="rgba(255,255,255,0.018)"/>` : "";
+    const awLogo = logoCircle(g.awayLogo, 165, cy, 21, `awC${i}`, g.away[0] ?? "A");
+    const hmLogo = logoCircle(g.homeLogo, 915, cy, 21, `hmC${i}`, g.home[0] ?? "H");
+    const fieldEl = g.field
+      ? `<text x="64" y="${textY + 14}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${C.dim}">${esc(trunc(g.field, 12))}</text>`
+      : "";
+    return `${bg}
+      <line x1="0" y1="${y + ROW_H}" x2="1080" y2="${y + ROW_H}" stroke="${C.divider}" stroke-width="1"/>
+      <text x="64" y="${textY - 6}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
+      ${fieldEl}
+      <line x1="120" y1="${y + 12}" x2="120" y2="${y + ROW_H - 12}" stroke="${C.divider}" stroke-width="1"/>
+      ${awLogo}
+      <text x="196" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.text}" font-weight="bold">${esc(trunc(g.away, 16))}</text>
+      <text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}">vs</text>
+      <text x="884" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.text}" font-weight="bold">${esc(trunc(g.home, 16))}</text>
+      ${hmLogo}`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
+  ${getFontStyle()}
+  <rect width="1080" height="${svgH}" fill="${C.bg}"/>
+  <circle cx="1080" cy="0" r="500" fill="rgba(34,197,94,0.02)"/>
+  ${logoCircle(leagueLogo, 76, 100, 52, "lgClip", league[0] ?? "L")}
+  <text x="148" y="68" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="148" y="124" font-family="DejaVu Sans,sans-serif" font-size="42" fill="${C.white}" font-weight="bold">${esc(dateLabel)}</text>
+  <text x="148" y="170" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
+  <line x1="24" y1="${HEADER_H}" x2="1056" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  ${rows}
+  <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
+  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+</svg>`;
+}
+
+function scheduleCaption(league: string, season: string, date: string, games: ScheduleGame[]): string {
+  const lines = games.map(g => `${g.time}  ${g.away} vs ${g.home}${g.field ? ` @ ${g.field}` : ""}`).join("\n");
+  return `📅 ${date}\n\n${lines}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
+}
+
 async function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
   league: string, season: string, date: string,
@@ -319,7 +372,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json() as { type: "game" | "standings"; gameId?: string; seasonId?: string; group?: string };
+  const body = await req.json() as { type: "game" | "standings" | "schedule"; gameId?: string; seasonId?: string; group?: string; dayKey?: string; gameIds?: string[] };
 
   async function postOneImage(svg: string, caption: string): Promise<{ ok: boolean; postId?: string; error?: string; detail?: unknown }> {
     const jpeg = await generateJpeg(svg);
@@ -401,6 +454,44 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     await cleanupOldImages();
     return NextResponse.json({ ok: true, posts });
+
+  } else if (body.type === "schedule" && body.seasonId && body.gameIds?.length) {
+    const dbGames = await prisma.game.findMany({
+      where: { id: { in: body.gameIds }, leagueId: league.id },
+      select: {
+        scheduledAt: true,
+        homeTeam: { select: { name: true, logoUrl: true } },
+        awayTeam: { select: { name: true, logoUrl: true } },
+        field:    { select: { name: true } },
+      },
+      orderBy: { scheduledAt: "asc" },
+    });
+    if (!dbGames.length) return NextResponse.json({ error: "No games found" }, { status: 404 });
+
+    const season = await prisma.season.findFirst({
+      where: { id: body.seasonId, leagueId: league.id },
+      select: { name: true },
+    });
+
+    const d0 = new Date(dbGames[0].scheduledAt);
+    const dateLabel = d0.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+
+    const leagueLogo = await fetchLogoAsDataUri(league.logoUrl);
+    const schedGames: ScheduleGame[] = await Promise.all(dbGames.map(async g => ({
+      time:     new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+      away:     g.awayTeam.name,
+      home:     g.homeTeam.name,
+      awayLogo: await fetchLogoAsDataUri(g.awayTeam.logoUrl),
+      homeLogo: await fetchLogoAsDataUri(g.homeTeam.logoUrl),
+      field:    g.field?.name ?? null,
+    })));
+
+    const svg = buildScheduleSvg(league.name, season?.name ?? "", dateLabel, schedGames, leagueLogo);
+    const cap = scheduleCaption(league.name, season?.name ?? "", dateLabel, schedGames);
+    const result = await postOneImage(svg, cap);
+    if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
+    await cleanupOldImages();
+    return NextResponse.json({ ok: true, postId: result.postId });
 
   } else {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
