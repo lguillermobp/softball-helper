@@ -104,37 +104,62 @@ const C = {
 
 type ScheduleGame = {
   time: string; away: string; home: string;
-  awayLogo: string | null; homeLogo: string | null; field: string | null;
+  awayLogo: string | null; homeLogo: string | null;
+  homeScore: number | null; awayScore: number | null; status: string;
 };
+type ScheduleGroup = { field: string | null; games: ScheduleGame[] };
 
 function buildScheduleSvg(
   league: string, season: string, dateLabel: string,
-  games: ScheduleGame[], leagueLogo: string | null = null,
+  groups: ScheduleGroup[], leagueLogo: string | null = null,
 ): string {
-  const ROW_H = 82;
-  const HEADER_H = 202;
-  const svgH = Math.max(1080, HEADER_H + games.length * ROW_H + 52);
-  const rows = games.map((g, i) => {
-    const y = HEADER_H + i * ROW_H;
-    const cy = y + ROW_H / 2;
-    const textY = cy + 6;
-    const bg = i % 2 === 1 ? `<rect x="0" y="${y}" width="1080" height="${ROW_H}" fill="rgba(255,255,255,0.018)"/>` : "";
-    const awLogo = logoCircle(g.awayLogo, 165, cy, 21, `awC${i}`, g.away[0] ?? "A");
-    const hmLogo = logoCircle(g.homeLogo, 915, cy, 21, `hmC${i}`, g.home[0] ?? "H");
-    const fieldEl = g.field
-      ? `<text x="64" y="${textY + 14}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${C.dim}">${esc(trunc(g.field, 12))}</text>`
-      : "";
-    return `${bg}
-      <line x1="0" y1="${y + ROW_H}" x2="1080" y2="${y + ROW_H}" stroke="${C.divider}" stroke-width="1"/>
-      <text x="64" y="${textY - 6}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
-      ${fieldEl}
-      <line x1="120" y1="${y + 12}" x2="120" y2="${y + ROW_H - 12}" stroke="${C.divider}" stroke-width="1"/>
-      ${awLogo}
-      <text x="196" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.text}" font-weight="bold">${esc(trunc(g.away, 16))}</text>
-      <text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}">vs</text>
-      <text x="884" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.text}" font-weight="bold">${esc(trunc(g.home, 16))}</text>
-      ${hmLogo}`;
-  }).join("");
+  const FIELD_H = 36; const GAME_H = 78; const HEADER_H = 202;
+  let contentH = 0;
+  for (const g of groups) { if (g.field) contentH += FIELD_H; contentH += g.games.length * GAME_H; }
+  const svgH = Math.max(1080, HEADER_H + contentH + 52);
+
+  let y = HEADER_H;
+  let idx = 0;
+  let body = "";
+
+  for (const group of groups) {
+    if (group.field) {
+      body += `<rect x="0" y="${y}" width="1080" height="${FIELD_H}" fill="rgba(34,197,94,0.06)"/>
+        <rect x="0" y="${y}" width="4" height="${FIELD_H}" fill="${C.green}"/>
+        <text x="18" y="${y + FIELD_H / 2 + 6}" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.green}" font-weight="bold" letter-spacing="1">${esc(group.field.toUpperCase())}</text>
+        <line x1="0" y1="${y + FIELD_H}" x2="1080" y2="${y + FIELD_H}" stroke="${C.divider}" stroke-width="1"/>`;
+      y += FIELD_H;
+    }
+    for (const g of group.games) {
+      const cy = y + GAME_H / 2;
+      const textY = cy + 7;
+      const done = g.status === "COMPLETED" && g.homeScore !== null && g.awayScore !== null;
+      const awayWins = done && g.awayScore! > g.homeScore!;
+      const homeWins = done && g.homeScore! > g.awayScore!;
+      const awLogo = logoCircle(g.awayLogo, 165, cy, 20, `awC${idx}`, g.away[0] ?? "A");
+      const hmLogo = logoCircle(g.homeLogo, 915, cy, 20, `hmC${idx}`, g.home[0] ?? "H");
+      const middle = done
+        ? `<text x="478" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${awayWins ? C.green : C.muted}" font-weight="bold">${g.awayScore}</text>
+           <text x="540" y="${textY - 2}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.dim}">—</text>
+           <text x="602" y="${textY}" text-anchor="start" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${homeWins ? C.green : C.muted}" font-weight="bold">${g.homeScore}</text>`
+        : `<text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}">vs</text>`;
+      const awayFill = done ? (awayWins ? C.white : C.muted) : C.text;
+      const homeFill = done ? (homeWins ? C.white : C.muted) : C.text;
+      const nameSz   = done ? 17 : 19;
+      body += `${idx % 2 === 1 ? `<rect x="0" y="${y}" width="1080" height="${GAME_H}" fill="rgba(255,255,255,0.018)"/>` : ""}
+        <line x1="0" y1="${y + GAME_H}" x2="1080" y2="${y + GAME_H}" stroke="${C.divider}" stroke-width="1"/>
+        <text x="64" y="${textY - 4}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
+        <line x1="120" y1="${y + 10}" x2="120" y2="${y + GAME_H - 10}" stroke="${C.divider}" stroke-width="1"/>
+        ${awLogo}
+        <text x="196" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${awayFill}" font-weight="${awayWins ? "bold" : "normal"}">${esc(trunc(g.away, 14))}</text>
+        ${middle}
+        <text x="884" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${homeFill}" font-weight="${homeWins ? "bold" : "normal"}">${esc(trunc(g.home, 14))}</text>
+        ${hmLogo}`;
+      y += GAME_H;
+      idx++;
+    }
+  }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
   ${getFontStyle()}
   <rect width="1080" height="${svgH}" fill="${C.bg}"/>
@@ -143,16 +168,25 @@ function buildScheduleSvg(
   <text x="148" y="68" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
   <text x="148" y="124" font-family="DejaVu Sans,sans-serif" font-size="42" fill="${C.white}" font-weight="bold">${esc(dateLabel)}</text>
   <text x="148" y="170" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
-  <line x1="24" y1="${HEADER_H}" x2="1056" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
-  ${rows}
+  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  ${body}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
   <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
 </svg>`;
 }
 
-function scheduleCaption(league: string, season: string, date: string, games: ScheduleGame[]): string {
-  const lines = games.map(g => `${g.time}  ${g.away} vs ${g.home}${g.field ? ` @ ${g.field}` : ""}`).join("\n");
-  return `📅 ${date}\n\n${lines}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
+function scheduleCaption(league: string, season: string, date: string, groups: ScheduleGroup[]): string {
+  const lines = groups.flatMap(grp => {
+    const header = grp.field ? [`${grp.field.toUpperCase()}`] : [];
+    const rows = grp.games.map(g => {
+      const done = g.status === "COMPLETED" && g.homeScore !== null && g.awayScore !== null;
+      return done
+        ? `${g.time}  ${g.away} ${g.awayScore} - ${g.homeScore} ${g.home}`
+        : `${g.time}  ${g.away} vs ${g.home}`;
+    });
+    return [...header, ...rows];
+  });
+  return `📅 ${date}\n\n${lines.join("\n")}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
 }
 
 async function buildGameSvg(
@@ -459,10 +493,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     const dbGames = await prisma.game.findMany({
       where: { id: { in: body.gameIds }, leagueId: league.id },
       select: {
-        scheduledAt: true,
+        scheduledAt: true, status: true, homeScore: true, awayScore: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
-        field:    { select: { name: true } },
+        field:    { select: { id: true, name: true } },
       },
       orderBy: { scheduledAt: "asc" },
     });
@@ -477,17 +511,35 @@ export async function POST(req: NextRequest, { params }: Params) {
     const dateLabel = d0.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
     const leagueLogo = await fetchLogoAsDataUri(league.logoUrl);
-    const schedGames: ScheduleGame[] = await Promise.all(dbGames.map(async g => ({
-      time:     new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
-      away:     g.awayTeam.name,
-      home:     g.homeTeam.name,
-      awayLogo: await fetchLogoAsDataUri(g.awayTeam.logoUrl),
-      homeLogo: await fetchLogoAsDataUri(g.homeTeam.logoUrl),
-      field:    g.field?.name ?? null,
-    })));
 
-    const svg = buildScheduleSvg(league.name, season?.name ?? "", dateLabel, schedGames, leagueLogo);
-    const cap = scheduleCaption(league.name, season?.name ?? "", dateLabel, schedGames);
+    // Group by field (preserving order from catGroups, which is field-sorted)
+    const fieldOrder: string[] = [];
+    const byField = new Map<string, typeof dbGames>();
+    for (const g of dbGames) {
+      const fk = g.field?.id ?? "__none__";
+      if (!byField.has(fk)) { byField.set(fk, []); fieldOrder.push(fk); }
+      byField.get(fk)!.push(g);
+    }
+    const showFieldHeaders = byField.size > 1 || (byField.size === 1 && !byField.has("__none__"));
+
+    const groups: ScheduleGroup[] = await Promise.all(fieldOrder.map(async fk => {
+      const gs = byField.get(fk)!;
+      const fieldName = showFieldHeaders ? (gs[0].field?.name ?? null) : null;
+      const games: ScheduleGame[] = await Promise.all(gs.map(async g => ({
+        time:      new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+        away:      g.awayTeam.name,
+        home:      g.homeTeam.name,
+        awayLogo:  await fetchLogoAsDataUri(g.awayTeam.logoUrl),
+        homeLogo:  await fetchLogoAsDataUri(g.homeTeam.logoUrl),
+        homeScore: g.homeScore,
+        awayScore: g.awayScore,
+        status:    g.status,
+      })));
+      return { field: fieldName, games };
+    }));
+
+    const svg = buildScheduleSvg(league.name, season?.name ?? "", dateLabel, groups, leagueLogo);
+    const cap = scheduleCaption(league.name, season?.name ?? "", dateLabel, groups);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();
