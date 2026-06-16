@@ -948,15 +948,6 @@ ${body}
                                       )}
                                       {game.status === "COMPLETED" && isAdmin && (
                                         <>
-                                          <a
-                                            href={`/api/leagues/${slug}/instagram/post?type=game&gameId=${game.id}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80"
-                                            style={{ background: "var(--sh-bg-card2)", color: "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
-                                          >
-                                            🖼 Preview
-                                          </a>
                                           <button
                                             onClick={() => postToInstagram("game", game.id)}
                                             disabled={igPosting === game.id}
@@ -1240,15 +1231,6 @@ ${body}
             <div className="flex justify-end gap-2">
               {isAdmin && !hasGroups && (
                 <>
-                  <a
-                    href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                    style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.5)", background: "transparent" }}
-                  >
-                    🖼 Preview standings
-                  </a>
                   <button
                     onClick={() => postToInstagram("standings", seasonId)}
                     disabled={!!igPosting}
@@ -1286,25 +1268,14 @@ ${body}
                       {label}
                     </h3>
                     {isAdmin && (
-                      <>
-                        <a
-                          href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}&group=${encodeURIComponent(g)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80"
-                          style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.45)", background: "transparent" }}
-                        >
-                          🖼
-                        </a>
-                        <button
-                          onClick={() => postToInstagram("standings", seasonId, g)}
-                          disabled={!!igPosting}
-                          className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                          style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "rgba(255,255,255,0.45)", background: "transparent" }}
-                        >
-                          {igPosting === previewKey ? "…" : posted ? "✓" : "📸"}
-                        </button>
-                      </>
+                      <button
+                        onClick={() => postToInstagram("standings", seasonId, g)}
+                        disabled={!!igPosting}
+                        className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
+                        style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "rgba(255,255,255,0.45)", background: "transparent" }}
+                      >
+                        {igPosting === previewKey ? "…" : posted ? "✓" : "📸"}
+                      </button>
                     )}
                   </div>
                   <StandingsTable rows={rows} />
