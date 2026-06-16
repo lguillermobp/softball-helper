@@ -107,7 +107,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -320,6 +320,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [notifyEmail,    setNotifyEmail]    = useState(league.notifyEmail ?? "");
   const [notifyManagers, setNotifyManagers] = useState(league.notifyManagers);
   const [igEnabled,      setIgEnabled]      = useState(league.instagramEnabled);
+  const [timezone,       setTimezone]       = useState(league.timezone || "UTC");
   const [savingNotify,   setSavingNotify]   = useState(false);
   const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
 
@@ -329,7 +330,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       const res = await fetch(`/api/leagues/${slug}/notifications`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers, instagramEnabled: igEnabled }),
+        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers, instagramEnabled: igEnabled, timezone }),
       });
       const data = await res.json();
       if (!res.ok) { setNotifyMsg(data.error ?? "Failed to save"); return; }
@@ -337,6 +338,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       setNotifyEmail(data.notifyEmail ?? "");
       setNotifyManagers(data.notifyManagers);
       setIgEnabled(data.instagramEnabled);
+      setTimezone(data.timezone || "UTC");
       setNotifyMsg("Saved ✓");
       setTimeout(() => setNotifyMsg(null), 2500);
     } finally {
@@ -558,6 +560,51 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               />
               <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify team managers &amp; assistants</span>
             </label>
+            <div className="mb-3">
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--sh-muted)" }}>Timezone</label>
+              <select
+                value={timezone}
+                onChange={e => setTimezone(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+              >
+                <optgroup label="North America">
+                  <option value="America/New_York">Eastern — New York, Miami, Toronto</option>
+                  <option value="America/Chicago">Central — Chicago, Dallas, Mexico City</option>
+                  <option value="America/Denver">Mountain — Denver, Phoenix</option>
+                  <option value="America/Los_Angeles">Pacific — Los Angeles, Seattle, Vancouver</option>
+                  <option value="America/Anchorage">Alaska</option>
+                  <option value="Pacific/Honolulu">Hawaii</option>
+                </optgroup>
+                <optgroup label="Latin America">
+                  <option value="America/Argentina/Buenos_Aires">Argentina — Buenos Aires</option>
+                  <option value="America/Sao_Paulo">Brazil — São Paulo, Rio de Janeiro</option>
+                  <option value="America/Santiago">Chile — Santiago</option>
+                  <option value="America/Bogota">Colombia — Bogotá</option>
+                  <option value="America/Lima">Peru — Lima</option>
+                  <option value="America/Caracas">Venezuela — Caracas</option>
+                  <option value="America/La_Paz">Bolivia — La Paz</option>
+                  <option value="America/Asuncion">Paraguay — Asunción</option>
+                  <option value="America/Montevideo">Uruguay — Montevideo</option>
+                  <option value="America/Guayaquil">Ecuador — Guayaquil</option>
+                  <option value="America/Panama">Panama City</option>
+                  <option value="America/Costa_Rica">Costa Rica</option>
+                  <option value="America/Guatemala">Guatemala</option>
+                  <option value="America/Tegucigalpa">Honduras</option>
+                  <option value="America/El_Salvador">El Salvador</option>
+                  <option value="America/Managua">Nicaragua</option>
+                  <option value="America/Santo_Domingo">Dominican Republic</option>
+                  <option value="America/Puerto_Rico">Puerto Rico</option>
+                  <option value="America/Havana">Cuba — Havana</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Madrid">Madrid, Barcelona</option>
+                  <option value="Europe/Paris">Paris, Rome, Berlin</option>
+                </optgroup>
+                <option value="UTC">UTC</option>
+              </select>
+            </div>
             <label className="flex items-center gap-2 cursor-pointer mb-3">
               <input
                 type="checkbox"

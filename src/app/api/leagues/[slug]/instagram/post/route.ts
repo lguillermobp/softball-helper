@@ -399,7 +399,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    select: { id: true, name: true, logoUrl: true, instagramEnabled: true, userRoles: { where: { userId }, select: { role: true } } },
+    select: { id: true, name: true, logoUrl: true, instagramEnabled: true, timezone: true, userRoles: { where: { userId }, select: { role: true } } },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -440,9 +440,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
       fetchLogoAsDataUri(game.awayTeam.logoUrl),
     ]);
+    const tz = league.timezone || "UTC";
     const _d = new Date(game.scheduledAt);
-    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
+      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
     const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
     const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
     const result = await postOneImage(svg, cap);
@@ -508,8 +509,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       select: { name: true },
     });
 
+    const tz = league.timezone || "UTC";
     const d0 = new Date(dbGames[0].scheduledAt);
-    const dateLabel = d0.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    const dateLabel = d0.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz });
 
     const leagueLogo = await fetchLogoAsDataUri(league.logoUrl);
 
@@ -527,7 +529,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       const gs = byField.get(fk)!;
       const fieldName = showFieldHeaders ? (gs[0].field?.name ?? null) : null;
       const games: ScheduleGame[] = await Promise.all(gs.map(async g => ({
-        time:      new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+        time:      new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }),
         away:      g.awayTeam.name,
         home:      g.homeTeam.name,
         awayLogo:  await fetchLogoAsDataUri(g.awayTeam.logoUrl),
@@ -563,7 +565,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    select: { id: true, name: true, logoUrl: true, userRoles: { where: { userId }, select: { role: true } } },
+    select: { id: true, name: true, logoUrl: true, timezone: true, userRoles: { where: { userId }, select: { role: true } } },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
@@ -593,9 +595,10 @@ export async function GET(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
       fetchLogoAsDataUri(game.awayTeam.logoUrl),
     ]);
+    const tz = league.timezone || "UTC";
     const _d = new Date(game.scheduledAt);
-    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
+      + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
     svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
   } else if (type === "standings" && seasonId) {
     const season = await prisma.season.findFirst({

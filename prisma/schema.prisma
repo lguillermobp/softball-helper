@@ -122,6 +122,7 @@ model League {
   notifyEmail          String?
   notifyManagers       Boolean          @default(false)
   instagramEnabled     Boolean          @default(false)
+  timezone             String           @default("UTC")
 
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]
