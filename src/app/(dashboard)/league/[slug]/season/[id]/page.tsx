@@ -78,10 +78,23 @@ export default async function SeasonPage({ params }: PageProps) {
     home.rf += hs; home.ra += as_;
     away.rf += as_; away.ra += hs;
 
-    if (hs > as_) {
+    // Determine effective winner — upheld protest overrides score unless protesting team already won
+    let homeWins: boolean | null =
+      hs > as_ ? true : as_ > hs ? false : null;
+
+    if (game.protestStatus === "UPHELD" && game.protestTeamId) {
+      const protestWonByScore =
+        (game.protestTeamId === game.homeTeamId && hs > as_) ||
+        (game.protestTeamId === game.awayTeamId && as_ > hs);
+      if (!protestWonByScore) {
+        homeWins = game.protestTeamId === game.homeTeamId ? true : false;
+      }
+    }
+
+    if (homeWins === true) {
       home.w++; home.pts += season.pointsWin;
       away.l++;  away.pts += season.pointsLoss;
-    } else if (as_ > hs) {
+    } else if (homeWins === false) {
       away.w++; away.pts += season.pointsWin;
       home.l++;  home.pts += season.pointsLoss;
     } else {

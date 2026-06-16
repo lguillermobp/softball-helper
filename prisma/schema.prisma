@@ -308,10 +308,13 @@ model Game {
   startedAt         DateTime?
   lineupsLocked     Boolean    @default(false)
   cancelReason      String?
-  isPractice        Boolean    @default(false)
+  isPractice        Boolean       @default(false)
   rescheduledFromId String?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  protestStatus     ProtestStatus?
+  protestTeamId     String?
+  protestComment    String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   league          League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   season          Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
@@ -339,6 +342,12 @@ enum GameStatus {
   COMPLETED
   CANCELLED
   RESCHEDULED
+}
+
+enum ProtestStatus {
+  FILED
+  UPHELD
+  DENIED
 }
 
 enum OfficialRole {

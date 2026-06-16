@@ -147,7 +147,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       }),
       prisma.game.findMany({
         where: { seasonId: latestSeason.id, status: "COMPLETED", isPractice: false },
-        select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
+        select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, protestStatus: true, protestTeamId: true },
       }),
     ]);
 
@@ -169,9 +169,20 @@ export default async function LeaguePublicPage({ params }: PageProps) {
       home.gp++; away.gp++;
       home.rf += hs; home.ra += as_;
       away.rf += as_; away.ra += hs;
-      if (hs > as_)       { home.w++; home.pts += ptsWin;  away.l++; away.pts += ptsLoss; }
-      else if (as_ > hs)  { away.w++; away.pts += ptsWin;  home.l++; home.pts += ptsLoss; }
-      else                { home.t++; home.pts += ptsTie;  away.t++; away.pts += ptsTie;  }
+
+      let homeWins: boolean | null = hs > as_ ? true : as_ > hs ? false : null;
+      if (g.protestStatus === "UPHELD" && g.protestTeamId) {
+        const protestWonByScore =
+          (g.protestTeamId === g.homeTeamId && hs > as_) ||
+          (g.protestTeamId === g.awayTeamId && as_ > hs);
+        if (!protestWonByScore) {
+          homeWins = g.protestTeamId === g.homeTeamId ? true : false;
+        }
+      }
+
+      if (homeWins === true)       { home.w++; home.pts += ptsWin;  away.l++; away.pts += ptsLoss; }
+      else if (homeWins === false)  { away.w++; away.pts += ptsWin;  home.l++; home.pts += ptsLoss; }
+      else                          { home.t++; home.pts += ptsTie;  away.t++; away.pts += ptsTie;  }
     }
 
     // Split into groups first, then sort WITHIN each group independently

@@ -41,6 +41,9 @@ interface Game {
   rescheduledFrom: { id: string; scheduledAt: string } | null;
   startedAt: string | null;
   officials: { role: string; user: { name: string | null } }[];
+  protestStatus: string | null;
+  protestTeamId: string | null;
+  protestComment: string | null;
 }
 
 interface Standing {
@@ -175,6 +178,15 @@ export function SeasonDashboard({
   const [igPosting, setIgPosting] = useState<string | null>(null); // gameId or "standings"
   const [igResult, setIgResult]   = useState<{ id: string; ok: boolean } | null>(null);
 
+  // Protest state
+  const [protestGames, setProtestGames] = useState<Record<string, { protestStatus: string | null; protestTeamId: string | null; protestComment: string | null }>>(
+    () => Object.fromEntries(games.map(g => [g.id, { protestStatus: g.protestStatus, protestTeamId: g.protestTeamId, protestComment: g.protestComment }]))
+  );
+  const [protestOpen, setProtestOpen]       = useState<string | null>(null); // gameId with open form
+  const [protestTeamId, setProtestTeamId]   = useState("");
+  const [protestComment, setProtestComment] = useState("");
+  const [protestLoading, setProtestLoading] = useState<string | null>(null);
+
   async function postToInstagram(type: "game" | "standings", id: string) {
     const key = type === "game" ? id : "standings";
     setIgPosting(key); setIgResult(null);
@@ -190,6 +202,55 @@ export function SeasonDashboard({
       setIgResult({ id: key, ok: false });
     } finally {
       setIgPosting(null);
+    }
+  }
+
+  async function fileProtest(gameId: string) {
+    if (!protestTeamId) return;
+    setProtestLoading(gameId);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/games/${gameId}/protest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: protestTeamId, comment: protestComment }),
+      });
+      if (res.ok) {
+        setProtestGames(p => ({ ...p, [gameId]: { protestStatus: "FILED", protestTeamId, protestComment: protestComment || null } }));
+        setProtestOpen(null);
+        router.refresh();
+      }
+    } finally {
+      setProtestLoading(null);
+    }
+  }
+
+  async function resolveProtest(gameId: string, resolution: "UPHELD" | "DENIED") {
+    setProtestLoading(gameId);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/games/${gameId}/protest`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution }),
+      });
+      if (res.ok) {
+        setProtestGames(p => ({ ...p, [gameId]: { ...p[gameId], protestStatus: resolution } }));
+        router.refresh();
+      }
+    } finally {
+      setProtestLoading(null);
+    }
+  }
+
+  async function clearProtest(gameId: string) {
+    setProtestLoading(gameId);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/games/${gameId}/protest`, { method: "DELETE" });
+      if (res.ok) {
+        setProtestGames(p => ({ ...p, [gameId]: { protestStatus: null, protestTeamId: null, protestComment: null } }));
+        router.refresh();
+      }
+    } finally {
+      setProtestLoading(null);
     }
   }
 
@@ -892,6 +953,161 @@ ${body}
                                         </button>
                                       )}
                                     </div>
+                                    {/* ── Protest section ─────────────────── */}
+                                    {game.status === "COMPLETED" && (() => {
+                                      const ps = protestGames[game.id];
+                                      const status = ps?.protestStatus ?? null;
+                                      const loading = protestLoading === game.id;
+                                      const protestingTeam = status && ps.protestTeamId
+                                        ? (ps.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+                                        : null;
+
+                                      if (protestOpen === game.id) {
+                                        return (
+                                          <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: "var(--sh-border2)" }}>
+                                            <p className="font-semibold mb-1" style={{ color: "var(--sh-warn)" }}>File Protest</p>
+                                            <div className="flex flex-col gap-1.5">
+                                              <select
+                                                value={protestTeamId}
+                                                onChange={e => setProtestTeamId(e.target.value)}
+                                                className="rounded px-2 py-1 text-xs"
+                                                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-text)", border: "1px solid var(--sh-border2)" }}
+                                              >
+                                                <option value="">Select protesting team…</option>
+                                                <option value={game.homeTeamId}>{game.homeTeam.name}</option>
+                                                <option value={game.awayTeamId}>{game.awayTeam.name}</option>
+                                              </select>
+                                              <textarea
+                                                value={protestComment}
+                                                onChange={e => setProtestComment(e.target.value)}
+                                                placeholder="Comment (optional)"
+                                                rows={2}
+                                                className="rounded px-2 py-1 text-xs resize-none"
+                                                style={{ background: "var(--sh-bg-card2)", color: "var(--sh-text)", border: "1px solid var(--sh-border2)" }}
+                                              />
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  onClick={() => fileProtest(game.id)}
+                                                  disabled={!protestTeamId || loading}
+                                                  className="px-2 py-1 rounded text-xs font-semibold disabled:opacity-40"
+                                                  style={{ background: "var(--sh-warn)", color: "#000" }}
+                                                >
+                                                  {loading ? "Filing…" : "Submit"}
+                                                </button>
+                                                <button
+                                                  onClick={() => setProtestOpen(null)}
+                                                  className="px-2 py-1 rounded text-xs"
+                                                  style={{ color: "var(--sh-muted)" }}
+                                                >
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
+                                      if (!status && isAdmin) {
+                                        return (
+                                          <button
+                                            onClick={() => { setProtestOpen(game.id); setProtestTeamId(""); setProtestComment(""); }}
+                                            className="mt-1.5 text-xs hover:opacity-80"
+                                            style={{ color: "var(--sh-muted)" }}
+                                          >
+                                            ⚑ File protest
+                                          </button>
+                                        );
+                                      }
+
+                                      if (status === "FILED") {
+                                        return (
+                                          <div className="mt-2 pt-2 border-t text-xs flex flex-wrap items-start gap-2" style={{ borderColor: "var(--sh-border2)" }}>
+                                            <span className="font-semibold px-2 py-0.5 rounded" style={{ background: "rgba(234,179,8,0.2)", color: "var(--sh-warn)" }}>
+                                              ⚑ PROTEST FILED — {protestingTeam}
+                                            </span>
+                                            {ps?.protestComment && (
+                                              <span style={{ color: "var(--sh-muted)" }}>"{ps.protestComment}"</span>
+                                            )}
+                                            {isAdmin && (
+                                              <div className="flex gap-1.5 ml-auto">
+                                                <button
+                                                  onClick={() => resolveProtest(game.id, "UPHELD")}
+                                                  disabled={loading}
+                                                  className="px-2 py-0.5 rounded text-xs font-semibold disabled:opacity-40"
+                                                  style={{ background: "rgba(74,222,128,0.2)", color: "#4ade80", border: "1px solid #4ade8040" }}
+                                                >
+                                                  {loading ? "…" : "Uphold"}
+                                                </button>
+                                                <button
+                                                  onClick={() => resolveProtest(game.id, "DENIED")}
+                                                  disabled={loading}
+                                                  className="px-2 py-0.5 rounded text-xs font-semibold disabled:opacity-40"
+                                                  style={{ background: "rgba(239,68,68,0.15)", color: "var(--sh-danger)", border: "1px solid var(--sh-danger-border)" }}
+                                                >
+                                                  {loading ? "…" : "Deny"}
+                                                </button>
+                                                <button
+                                                  onClick={() => clearProtest(game.id)}
+                                                  disabled={loading}
+                                                  className="px-2 py-0.5 rounded text-xs disabled:opacity-40"
+                                                  style={{ color: "var(--sh-muted)" }}
+                                                >
+                                                  Clear
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+
+                                      if (status === "UPHELD") {
+                                        return (
+                                          <div className="mt-2 pt-2 border-t text-xs flex flex-wrap items-center gap-2" style={{ borderColor: "var(--sh-border2)" }}>
+                                            <span className="font-semibold px-2 py-0.5 rounded" style={{ background: "rgba(74,222,128,0.15)", color: "#4ade80" }}>
+                                              ✓ PROTEST UPHELD — {protestingTeam}
+                                            </span>
+                                            {ps?.protestComment && (
+                                              <span style={{ color: "var(--sh-muted)" }}>"{ps.protestComment}"</span>
+                                            )}
+                                            {isAdmin && (
+                                              <button
+                                                onClick={() => clearProtest(game.id)}
+                                                disabled={loading}
+                                                className="ml-auto text-xs disabled:opacity-40 hover:opacity-80"
+                                                style={{ color: "var(--sh-muted)" }}
+                                              >
+                                                Clear
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+
+                                      if (status === "DENIED") {
+                                        return (
+                                          <div className="mt-2 pt-2 border-t text-xs flex flex-wrap items-center gap-2" style={{ borderColor: "var(--sh-border2)" }}>
+                                            <span className="font-semibold px-2 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "var(--sh-danger)" }}>
+                                              ✗ PROTEST DENIED — {protestingTeam}
+                                            </span>
+                                            {ps?.protestComment && (
+                                              <span style={{ color: "var(--sh-muted)" }}>"{ps.protestComment}"</span>
+                                            )}
+                                            {isAdmin && (
+                                              <button
+                                                onClick={() => clearProtest(game.id)}
+                                                disabled={loading}
+                                                className="ml-auto text-xs disabled:opacity-40 hover:opacity-80"
+                                                style={{ color: "var(--sh-muted)" }}
+                                              >
+                                                Clear
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+
+                                      return null;
+                                    })()}
                                     <p className="text-xs" style={dim}>
                                       {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                     </p>
