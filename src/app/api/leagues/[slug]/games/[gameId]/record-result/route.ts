@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit, getRequestMeta } from "@/lib/audit";
 import { sendGameEndNotification, sendManagerGameEndNotification } from "@/lib/email";
+import { autoPostGameScoreCard } from "@/lib/ig-auto-post";
 
 interface Params { params: Promise<{ slug: string; gameId: string }> }
 
@@ -17,9 +18,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const league = await prisma.league.findUnique({
     where: { slug },
     select: {
-      id: true, name: true,
+      id: true, name: true, logoUrl: true,
       notifyGameEnd: true, notifyEmail: true,
-      notifyManagers: true,
+      notifyManagers: true, instagramEnabled: true, timezone: true,
       userRoles: { where: { userId }, select: { role: true } },
     },
   });
@@ -33,9 +34,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   const game = await prisma.game.findFirst({
     where: { id: gameId, leagueId: league.id },
     include: {
-      homeTeam: { select: { name: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
-      awayTeam: { select: { name: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
+      homeTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
+      awayTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       field:    { select: { name: true } },
+      season:   { select: { name: true } },
     },
   });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
@@ -94,6 +96,22 @@ export async function POST(req: NextRequest, { params }: Params) {
         fieldName: game.field?.name ?? null,
       }).catch(err => console.error("[notify] manager email failed:", err));
     }
+  }
+
+  if (league.instagramEnabled) {
+    autoPostGameScoreCard({
+      leagueName:    league.name,
+      leagueLogoUrl: league.logoUrl,
+      timezone:      league.timezone,
+      seasonName:    game.season?.name ?? "",
+      homeTeam:      game.homeTeam.name,
+      awayTeam:      game.awayTeam.name,
+      homeScore,
+      awayScore,
+      homeLogoUrl:   game.homeTeam.logoUrl,
+      awayLogoUrl:   game.awayTeam.logoUrl,
+      scheduledAt:   game.scheduledAt,
+    }).catch(err => console.error("[ig-auto-post] record-result failed:", err));
   }
 
   return NextResponse.json(updated);
