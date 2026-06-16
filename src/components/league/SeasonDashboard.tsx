@@ -190,10 +190,10 @@ export function SeasonDashboard({
   async function postToInstagram(
     type: "game" | "standings" | "schedule",
     id: string,
-    opts?: { group?: string; dayKey?: string; gameIds?: string[] },
+    opts?: { group?: string; dayKey?: string; catKey?: string; gameIds?: string[] },
   ) {
     const key = type === "game" ? id
-      : type === "schedule" ? `schedule-${opts?.dayKey}`
+      : type === "schedule" ? `schedule-${opts?.dayKey}-${opts?.catKey ?? "all"}`
       : opts?.group !== undefined ? `standings-${opts.group}` : "standings";
     setIgPosting(key); setIgResult(null);
     try {
@@ -582,7 +582,7 @@ ${body}
     return [...dayMap.entries()].map(([dayKey, { label, grpMap }]) => ({
       dayKey,
       label,
-      catGroups: [...grpMap.values()].sort((a, b) => {
+      catGroups: [...grpMap.entries()].map(([grpKey, v]) => ({ grpKey, ...v })).sort((a, b) => {
         // No-field bucket always last
         if (!a.grpName && b.grpName) return 1;
         if (a.grpName && !b.grpName) return -1;
@@ -787,32 +787,16 @@ ${body}
                       📅 {label}
                     </button>
                     <span className="flex items-center gap-2 shrink-0">
-                      {isAdmin && (() => {
-                        const dayGameIds = catGroups.flatMap(cg => cg.catGames.map(g => g.id));
-                        const schedKey = `schedule-${dayKey}`;
-                        const schedPosted = igResult?.id === schedKey && igResult.ok;
-                        return (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => openAssignDialog(dayKey, label)}
-                              className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity"
-                              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
-                            >
-                              👤 Assign
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => postToInstagram("schedule", seasonId, { dayKey, gameIds: dayGameIds })}
-                              disabled={!!igPosting}
-                              className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity disabled:opacity-40"
-                              style={{ borderColor: "var(--sh-border2)", color: schedPosted ? "#4ade80" : "var(--sh-secondary)", background: "transparent" }}
-                            >
-                              {igPosting === schedKey ? "…" : schedPosted ? "✓" : "📸"}
-                            </button>
-                          </>
-                        );
-                      })()}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => openAssignDialog(dayKey, label)}
+                          className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity"
+                          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}
+                        >
+                          👤 Assign
+                        </button>
+                      )}
                       {collapsed && (
                         <span className="text-xs" style={{ color: "var(--sh-muted)" }}>
                           {totalGames} game{totalGames !== 1 ? "s" : ""}
@@ -845,15 +829,32 @@ ${body}
                         </div>
                       ) : null;
                     })()}
-                    {catGroups.map(({ grpName, catGames }) => (
-                      <div key={grpName || "__none__"}>
-                        {/* Field sub-header */}
-                        {grpName && (
-                          <p className="text-xs font-semibold uppercase tracking-wider mb-2 ml-1"
-                            style={{ color: "var(--sh-primary)" }}>
-                            🏟️ {grpName}
-                          </p>
-                        )}
+                    {catGroups.map(({ grpKey, grpName, catGames }) => (
+                      <div key={grpKey}>
+                        {/* Field sub-header with per-field 📸 button */}
+                        <div className="flex items-center gap-2 mb-2">
+                          {grpName ? (
+                            <p className="text-xs font-semibold uppercase tracking-wider ml-1 flex-1"
+                              style={{ color: "var(--sh-primary)" }}>
+                              🏟️ {grpName}
+                            </p>
+                          ) : <span className="flex-1" />}
+                          {isAdmin && (() => {
+                            const schedKey = `schedule-${dayKey}-${grpKey}`;
+                            const posted = igResult?.id === schedKey && igResult.ok;
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => postToInstagram("schedule", seasonId, { dayKey, catKey: grpKey, gameIds: catGames.map(g => g.id) })}
+                                disabled={!!igPosting}
+                                className="text-xs px-2 py-0.5 rounded border hover:opacity-80 transition-opacity disabled:opacity-40"
+                                style={{ borderColor: "var(--sh-border2)", color: posted ? "#4ade80" : "var(--sh-secondary)", background: "transparent" }}
+                              >
+                                {igPosting === schedKey ? "…" : posted ? "✓" : "📸"}
+                              </button>
+                            );
+                          })()}
+                        </div>
 
                         <div className="space-y-2">
                           {catGames.map((game) => {
