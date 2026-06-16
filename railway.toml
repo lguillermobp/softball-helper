@@ -1,5 +1,5 @@
 [build]
-buildCommand = "npm run build"
+buildCommand = "npm run build && mkdir -p .fonts && cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf .fonts/ 2>/dev/null && cp /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf .fonts/ 2>/dev/null && echo 'fonts copied' || echo 'font copy failed'"
 
 [deploy]
 startCommand = "export FONTCONFIG_FILE=/app/fontconfig/fonts.conf && fc-cache -f 2>/dev/null; timeout 30 npx prisma migrate deploy && npm run start"

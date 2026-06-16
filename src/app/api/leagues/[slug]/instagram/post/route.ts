@@ -11,29 +11,31 @@ if (!process.env.FONTCONFIG_FILE) {
   process.env.FONTCONFIG_FILE = path.join(process.cwd(), "fontconfig/fonts.conf");
 }
 
-// Log font availability once at startup to help debug Railway font issues
-let _fontLogged = false;
-function logFonts() {
-  if (_fontLogged) return;
-  _fontLogged = true;
-  const paths = [
+// Embed DejaVu Sans as base64 @font-face, reading from the .fonts dir copied during build.
+// This bypasses fontconfig entirely — works even if fc-cache fails.
+let _fontStyle: string | undefined;
+function getFontStyle(): string {
+  if (_fontStyle !== undefined) return _fontStyle;
+  const candidates = [
+    path.join(process.cwd(), ".fonts/DejaVuSans.ttf"),
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/dejavu/DejaVuSans.ttf",
     "/usr/share/fonts/truetype/DejaVuSans.ttf",
   ];
-  for (const p of paths) {
-    if (fs.existsSync(p)) {
-      console.log("[instagram] font found:", p);
-      return;
-    }
+  for (const p of candidates) {
+    try {
+      const b64 = fs.readFileSync(p).toString("base64");
+      console.log("[instagram] loaded font from", p);
+      _fontStyle = `<style>@font-face { font-family: 'DejaVu Sans'; src: url('data:font/truetype;base64,${b64}') format('truetype'); }</style>`;
+      return _fontStyle;
+    } catch {}
   }
-  console.warn("[instagram] DejaVu Sans NOT found in any expected path");
-  try {
-    const dirs = ["/usr/share/fonts", "/usr/local/share/fonts"];
-    for (const d of dirs) {
-      if (fs.existsSync(d)) console.log("[instagram] fonts dir contents:", d, fs.readdirSync(d).join(", "));
-    }
-  } catch {}
+  console.warn("[instagram] no font found — text will show as boxes");
+  // Log what is actually on disk so we can diagnose
+  for (const dir of [path.join(process.cwd(), ".fonts"), "/usr/share/fonts/truetype/dejavu"]) {
+    try { console.log("[instagram] dir", dir, ":", fs.readdirSync(dir).join(", ")); } catch {}
+  }
+  _fontStyle = "";
+  return _fontStyle;
 }
 
 interface Params { params: Promise<{ slug: string }> }
@@ -79,6 +81,7 @@ async function buildGameSvg(home: string, away: string, hs: number, as_: number,
   const aScoreFill = awayWins ? "#4ade80" : "rgba(255,255,255,0.6)";
   const footer = [trunc(season, 30), date].filter(Boolean).join(" - ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
+  ${getFontStyle()}
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0a1a0a"/><stop offset="50%" stop-color="#0f2a0f"/><stop offset="100%" stop-color="#0a1a0a"/>
@@ -128,6 +131,7 @@ async function buildStandingsSvg(league: string, season: string, rows: Row[]) {
       ${cells}`;
   }).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
+  ${getFontStyle()}
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0a1a0a"/><stop offset="50%" stop-color="#0f2a0f"/><stop offset="100%" stop-color="#0a1a0a"/>
@@ -147,7 +151,6 @@ async function buildStandingsSvg(league: string, season: string, rows: Row[]) {
 }
 
 async function generateJpeg(svg: string): Promise<Buffer> {
-  logFonts();
   return sharp(Buffer.from(svg)).jpeg({ quality: 92 }).toBuffer();
 }
 
