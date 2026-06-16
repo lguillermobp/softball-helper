@@ -914,13 +914,17 @@ ${body}
                                         <span className="text-sm font-semibold" style={dim}>vs</span>
                                       )}
                                       {(() => {
-                                        const ps = protestGames[game.id]?.protestStatus;
+                                        const pGame = protestGames[game.id];
+                                        const ps = pGame?.protestStatus;
                                         if (!ps || ps === "DENIED") return null;
                                         const upheld = ps === "UPHELD";
+                                        const teamName = pGame?.protestTeamId
+                                          ? (pGame.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+                                          : null;
                                         return (
-                                          <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+                                          <span className="text-xs font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
                                             style={{ background: upheld ? "rgba(249,115,22,0.15)" : "rgba(234,179,8,0.15)", color: upheld ? "#fb923c" : "#facc15" }}>
-                                            {upheld ? "UPHELD" : "PROTEST"}
+                                            {upheld ? (teamName ? `UPHELD — ${teamName}` : "UPHELD") : "PROTEST"}
                                           </span>
                                         );
                                       })()}

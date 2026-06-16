@@ -106,18 +106,21 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (league.instagramEnabled) {
     autoPostGameScoreCard({
-      leagueName:   league.name,
-      leagueLogoUrl: league.logoUrl,
-      timezone:     league.timezone,
-      seasonName:   game.season?.name ?? "",
-      homeTeam:     game.homeTeam.name,
-      awayTeam:     game.awayTeam.name,
-      homeScore:    homeRuns,
-      awayScore:    awayRuns,
-      homeLogoUrl:  game.homeTeam.logoUrl,
-      awayLogoUrl:  game.awayTeam.logoUrl,
-      scheduledAt:   game.scheduledAt,
-      protestStatus: game.protestStatus,
+      leagueName:      league.name,
+      leagueLogoUrl:   league.logoUrl,
+      timezone:        league.timezone,
+      seasonName:      game.season?.name ?? "",
+      homeTeam:        game.homeTeam.name,
+      awayTeam:        game.awayTeam.name,
+      homeScore:       homeRuns,
+      awayScore:       awayRuns,
+      homeLogoUrl:     game.homeTeam.logoUrl,
+      awayLogoUrl:     game.awayTeam.logoUrl,
+      scheduledAt:     game.scheduledAt,
+      protestStatus:   game.protestStatus,
+      protestTeamName: game.protestTeamId
+        ? (game.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+        : null,
     }).catch(err => console.error("[ig-auto-post] game end failed:", err));
   }
 

@@ -62,7 +62,7 @@ function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
   league: string, season: string, date: string,
   homeLogo: string | null, awayLogo: string | null, leagueLogo: string | null,
-  protestStatus?: string | null,
+  protestStatus?: string | null, protestTeamName?: string | null,
 ): string {
   const homeWins = hs > as_; const awayWins = as_ > hs;
   const homeFill   = homeWins ? C.white : awayWins ? C.muted : C.text;
@@ -74,8 +74,9 @@ function buildGameSvg(
     ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(234,179,8,0.30)" stroke="rgba(234,179,8,0.70)" stroke-width="1.5"/>
        <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#facc15" font-weight="bold" letter-spacing="2">BAJO PROTESTA / UNDER PROTEST</text>`
     : protestStatus === "UPHELD"
-    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(249,115,22,0.30)" stroke="rgba(249,115,22,0.70)" stroke-width="1.5"/>
-       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#fb923c" font-weight="bold" letter-spacing="2">PROTESTA ACEPTADA / PROTEST UPHELD</text>`
+    ? `<rect x="270" y="236" width="540" height="${protestTeamName ? 52 : 36}" rx="18" fill="rgba(249,115,22,0.30)" stroke="rgba(249,115,22,0.70)" stroke-width="1.5"/>
+       <text x="540" y="${protestTeamName ? 254 : 260}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="12" fill="#fb923c" font-weight="bold" letter-spacing="1">PROTESTA ACEPTADA / PROTEST UPHELD</text>
+       ${protestTeamName ? `<text x="540" y="275" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="#fb923c" font-weight="bold">${esc(trunc(protestTeamName, 30))}</text>` : ""}`
     : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
   ${getFontStyle()}
@@ -133,10 +134,11 @@ export async function autoPostGameScoreCard(params: {
   awayLogoUrl: string | null;
   scheduledAt: Date;
   protestStatus?: string | null;
+  protestTeamName?: string | null;
 }): Promise<void> {
   if (!IG_USER_ID || !IG_TOKEN) return;
 
-  const { leagueName, leagueLogoUrl, timezone, seasonName, homeTeam, awayTeam, homeScore, awayScore, homeLogoUrl, awayLogoUrl, scheduledAt, protestStatus } = params;
+  const { leagueName, leagueLogoUrl, timezone, seasonName, homeTeam, awayTeam, homeScore, awayScore, homeLogoUrl, awayLogoUrl, scheduledAt, protestStatus, protestTeamName } = params;
 
   const tz = timezone || "UTC";
   const _d = new Date(scheduledAt);
@@ -149,7 +151,7 @@ export async function autoPostGameScoreCard(params: {
     fetchLogoAsDataUri(awayLogoUrl),
   ]);
 
-  const svg = buildGameSvg(homeTeam, awayTeam, homeScore, awayScore, leagueName, seasonName, date, homeLogo, awayLogo, leagueLogo, protestStatus);
+  const svg = buildGameSvg(homeTeam, awayTeam, homeScore, awayScore, leagueName, seasonName, date, homeLogo, awayLogo, leagueLogo, protestStatus, protestTeamName);
   const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 92 }).toBuffer();
 
   const img = await prisma.igImage.create({ data: { data: Buffer.from(jpeg) } });

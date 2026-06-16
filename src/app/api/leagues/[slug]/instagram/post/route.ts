@@ -106,7 +106,7 @@ type ScheduleGame = {
   time: string; away: string; home: string;
   awayLogo: string | null; homeLogo: string | null;
   homeScore: number | null; awayScore: number | null; status: string;
-  protestStatus: string | null;
+  protestStatus: string | null; protestTeamName: string | null;
 };
 type ScheduleGroup = { field: string | null; games: ScheduleGame[] };
 
@@ -139,10 +139,17 @@ function buildScheduleSvg(
       const homeWins = done && g.homeScore! > g.awayScore!;
       const awLogo = logoCircle(g.awayLogo, 165, cy, 20, `awC${idx}`, g.away[0] ?? "A");
       const hmLogo = logoCircle(g.homeLogo, 915, cy, 20, `hmC${idx}`, g.home[0] ?? "H");
-      const protestPill = (g.protestStatus === "FILED" || g.protestStatus === "UPHELD")
-        ? `<rect x="495" y="${textY + 5}" width="90" height="15" rx="7" fill="${g.protestStatus === "UPHELD" ? "rgba(249,115,22,0.30)" : "rgba(234,179,8,0.30)"}"/>
-           <text x="540" y="${textY + 16}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="${g.protestStatus === "UPHELD" ? "#fb923c" : "#facc15"}" font-weight="bold">${g.protestStatus === "UPHELD" ? "UPHELD" : "PROTEST"}</text>`
-        : "";
+      const protestPill = (() => {
+        if (!g.protestStatus || g.protestStatus === "DENIED") return "";
+        const upheld = g.protestStatus === "UPHELD";
+        const label = upheld
+          ? (g.protestTeamName ? `UPHELD — ${trunc(g.protestTeamName, 16)}` : "UPHELD")
+          : "PROTEST FILED";
+        const fill = upheld ? "rgba(249,115,22,0.30)" : "rgba(234,179,8,0.30)";
+        const textFill = upheld ? "#fb923c" : "#facc15";
+        return `<rect x="390" y="${textY + 5}" width="300" height="15" rx="7" fill="${fill}"/>
+           <text x="540" y="${textY + 16}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="${textFill}" font-weight="bold">${esc(label)}</text>`;
+      })();
       const middle = done
         ? `<text x="478" y="${textY}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${awayWins ? C.green : C.muted}" font-weight="bold">${g.awayScore}</text>
            <text x="540" y="${textY - 2}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.dim}">—</text>
@@ -199,7 +206,7 @@ async function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
   league: string, season: string, date: string,
   homeLogo: string | null, awayLogo: string | null, leagueLogo: string | null,
-  protestStatus?: string | null,
+  protestStatus?: string | null, protestTeamName?: string | null,
 ) {
   const homeWins = hs > as_; const awayWins = as_ > hs;
   const homeFill   = homeWins ? C.white : awayWins ? C.muted : C.text;
@@ -211,8 +218,9 @@ async function buildGameSvg(
     ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(234,179,8,0.30)" stroke="rgba(234,179,8,0.70)" stroke-width="1.5"/>
        <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#facc15" font-weight="bold" letter-spacing="2">BAJO PROTESTA / UNDER PROTEST</text>`
     : protestStatus === "UPHELD"
-    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(249,115,22,0.30)" stroke="rgba(249,115,22,0.70)" stroke-width="1.5"/>
-       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#fb923c" font-weight="bold" letter-spacing="2">PROTESTA ACEPTADA / PROTEST UPHELD</text>`
+    ? `<rect x="270" y="236" width="540" height="${protestTeamName ? 52 : 36}" rx="18" fill="rgba(249,115,22,0.30)" stroke="rgba(249,115,22,0.70)" stroke-width="1.5"/>
+       <text x="540" y="${protestTeamName ? 254 : 260}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="12" fill="#fb923c" font-weight="bold" letter-spacing="1">PROTESTA ACEPTADA / PROTEST UPHELD</text>
+       ${protestTeamName ? `<text x="540" y="275" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="#fb923c" font-weight="bold">${esc(trunc(protestTeamName, 30))}</text>` : ""}`
     : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
   ${getFontStyle()}
@@ -442,7 +450,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const game = await prisma.game.findFirst({
       where: { id: body.gameId, leagueId: league.id, status: "COMPLETED" },
       select: {
-        homeScore: true, awayScore: true, scheduledAt: true, protestStatus: true,
+        homeScore: true, awayScore: true, scheduledAt: true,
+        protestStatus: true, protestTeamId: true, homeTeamId: true, awayTeamId: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         season:   { select: { name: true } },
@@ -450,6 +459,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
     if (!game || game.homeScore === null || game.awayScore === null)
       return NextResponse.json({ error: "Game not found or not completed" }, { status: 404 });
+    const protestTeamName = game.protestTeamId
+      ? (game.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+      : null;
     const [leagueLogo, homeLogo, awayLogo] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
@@ -459,7 +471,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const _d = new Date(game.scheduledAt);
     const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
       + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
-    const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus);
+    const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus, protestTeamName);
     const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
@@ -510,7 +522,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const dbGames = await prisma.game.findMany({
       where: { id: { in: body.gameIds }, leagueId: league.id },
       select: {
-        scheduledAt: true, status: true, homeScore: true, awayScore: true, protestStatus: true,
+        scheduledAt: true, status: true, homeScore: true, awayScore: true,
+        protestStatus: true, protestTeamId: true, homeTeamId: true, awayTeamId: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         field:    { select: { id: true, name: true } },
@@ -544,15 +557,18 @@ export async function POST(req: NextRequest, { params }: Params) {
       const gs = byField.get(fk)!;
       const fieldName = showFieldHeaders ? (gs[0].field?.name ?? null) : null;
       const games: ScheduleGame[] = await Promise.all(gs.map(async g => ({
-        time:          new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }),
-        away:          g.awayTeam.name,
-        home:          g.homeTeam.name,
-        awayLogo:      await fetchLogoAsDataUri(g.awayTeam.logoUrl),
-        homeLogo:      await fetchLogoAsDataUri(g.homeTeam.logoUrl),
-        homeScore:     g.homeScore,
-        awayScore:     g.awayScore,
-        status:        g.status,
-        protestStatus: g.protestStatus,
+        time:            new Date(g.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }),
+        away:            g.awayTeam.name,
+        home:            g.homeTeam.name,
+        awayLogo:        await fetchLogoAsDataUri(g.awayTeam.logoUrl),
+        homeLogo:        await fetchLogoAsDataUri(g.homeTeam.logoUrl),
+        homeScore:       g.homeScore,
+        awayScore:       g.awayScore,
+        status:          g.status,
+        protestStatus:   g.protestStatus,
+        protestTeamName: g.protestTeamId
+          ? (g.protestTeamId === g.homeTeamId ? g.homeTeam.name : g.awayTeam.name)
+          : null,
       })));
       return { field: fieldName, games };
     }));
@@ -598,7 +614,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     const game = await prisma.game.findFirst({
       where: { id: gameId, leagueId: league.id, status: "COMPLETED" },
       select: {
-        homeScore: true, awayScore: true, scheduledAt: true, protestStatus: true,
+        homeScore: true, awayScore: true, scheduledAt: true,
+        protestStatus: true, protestTeamId: true, homeTeamId: true, awayTeamId: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         season:   { select: { name: true } },
@@ -606,6 +623,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     });
     if (!game || game.homeScore === null || game.awayScore === null)
       return NextResponse.json({ error: "Game not found or not completed" }, { status: 404 });
+    const protestTeamNameGet = game.protestTeamId
+      ? (game.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+      : null;
     const [leagueLogo, homeLogo, awayLogo] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(game.homeTeam.logoUrl),
@@ -615,7 +635,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const _d = new Date(game.scheduledAt);
     const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
       + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
-    svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus);
+    svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus, protestTeamNameGet);
   } else if (type === "standings" && seasonId) {
     const season = await prisma.season.findFirst({
       where: { id: seasonId, leagueId: league.id },

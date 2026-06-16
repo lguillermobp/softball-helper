@@ -35,6 +35,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id: gameId, leagueId: league.id },
     select: {
       scheduledAt: true, status: true, protestStatus: true,
+      protestTeamId: true, homeTeamId: true, awayTeamId: true,
       homeTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       awayTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       field:    { select: { name: true } },
@@ -109,10 +110,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       awayTeam:      game.awayTeam.name,
       homeScore,
       awayScore,
-      homeLogoUrl:   game.homeTeam.logoUrl,
-      awayLogoUrl:   game.awayTeam.logoUrl,
-      scheduledAt:   game.scheduledAt,
-      protestStatus: game.protestStatus,
+      homeLogoUrl:     game.homeTeam.logoUrl,
+      awayLogoUrl:     game.awayTeam.logoUrl,
+      scheduledAt:     game.scheduledAt,
+      protestStatus:   game.protestStatus,
+      protestTeamName: game.protestTeamId
+        ? (game.protestTeamId === game.homeTeamId ? game.homeTeam.name : game.awayTeam.name)
+        : null,
     }).catch(err => console.error("[ig-auto-post] record-result failed:", err));
   }
 
