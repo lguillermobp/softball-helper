@@ -193,6 +193,7 @@ async function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
   league: string, season: string, date: string,
   homeLogo: string | null, awayLogo: string | null, leagueLogo: string | null,
+  protestStatus?: string | null,
 ) {
   const homeWins = hs > as_; const awayWins = as_ > hs;
   const homeFill   = homeWins ? C.white : awayWins ? C.muted : C.text;
@@ -200,6 +201,13 @@ async function buildGameSvg(
   const hScoreFill = homeWins ? C.green : C.muted;
   const aScoreFill = awayWins ? C.green : C.muted;
   const footer = [trunc(season, 30), date].filter(Boolean).join(" · ");
+  const protestBadge = protestStatus === "FILED"
+    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.5"/>
+       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#facc15" font-weight="bold" letter-spacing="2">⚠ BAJO PROTESTA / UNDER PROTEST</text>`
+    : protestStatus === "UPHELD"
+    ? `<rect x="270" y="236" width="540" height="36" rx="18" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.5"/>
+       <text x="540" y="260" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="#fb923c" font-weight="bold" letter-spacing="2">PROTESTA ACEPTADA / PROTEST UPHELD</text>`
+    : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
   ${getFontStyle()}
   <rect width="1080" height="1080" fill="${C.bg}"/>
@@ -209,6 +217,7 @@ async function buildGameSvg(
   <text x="540" y="158" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
   <rect x="420" y="184" width="240" height="40" rx="20" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.35)" stroke-width="1.5"/>
   <text x="540" y="210" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold" letter-spacing="4">FINAL</text>
+  ${protestBadge}
   ${logoCircle(awayLogo, 220, 368, 75, "awClip", away[0] ?? "A")}
   <text x="220" y="496" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 44 : 36}" fill="${awayFill}" font-weight="bold">${esc(trunc(away, 16))}</text>
   <text x="220" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">AWAY</text>
@@ -427,7 +436,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const game = await prisma.game.findFirst({
       where: { id: body.gameId, leagueId: league.id, status: "COMPLETED" },
       select: {
-        homeScore: true, awayScore: true, scheduledAt: true,
+        homeScore: true, awayScore: true, scheduledAt: true, protestStatus: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         season:   { select: { name: true } },
@@ -444,7 +453,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const _d = new Date(game.scheduledAt);
     const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
       + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
-    const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
+    const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus);
     const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
@@ -582,7 +591,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const game = await prisma.game.findFirst({
       where: { id: gameId, leagueId: league.id, status: "COMPLETED" },
       select: {
-        homeScore: true, awayScore: true, scheduledAt: true,
+        homeScore: true, awayScore: true, scheduledAt: true, protestStatus: true,
         homeTeam: { select: { name: true, logoUrl: true } },
         awayTeam: { select: { name: true, logoUrl: true } },
         season:   { select: { name: true } },
@@ -599,7 +608,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const _d = new Date(game.scheduledAt);
     const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
       + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
-    svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo);
+    svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus);
   } else if (type === "standings" && seasonId) {
     const season = await prisma.season.findFirst({
       where: { id: seasonId, leagueId: league.id },

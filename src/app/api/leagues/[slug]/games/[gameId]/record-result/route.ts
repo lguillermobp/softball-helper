@@ -33,7 +33,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const game = await prisma.game.findFirst({
     where: { id: gameId, leagueId: league.id },
-    include: {
+    select: {
+      scheduledAt: true, status: true, protestStatus: true,
       homeTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       awayTeam: { select: { name: true, logoUrl: true, manager: { select: { email: true, name: true } }, assistant: { select: { email: true, name: true } } } },
       field:    { select: { name: true } },
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       homeLogoUrl:   game.homeTeam.logoUrl,
       awayLogoUrl:   game.awayTeam.logoUrl,
       scheduledAt:   game.scheduledAt,
+      protestStatus: game.protestStatus,
     }).catch(err => console.error("[ig-auto-post] record-result failed:", err));
   }
 

@@ -116,7 +116,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       awayScore:    awayRuns,
       homeLogoUrl:  game.homeTeam.logoUrl,
       awayLogoUrl:  game.awayTeam.logoUrl,
-      scheduledAt:  game.scheduledAt,
+      scheduledAt:   game.scheduledAt,
+      protestStatus: game.protestStatus,
     }).catch(err => console.error("[ig-auto-post] game end failed:", err));
   }
 
