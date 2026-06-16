@@ -272,3 +272,93 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   return NextResponse.json({ ok: true, postId: publish.id });
 }
+
+// ── Preview: GET /api/leagues/[slug]/instagram/post?type=game&gameId=X
+// Returns the JPEG directly so admins can verify rendering before posting.
+export async function GET(req: NextRequest, { params }: Params) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { slug } = await params;
+  const userId = session.user.id!;
+  const isMasterAdmin = (session.user as any).isMasterAdmin as boolean;
+
+  const league = await prisma.league.findUnique({
+    where: { slug },
+    select: { id: true, name: true, userRoles: { where: { userId }, select: { role: true } } },
+  });
+  if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
+  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { searchParams } = new URL(req.url);
+  const type     = searchParams.get("type");
+  const gameId   = searchParams.get("gameId");
+  const seasonId = searchParams.get("seasonId");
+
+  let svg: string;
+
+  if (type === "game" && gameId) {
+    const game = await prisma.game.findFirst({
+      where: { id: gameId, leagueId: league.id, status: "COMPLETED" },
+      select: {
+        homeScore: true, awayScore: true, scheduledAt: true,
+        homeTeam: { select: { name: true } },
+        awayTeam: { select: { name: true } },
+        season:   { select: { name: true } },
+      },
+    });
+    if (!game || game.homeScore === null || game.awayScore === null)
+      return NextResponse.json({ error: "Game not found or not completed" }, { status: 404 });
+    const date = new Date(game.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date);
+  } else if (type === "standings" && seasonId) {
+    const season = await prisma.season.findFirst({
+      where: { id: seasonId, leagueId: league.id },
+      select: {
+        name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true,
+        teams: { select: { id: true, name: true } },
+        games: {
+          where: { status: "COMPLETED", isPractice: false },
+          select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, homeTeam: { select: { id: true, name: true } }, awayTeam: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
+    const map = new Map<string, Row>();
+    for (const t of season.teams) map.set(t.id, { name: t.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+    for (const g of season.games) {
+      if (g.homeScore === null || g.awayScore === null) continue;
+      if (!map.has(g.homeTeamId)) map.set(g.homeTeamId, { name: g.homeTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+      if (!map.has(g.awayTeamId)) map.set(g.awayTeamId, { name: g.awayTeam.name, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
+      const h = map.get(g.homeTeamId)!; const a = map.get(g.awayTeamId)!;
+      h.gp++; a.gp++;
+      h.rf += g.homeScore; h.ra += g.awayScore;
+      a.rf += g.awayScore; a.ra += g.homeScore;
+      if (g.homeScore > g.awayScore) { h.w++; h.pts += season.pointsWin; a.l++; a.pts += season.pointsLoss; }
+      else if (g.awayScore > g.homeScore) { a.w++; a.pts += season.pointsWin; h.l++; h.pts += season.pointsLoss; }
+      else { h.t++; h.pts += season.pointsTie; a.t++; a.pts += season.pointsTie; }
+    }
+    const tbs = season.tiebreakers.split(",").map(s => s.trim()).filter(Boolean);
+    const rows = Array.from(map.values()).sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      for (const tb of tbs) {
+        let d = 0;
+        if (tb === "RD") d = (b.rf - b.ra) - (a.rf - a.ra);
+        else if (tb === "RF") d = b.rf - a.rf;
+        else if (tb === "RA") d = a.ra - b.ra;
+        else if (tb === "W")  d = b.w - a.w;
+        if (d !== 0) return d;
+      }
+      return 0;
+    });
+    svg = await buildStandingsSvg(league.name, season.name, rows);
+  } else {
+    return NextResponse.json({ error: "type + gameId or seasonId required" }, { status: 400 });
+  }
+
+  const jpeg = await generateJpeg(svg);
+  return new NextResponse(new Uint8Array(jpeg), {
+    headers: { "Content-Type": "image/jpeg", "Cache-Control": "no-store" },
+  });
+}

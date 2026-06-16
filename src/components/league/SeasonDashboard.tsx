@@ -942,15 +942,26 @@ ${body}
                                         </Link>
                                       )}
                                       {game.status === "COMPLETED" && isAdmin && (
-                                        <button
-                                          onClick={() => postToInstagram("game", game.id)}
-                                          disabled={igPosting === game.id}
-                                          title={igResult?.id === game.id && igResult.ok ? "Posted!" : "Post result to Instagram"}
-                                          className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80 disabled:opacity-40"
-                                          style={{ background: "var(--sh-bg-card2)", color: igResult?.id === game.id && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
-                                        >
-                                          {igPosting === game.id ? "…" : igResult?.id === game.id && igResult.ok ? "✓ Posted" : "📸 IG"}
-                                        </button>
+                                        <>
+                                          <a
+                                            href={`/api/leagues/${slug}/instagram/post?type=game&gameId=${game.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80"
+                                            style={{ background: "var(--sh-bg-card2)", color: "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
+                                          >
+                                            🖼 Preview
+                                          </a>
+                                          <button
+                                            onClick={() => postToInstagram("game", game.id)}
+                                            disabled={igPosting === game.id}
+                                            title={igResult?.id === game.id && igResult.ok ? "Posted!" : "Post result to Instagram"}
+                                            className="text-xs px-2 py-1 rounded-lg transition-all hover:opacity-80 disabled:opacity-40"
+                                            style={{ background: "var(--sh-bg-card2)", color: igResult?.id === game.id && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.4)", border: "1px solid var(--sh-border2)" }}
+                                          >
+                                            {igPosting === game.id ? "…" : igResult?.id === game.id && igResult.ok ? "✓ Posted" : "📸 IG"}
+                                          </button>
+                                        </>
                                       )}
                                     </div>
                                     {/* ── Protest section ─────────────────── */}
@@ -1223,14 +1234,25 @@ ${body}
           {standings.length > 0 && (
             <div className="flex justify-end gap-2">
               {isAdmin && (
-                <button
-                  onClick={() => postToInstagram("standings", seasonId)}
-                  disabled={igPosting === "standings"}
-                  className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
-                  style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
-                >
-                  {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
-                </button>
+                <>
+                  <a
+                    href={`/api/leagues/${slug}/instagram/post?type=standings&seasonId=${seasonId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--sh-border2)", color: "rgba(255,255,255,0.5)", background: "transparent" }}
+                  >
+                    🖼 Preview standings
+                  </a>
+                  <button
+                    onClick={() => postToInstagram("standings", seasonId)}
+                    disabled={igPosting === "standings"}
+                    className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-40"
+                    style={{ borderColor: "var(--sh-border2)", color: igResult?.id === "standings" && igResult.ok ? "#4ade80" : "rgba(255,255,255,0.5)", background: "transparent" }}
+                  >
+                    {igPosting === "standings" ? "Posting…" : igResult?.id === "standings" && igResult.ok ? "✓ Posted to Instagram" : "📸 Post standings to Instagram"}
+                  </button>
+                </>
               )}
               <button
                 onClick={printStandings}
