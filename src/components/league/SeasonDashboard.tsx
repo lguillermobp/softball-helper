@@ -905,7 +905,7 @@ ${body}
                                       </div>
                                       <TeamAvatar name={game.homeTeam.name} logoUrl={game.homeTeam.logoUrl} size={8} />
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className="flex flex-col items-center gap-1 shrink-0">
                                       {game.status === "COMPLETED" ? (
                                         <span className="text-xl font-bold" style={{ color: "var(--sh-primary)" }}>
                                           {game.homeScore ?? 0} – {game.awayScore ?? 0}
@@ -913,6 +913,17 @@ ${body}
                                       ) : (
                                         <span className="text-sm font-semibold" style={dim}>vs</span>
                                       )}
+                                      {(() => {
+                                        const ps = protestGames[game.id]?.protestStatus;
+                                        if (!ps || ps === "DENIED") return null;
+                                        const upheld = ps === "UPHELD";
+                                        return (
+                                          <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+                                            style={{ background: upheld ? "rgba(249,115,22,0.15)" : "rgba(234,179,8,0.15)", color: upheld ? "#fb923c" : "#facc15" }}>
+                                            {upheld ? "UPHELD" : "PROTEST"}
+                                          </span>
+                                        );
+                                      })()}
                                     </div>
                                     <div className="flex-1 flex items-center gap-2">
                                       <TeamAvatar name={game.awayTeam.name} logoUrl={game.awayTeam.logoUrl} size={8} />
