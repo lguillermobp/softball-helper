@@ -412,7 +412,7 @@ export default async function LeaguePage({ params }: PageProps) {
           currentUserId={sessionUser.id!}
           technician={technicianData}
           availableTechnicians={availableTechnicians}
-          league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, logoUrl: fullLeague.logoUrl ?? null, bannerUrl: fullLeague.bannerUrl ?? null, plan: { name: league.plan.name, stripePriceId: league.plan.stripePriceId ?? null }, stripeCustomerId: league.stripeCustomerId ?? null, subscriptionStatus: league.subscriptionStatus ?? null, notifyGameEnd: fullLeague.notifyGameEnd, notifyEmail: fullLeague.notifyEmail ?? null, notifyManagers: fullLeague.notifyManagers }}
+          league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, logoUrl: fullLeague.logoUrl ?? null, bannerUrl: fullLeague.bannerUrl ?? null, plan: { name: league.plan.name, stripePriceId: league.plan.stripePriceId ?? null }, stripeCustomerId: league.stripeCustomerId ?? null, subscriptionStatus: league.subscriptionStatus ?? null, notifyGameEnd: fullLeague.notifyGameEnd, notifyEmail: fullLeague.notifyEmail ?? null, notifyManagers: fullLeague.notifyManagers, instagramEnabled: fullLeague.instagramEnabled }}
           seasons={seasons}
           categories={categories}
           teams={teams}

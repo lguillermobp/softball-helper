@@ -399,12 +399,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    select: { id: true, name: true, logoUrl: true, userRoles: { where: { userId }, select: { role: true } } },
+    select: { id: true, name: true, logoUrl: true, instagramEnabled: true, userRoles: { where: { userId }, select: { role: true } } },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!league.instagramEnabled) return NextResponse.json({ error: "Instagram publishing is not enabled for this league" }, { status: 403 });
 
   const body = await req.json() as { type: "game" | "standings" | "schedule"; gameId?: string; seasonId?: string; group?: string; dayKey?: string; gameIds?: string[] };
 

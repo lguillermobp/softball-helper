@@ -107,7 +107,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean };
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -319,6 +319,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [notifyOn,       setNotifyOn]       = useState(league.notifyGameEnd);
   const [notifyEmail,    setNotifyEmail]    = useState(league.notifyEmail ?? "");
   const [notifyManagers, setNotifyManagers] = useState(league.notifyManagers);
+  const [igEnabled,      setIgEnabled]      = useState(league.instagramEnabled);
   const [savingNotify,   setSavingNotify]   = useState(false);
   const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
 
@@ -328,13 +329,14 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       const res = await fetch(`/api/leagues/${slug}/notifications`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers }),
+        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers, instagramEnabled: igEnabled }),
       });
       const data = await res.json();
       if (!res.ok) { setNotifyMsg(data.error ?? "Failed to save"); return; }
       setNotifyOn(data.notifyGameEnd);
       setNotifyEmail(data.notifyEmail ?? "");
       setNotifyManagers(data.notifyManagers);
+      setIgEnabled(data.instagramEnabled);
       setNotifyMsg("Saved ✓");
       setTimeout(() => setNotifyMsg(null), 2500);
     } finally {
@@ -555,6 +557,15 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 className="w-4 h-4 accent-green-500"
               />
               <span className="text-sm" style={{ color: "var(--sh-text)" }}>Notify team managers &amp; assistants</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={igEnabled}
+                onChange={e => setIgEnabled(e.target.checked)}
+                className="w-4 h-4 accent-green-500"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>Allow posting to Instagram</span>
             </label>
             <div className="flex items-center gap-2">
               <button

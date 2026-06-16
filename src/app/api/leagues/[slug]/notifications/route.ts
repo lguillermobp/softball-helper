@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!me.isMasterAdmin && league.userRoles.length === 0)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { notifyGameEnd, notifyEmail, notifyManagers } = await req.json();
+  const { notifyGameEnd, notifyEmail, notifyManagers, instagramEnabled } = await req.json();
 
   const updated = await prisma.league.update({
     where: { id: league.id },
@@ -27,8 +27,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(typeof notifyGameEnd === "boolean" && { notifyGameEnd }),
       ...(notifyEmail !== undefined && { notifyEmail: notifyEmail?.trim() || null }),
       ...(typeof notifyManagers === "boolean" && { notifyManagers }),
+      ...(typeof instagramEnabled === "boolean" && { instagramEnabled }),
     },
-    select: { notifyGameEnd: true, notifyEmail: true, notifyManagers: true },
+    select: { notifyGameEnd: true, notifyEmail: true, notifyManagers: true, instagramEnabled: true },
   });
 
   return NextResponse.json(updated);

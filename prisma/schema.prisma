@@ -121,6 +121,7 @@ model League {
   notifyGameEnd        Boolean          @default(false)
   notifyEmail          String?
   notifyManagers       Boolean          @default(false)
+  instagramEnabled     Boolean          @default(false)
 
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]
