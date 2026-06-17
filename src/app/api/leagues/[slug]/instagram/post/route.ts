@@ -204,28 +204,33 @@ function scheduleCaption(league: string, season: string, date: string, groups: S
 
 type RosterPlayer = { name: string; jerseyNumber: string | null };
 
-function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[]) {
+function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[], managerName: string | null, assistantName: string | null) {
+  const staff = [managerName && `MGR: ${managerName}`, assistantName && `ASST: ${assistantName}`].filter(Boolean).join("  |  ");
   const lines = players
     .sort((a, b) => {
       const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
       return na !== nb ? na - nb : a.name.localeCompare(b.name);
     })
     .map(p => p.jerseyNumber ? `#${p.jerseyNumber} ${p.name}` : p.name);
-  return `${teamName} — ${leagueName}\n\nRoster / Plantilla\n\n${lines.join("\n")}\n\n#softball #softballhelper #team #equipo`;
+  return `${teamName} — ${leagueName}${staff ? `\n${staff}` : ""}\n\nRoster / Plantilla\n\n${lines.join("\n")}\n\n#softball #softballhelper #team #equipo`;
 }
 
 async function buildTeamSvg(
   teamName: string, leagueName: string,
   teamLogo: string | null, leagueLogo: string | null,
   players: RosterPlayer[],
+  managerName: string | null,
+  assistantName: string | null,
 ): Promise<string> {
   const sorted = [...players].sort((a, b) => {
     const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
     return na !== nb ? na - nb : a.name.localeCompare(b.name);
   });
 
-  // Layout constants
-  const HEADER_H  = 310; // league logo + team logo + team name + label
+  const hasStaff = !!(managerName || assistantName);
+  const STAFF_H   = hasStaff ? 48 : 0;
+  const BASE_H    = 310; // league logo + team logo + team name
+  const HEADER_H  = BASE_H + STAFF_H;
   const FOOTER_H  = 52;
   const availH    = 1080 - HEADER_H - FOOTER_H;
   const rows      = Math.ceil(sorted.length / 2);
@@ -233,6 +238,18 @@ async function buildTeamSvg(
   const svgH      = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
   const nameFontSz = Math.round(Math.max(14, Math.min(20, ROW_H * 0.38)));
   const numFontSz  = Math.round(nameFontSz * 0.85);
+
+  // Staff section — manager (green) left, assistant (purple) right
+  const staffY = BASE_H + STAFF_H / 2 + 6;
+  const staffSection = hasStaff ? `
+  <rect x="0" y="${BASE_H}" width="1080" height="${STAFF_H}" fill="rgba(255,255,255,0.025)"/>
+  ${managerName ? `
+  <text x="40" y="${staffY - 10}" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${C.green}" font-weight="bold" letter-spacing="1">MANAGER</text>
+  <text x="40" y="${staffY + 8}" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.white}" font-weight="bold">${esc(trunc(managerName, 24))}</text>` : ""}
+  ${assistantName ? `
+  <text x="560" y="${staffY - 10}" font-family="DejaVu Sans,sans-serif" font-size="11" fill="#c084fc" font-weight="bold" letter-spacing="1">ASSISTANT</text>
+  <text x="560" y="${staffY + 8}" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.white}" font-weight="bold">${esc(trunc(assistantName, 24))}</text>` : ""}
+  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>` : "";
 
   // Build player rows — two columns
   const COL1_NUM = 64; const COL1_NAME = 96;
@@ -249,7 +266,7 @@ async function buildTeamSvg(
     return `${numEl}<text x="${nameX}" y="${y}" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.text}">${esc(trunc(p.name, 22))}</text>`;
   }).join("\n");
 
-  // Column dividers
+  // Column divider
   const gridTop = HEADER_H + 8;
   const gridBot = HEADER_H + rows * ROW_H - 8;
   const colDivider = sorted.length > 1
@@ -271,7 +288,8 @@ async function buildTeamSvg(
   <text x="134" y="84" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.dim}" letter-spacing="2">ROSTER / PLANTILLA</text>
   ${logoCircle(teamLogo, 540, 178, 72, "tmClip", teamName[0] ?? "T")}
   <text x="540" y="280" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="38" fill="${C.white}" font-weight="bold">${esc(trunc(teamName, 22))}</text>
-  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  <line x1="0" y1="${BASE_H}" x2="1080" y2="${BASE_H}" stroke="${C.divider}" stroke-width="1"/>
+  ${staffSection}
   ${rowDividers}
   ${colDivider}
   ${playerRows}
@@ -677,6 +695,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id: body.teamId, leagueId: league.id },
       select: {
         name: true, logoUrl: true,
+        manager:   { select: { name: true } },
+        assistant: { select: { name: true } },
         players: {
           where: { isActive: true },
           select: { name: true, jerseyNumber: true },
@@ -690,8 +710,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(team.logoUrl),
     ]);
-    const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players);
-    const cap = teamCaption(team.name, league.name, team.players);
+    const mgrName  = team.manager?.name ?? null;
+    const asstName = team.assistant?.name ?? null;
+    const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players, mgrName, asstName);
+    const cap = teamCaption(team.name, league.name, team.players, mgrName, asstName);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();
@@ -791,6 +813,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       where: { id: teamId, leagueId: league.id },
       select: {
         name: true, logoUrl: true,
+        manager:   { select: { name: true } },
+        assistant: { select: { name: true } },
         players: {
           where: { isActive: true },
           select: { name: true, jerseyNumber: true },
@@ -803,7 +827,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(team.logoUrl),
     ]);
-    svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players);
+    svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players, team.manager?.name ?? null, team.assistant?.name ?? null);
   } else {
     return NextResponse.json({ error: "type + gameId or seasonId required" }, { status: 400 });
   }
