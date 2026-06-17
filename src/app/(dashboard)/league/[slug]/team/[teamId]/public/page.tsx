@@ -59,7 +59,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
         select: { id: true, name: true, group: true, logoUrl: true },
       }),
       prisma.game.findMany({
-        where: { seasonId: team.seasonId, status: "COMPLETED" },
+        where: { seasonId: team.seasonId, status: "COMPLETED", isPractice: false },
         select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
       }),
     ]);
