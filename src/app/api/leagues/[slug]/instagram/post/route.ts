@@ -202,6 +202,84 @@ function scheduleCaption(league: string, season: string, date: string, groups: S
   return `📅 ${date}\n\n${lines.join("\n")}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
 }
 
+type RosterPlayer = { name: string; jerseyNumber: string | null };
+
+function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[]) {
+  const lines = players
+    .sort((a, b) => {
+      const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
+      return na !== nb ? na - nb : a.name.localeCompare(b.name);
+    })
+    .map(p => p.jerseyNumber ? `#${p.jerseyNumber} ${p.name}` : p.name);
+  return `${teamName} — ${leagueName}\n\nRoster / Plantilla\n\n${lines.join("\n")}\n\n#softball #softballhelper #team #equipo`;
+}
+
+async function buildTeamSvg(
+  teamName: string, leagueName: string,
+  teamLogo: string | null, leagueLogo: string | null,
+  players: RosterPlayer[],
+): Promise<string> {
+  const sorted = [...players].sort((a, b) => {
+    const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
+    return na !== nb ? na - nb : a.name.localeCompare(b.name);
+  });
+
+  // Layout constants
+  const HEADER_H  = 310; // league logo + team logo + team name + label
+  const FOOTER_H  = 52;
+  const availH    = 1080 - HEADER_H - FOOTER_H;
+  const rows      = Math.ceil(sorted.length / 2);
+  const ROW_H     = rows > 0 ? Math.max(34, Math.min(58, Math.floor(availH / rows))) : 54;
+  const svgH      = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
+  const nameFontSz = Math.round(Math.max(14, Math.min(20, ROW_H * 0.38)));
+  const numFontSz  = Math.round(nameFontSz * 0.85);
+
+  // Build player rows — two columns
+  const COL1_NUM = 64; const COL1_NAME = 96;
+  const COL2_NUM = 604; const COL2_NAME = 636;
+  const playerRows = sorted.map((p, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const y   = HEADER_H + row * ROW_H + ROW_H / 2 + nameFontSz * 0.38;
+    const numX  = col === 0 ? COL1_NUM : COL2_NUM;
+    const nameX = col === 0 ? COL1_NAME : COL2_NAME;
+    const numEl = p.jerseyNumber
+      ? `<text x="${numX}" y="${y}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="${numFontSz}" fill="${C.green}" font-weight="bold">#${esc(p.jerseyNumber)}</text>`
+      : "";
+    return `${numEl}<text x="${nameX}" y="${y}" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.text}">${esc(trunc(p.name, 22))}</text>`;
+  }).join("\n");
+
+  // Column dividers
+  const gridTop = HEADER_H + 8;
+  const gridBot = HEADER_H + rows * ROW_H - 8;
+  const colDivider = sorted.length > 1
+    ? `<line x1="540" y1="${gridTop}" x2="540" y2="${gridBot}" stroke="${C.divider}" stroke-width="1"/>`
+    : "";
+
+  // Row dividers
+  const rowDividers = Array.from({ length: rows - 1 }, (_, i) =>
+    `<line x1="24" y1="${HEADER_H + (i + 1) * ROW_H}" x2="1056" y2="${HEADER_H + (i + 1) * ROW_H}" stroke="${C.divider}" stroke-width="1"/>`
+  ).join("\n");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
+  ${getFontStyle()}
+  <rect width="1080" height="${svgH}" fill="${C.bg}"/>
+  <circle cx="1080" cy="0" r="480" fill="rgba(34,197,94,0.025)"/>
+  <circle cx="0" cy="${svgH}" r="360" fill="rgba(34,197,94,0.02)"/>
+  ${logoCircle(leagueLogo, 80, 68, 40, "lgClip", leagueName[0] ?? "L")}
+  <text x="134" y="58" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.muted}" font-weight="bold">${esc(trunc(leagueName, 40))}</text>
+  <text x="134" y="84" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.dim}" letter-spacing="2">ROSTER / PLANTILLA</text>
+  ${logoCircle(teamLogo, 540, 178, 72, "tmClip", teamName[0] ?? "T")}
+  <text x="540" y="280" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="38" fill="${C.white}" font-weight="bold">${esc(trunc(teamName, 22))}</text>
+  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  ${rowDividers}
+  ${colDivider}
+  ${playerRows}
+  <line x1="24" y1="${svgH - FOOTER_H + 10}" x2="1056" y2="${svgH - FOOTER_H + 10}" stroke="${C.divider}" stroke-width="1"/>
+  <text x="1056" y="${svgH - FOOTER_H + 36}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+</svg>`;
+}
+
 async function buildGameSvg(
   home: string, away: string, hs: number, as_: number,
   league: string, season: string, date: string,
@@ -444,7 +522,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!league.instagramEnabled) return NextResponse.json({ error: "Instagram publishing is not enabled for this league" }, { status: 403 });
 
-  const body = await req.json() as { type: "game" | "standings" | "schedule"; gameId?: string; seasonId?: string; group?: string; dayKey?: string; gameIds?: string[] };
+  const body = await req.json() as { type: "game" | "standings" | "schedule" | "team"; gameId?: string; seasonId?: string; group?: string; dayKey?: string; gameIds?: string[]; teamId?: string };
 
   async function postOneImage(svg: string, caption: string): Promise<{ ok: boolean; postId?: string; error?: string; detail?: unknown }> {
     const jpeg = await generateJpeg(svg);
@@ -594,6 +672,31 @@ export async function POST(req: NextRequest, { params }: Params) {
     await cleanupOldImages();
     return NextResponse.json({ ok: true, postId: result.postId });
 
+  } else if (body.type === "team" && body.teamId) {
+    const team = await prisma.team.findFirst({
+      where: { id: body.teamId, leagueId: league.id },
+      select: {
+        name: true, logoUrl: true,
+        players: {
+          where: { isActive: true },
+          select: { name: true, jerseyNumber: true },
+          orderBy: [{ jerseyNumber: "asc" }, { name: "asc" }],
+        },
+      },
+    });
+    if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+
+    const [leagueLogo, teamLogo] = await Promise.all([
+      fetchLogoAsDataUri(league.logoUrl),
+      fetchLogoAsDataUri(team.logoUrl),
+    ]);
+    const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players);
+    const cap = teamCaption(team.name, league.name, team.players);
+    const result = await postOneImage(svg, cap);
+    if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
+    await cleanupOldImages();
+    return NextResponse.json({ ok: true, postId: result.postId });
+
   } else {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -681,6 +784,26 @@ export async function GET(req: NextRequest, { params }: Params) {
     ]);
     rows.forEach((r, i) => { r.logoUri = teamLogos[i] ?? null; });
     svg = buildStandingsSvg(league.name, season.name, groupKey || null, rows, season.showPct, leagueLogo);
+  } else if (type === "team") {
+    const teamId = searchParams.get("teamId");
+    if (!teamId) return NextResponse.json({ error: "teamId required" }, { status: 400 });
+    const team = await prisma.team.findFirst({
+      where: { id: teamId, leagueId: league.id },
+      select: {
+        name: true, logoUrl: true,
+        players: {
+          where: { isActive: true },
+          select: { name: true, jerseyNumber: true },
+          orderBy: [{ jerseyNumber: "asc" }, { name: "asc" }],
+        },
+      },
+    });
+    if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    const [leagueLogo, teamLogo] = await Promise.all([
+      fetchLogoAsDataUri(league.logoUrl),
+      fetchLogoAsDataUri(team.logoUrl),
+    ]);
+    svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players);
   } else {
     return NextResponse.json({ error: "type + gameId or seasonId required" }, { status: 400 });
   }

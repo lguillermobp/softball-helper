@@ -746,6 +746,24 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     const [removedIds,      setRemovedIds]      = useState<Set<string>>(new Set());
     const [settingAsstId,   setSettingAsstId]   = useState<string | null>(null);
     const [enlargedPhoto,   setEnlargedPhoto]   = useState<{ url: string; name: string } | null>(null);
+    const [igTeamPosting,   setIgTeamPosting]   = useState(false);
+    const [igTeamResult,    setIgTeamResult]    = useState<"ok" | "error" | null>(null);
+
+    async function postTeamToInstagram() {
+      setIgTeamPosting(true); setIgTeamResult(null);
+      try {
+        const res = await fetch(`/api/leagues/${slug}/instagram/post`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "team", teamId: team.id }),
+        });
+        setIgTeamResult(res.ok ? "ok" : "error");
+      } catch {
+        setIgTeamResult("error");
+      } finally {
+        setIgTeamPosting(false);
+      }
+    }
 
     async function resendInvite(playerId: string) {
       setResending(playerId);
@@ -986,6 +1004,21 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 >
                   🖨 Roster
                 </button>
+                {igEnabled && isAdmin && (
+                  <button
+                    onClick={postTeamToInstagram}
+                    disabled={igTeamPosting}
+                    title="Post team roster to Instagram"
+                    className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
+                    style={igTeamResult === "ok"
+                      ? { borderColor: "var(--sh-primary)", color: "var(--sh-primary)", background: "transparent" }
+                      : igTeamResult === "error"
+                      ? { borderColor: "var(--sh-danger-border)", color: "var(--sh-danger)", background: "transparent" }
+                      : { borderColor: "#833ab4", color: "#c084fc", background: "transparent" }}
+                  >
+                    {igTeamPosting ? "Posting..." : igTeamResult === "ok" ? "Posted!" : igTeamResult === "error" ? "Failed" : "IG Roster"}
+                  </button>
+                )}
                 {!inactive && canEdit && (
                   <>
                     <EditTeamDialog
