@@ -202,11 +202,11 @@ function scheduleCaption(league: string, season: string, date: string, groups: S
   return `📅 ${date}\n\n${lines.join("\n")}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
 }
 
-type RosterPlayer = { name: string; jerseyNumber: string | null };
+type RosterPlayer = { name: string; jerseyNumber: string | null; userId: string | null; photoUri?: string | null };
 
 function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[], managerName: string | null, assistantName: string | null) {
   const staff = [managerName && `MGR: ${managerName}`, assistantName && `ASST: ${assistantName}`].filter(Boolean).join("  |  ");
-  const lines = players
+  const lines = [...players]
     .sort((a, b) => {
       const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
       return na !== nb ? na - nb : a.name.localeCompare(b.name);
@@ -219,82 +219,73 @@ async function buildTeamSvg(
   teamName: string, leagueName: string,
   teamLogo: string | null, leagueLogo: string | null,
   players: RosterPlayer[],
-  managerName: string | null,
-  assistantName: string | null,
+  managerId: string | null,
+  assistantId: string | null,
 ): Promise<string> {
+  const COLS     = 4;
+  const HEADER_H = 236;
+  const FOOTER_H = 42;
+
   const sorted = [...players].sort((a, b) => {
     const na = parseInt(a.jerseyNumber ?? "9999"), nb = parseInt(b.jerseyNumber ?? "9999");
     return na !== nb ? na - nb : a.name.localeCompare(b.name);
   });
 
-  const hasStaff = !!(managerName || assistantName);
-  const STAFF_H   = hasStaff ? 48 : 0;
-  const BASE_H    = 310; // league logo + team logo + team name
-  const HEADER_H  = BASE_H + STAFF_H;
-  const FOOTER_H  = 52;
-  const availH    = 1080 - HEADER_H - FOOTER_H;
-  const rows      = Math.ceil(sorted.length / 2);
-  const ROW_H     = rows > 0 ? Math.max(34, Math.min(58, Math.floor(availH / rows))) : 54;
-  const svgH      = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
-  const nameFontSz = Math.round(Math.max(14, Math.min(20, ROW_H * 0.38)));
-  const numFontSz  = Math.round(nameFontSz * 0.85);
+  const rows   = Math.ceil(sorted.length / COLS) || 1;
+  const availH = 1080 - HEADER_H - FOOTER_H;
+  const ROW_H  = Math.max(130, Math.min(210, Math.floor(availH / rows)));
+  const svgH   = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
 
-  // Staff section — manager (green) left, assistant (purple) right
-  const staffY = BASE_H + STAFF_H / 2 + 6;
-  const staffSection = hasStaff ? `
-  <rect x="0" y="${BASE_H}" width="1080" height="${STAFF_H}" fill="rgba(255,255,255,0.025)"/>
-  ${managerName ? `
-  <text x="40" y="${staffY - 10}" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${C.green}" font-weight="bold" letter-spacing="1">MANAGER</text>
-  <text x="40" y="${staffY + 8}" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.white}" font-weight="bold">${esc(trunc(managerName, 24))}</text>` : ""}
-  ${assistantName ? `
-  <text x="560" y="${staffY - 10}" font-family="DejaVu Sans,sans-serif" font-size="11" fill="#c084fc" font-weight="bold" letter-spacing="1">ASSISTANT</text>
-  <text x="560" y="${staffY + 8}" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.white}" font-weight="bold">${esc(trunc(assistantName, 24))}</text>` : ""}
-  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>` : "";
+  const CELL_W    = 1080 / COLS; // 270
+  const CARD_PAD  = 5;
+  const avatarR   = Math.round(Math.max(26, Math.min(44, ROW_H * 0.25)));
+  const numFontSz = Math.round(Math.max(11, Math.min(15, ROW_H * 0.09)));
+  const nameFontSz = Math.round(Math.max(10, Math.min(14, ROW_H * 0.085)));
 
-  // Build player rows — two columns
-  const COL1_NUM = 64; const COL1_NAME = 96;
-  const COL2_NUM = 604; const COL2_NAME = 636;
-  const playerRows = sorted.map((p, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const y   = HEADER_H + row * ROW_H + ROW_H / 2 + nameFontSz * 0.38;
-    const numX  = col === 0 ? COL1_NUM : COL2_NUM;
-    const nameX = col === 0 ? COL1_NAME : COL2_NAME;
-    const numEl = p.jerseyNumber
-      ? `<text x="${numX}" y="${y}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="${numFontSz}" fill="${C.green}" font-weight="bold">#${esc(p.jerseyNumber)}</text>`
+  const cards = sorted.map((p, i) => {
+    const col  = i % COLS;
+    const row  = Math.floor(i / COLS);
+    const rowY = HEADER_H + row * ROW_H;
+    const cx   = col * CELL_W + CELL_W / 2;
+
+    const avatarCy = rowY + CARD_PAD + 8 + avatarR;
+    const numY     = avatarCy + avatarR + numFontSz + 5;
+    const nameY    = numY + nameFontSz + 4;
+    const roleY    = nameY + 12;
+
+    const isMgr  = !!managerId  && p.userId === managerId;
+    const isAsst = !!assistantId && p.userId === assistantId;
+
+    const cardFill   = isMgr  ? "rgba(34,197,94,0.15)"   : isAsst ? "rgba(192,132,252,0.15)"   : "rgba(255,255,255,0.04)";
+    const cardStroke = isMgr  ? "rgba(34,197,94,0.45)"   : isAsst ? "rgba(192,132,252,0.45)"   : "rgba(148,163,184,0.12)";
+
+    const roleEl = isMgr
+      ? `<text x="${cx}" y="${roleY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="${C.green}" font-weight="bold" letter-spacing="1">MANAGER</text>`
+      : isAsst
+      ? `<text x="${cx}" y="${roleY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="#c084fc" font-weight="bold" letter-spacing="1">ASSISTANT</text>`
       : "";
-    return `${numEl}<text x="${nameX}" y="${y}" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.text}">${esc(trunc(p.name, 22))}</text>`;
+
+    return `<rect x="${col * CELL_W + CARD_PAD}" y="${rowY + CARD_PAD}" width="${CELL_W - CARD_PAD * 2}" height="${ROW_H - CARD_PAD * 2}" rx="10" fill="${cardFill}" stroke="${cardStroke}" stroke-width="1"/>
+    ${logoCircle(p.photoUri ?? null, cx, avatarCy, avatarR, `pClip${i}`, (p.name[0] ?? "?").toUpperCase())}
+    ${p.jerseyNumber ? `<text x="${cx}" y="${numY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${numFontSz}" fill="${C.green}" font-weight="bold">#${esc(p.jerseyNumber)}</text>` : ""}
+    <text x="${cx}" y="${nameY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.white}" font-weight="bold">${esc(trunc(p.name, 16))}</text>
+    ${roleEl}`;
   }).join("\n");
-
-  // Column divider
-  const gridTop = HEADER_H + 8;
-  const gridBot = HEADER_H + rows * ROW_H - 8;
-  const colDivider = sorted.length > 1
-    ? `<line x1="540" y1="${gridTop}" x2="540" y2="${gridBot}" stroke="${C.divider}" stroke-width="1"/>`
-    : "";
-
-  // Row dividers
-  const rowDividers = Array.from({ length: rows - 1 }, (_, i) =>
-    `<line x1="24" y1="${HEADER_H + (i + 1) * ROW_H}" x2="1056" y2="${HEADER_H + (i + 1) * ROW_H}" stroke="${C.divider}" stroke-width="1"/>`
-  ).join("\n");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
   ${getFontStyle()}
   <rect width="1080" height="${svgH}" fill="${C.bg}"/>
   <circle cx="1080" cy="0" r="480" fill="rgba(34,197,94,0.025)"/>
   <circle cx="0" cy="${svgH}" r="360" fill="rgba(34,197,94,0.02)"/>
-  ${logoCircle(leagueLogo, 80, 68, 40, "lgClip", leagueName[0] ?? "L")}
-  <text x="134" y="58" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.muted}" font-weight="bold">${esc(trunc(leagueName, 40))}</text>
-  <text x="134" y="84" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.dim}" letter-spacing="2">ROSTER / PLANTILLA</text>
-  ${logoCircle(teamLogo, 540, 178, 72, "tmClip", teamName[0] ?? "T")}
-  <text x="540" y="280" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="38" fill="${C.white}" font-weight="bold">${esc(trunc(teamName, 22))}</text>
-  <line x1="0" y1="${BASE_H}" x2="1080" y2="${BASE_H}" stroke="${C.divider}" stroke-width="1"/>
-  ${staffSection}
-  ${rowDividers}
-  ${colDivider}
-  ${playerRows}
-  <line x1="24" y1="${svgH - FOOTER_H + 10}" x2="1056" y2="${svgH - FOOTER_H + 10}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="1056" y="${svgH - FOOTER_H + 36}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+  ${logoCircle(leagueLogo, 70, 54, 34, "lgClip", leagueName[0] ?? "L")}
+  <text x="116" y="42" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.muted}" font-weight="bold">${esc(trunc(leagueName, 44))}</text>
+  <text x="116" y="64" font-family="DejaVu Sans,sans-serif" font-size="11" fill="${C.dim}" letter-spacing="2">ROSTER / PLANTILLA</text>
+  ${logoCircle(teamLogo, 540, 146, 56, "tmClip", teamName[0] ?? "T")}
+  <text x="540" y="218" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="32" fill="${C.white}" font-weight="bold">${esc(trunc(teamName, 24))}</text>
+  <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
+  ${cards}
+  <line x1="24" y1="${svgH - FOOTER_H + 8}" x2="1056" y2="${svgH - FOOTER_H + 8}" stroke="${C.divider}" stroke-width="1"/>
+  <text x="1056" y="${svgH - FOOTER_H + 32}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
 </svg>`;
 }
 
@@ -702,7 +693,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         assistant: { select: { name: true } },
         players: {
           where: { isActive: true },
-          select: { name: true, jerseyNumber: true },
+          select: { name: true, jerseyNumber: true, userId: true, photoUrl: true },
           orderBy: [{ jerseyNumber: "asc" }, { name: "asc" }],
         },
       },
@@ -711,14 +702,16 @@ export async function POST(req: NextRequest, { params }: Params) {
     const isTeamStaff = team.managerId === userId || team.assistantId === userId;
     if (!isAdmin && !isTeamStaff) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const [leagueLogo, teamLogo] = await Promise.all([
+    const [leagueLogo, teamLogo, ...playerPhotos] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(team.logoUrl),
+      ...team.players.map(p => fetchLogoAsDataUri(p.photoUrl)),
     ]);
+    const players: RosterPlayer[] = team.players.map((p, i) => ({ ...p, photoUri: playerPhotos[i] ?? null }));
     const mgrName  = team.manager?.name ?? null;
     const asstName = team.assistant?.name ?? null;
-    const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players, mgrName, asstName);
-    const cap = teamCaption(team.name, league.name, team.players, mgrName, asstName);
+    const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, players, team.managerId, team.assistantId);
+    const cap = teamCaption(team.name, league.name, players, mgrName, asstName);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();
@@ -818,21 +811,22 @@ export async function GET(req: NextRequest, { params }: Params) {
       where: { id: teamId, leagueId: league.id },
       select: {
         name: true, logoUrl: true,
-        manager:   { select: { name: true } },
-        assistant: { select: { name: true } },
+        managerId: true, assistantId: true,
         players: {
           where: { isActive: true },
-          select: { name: true, jerseyNumber: true },
+          select: { name: true, jerseyNumber: true, userId: true, photoUrl: true },
           orderBy: [{ jerseyNumber: "asc" }, { name: "asc" }],
         },
       },
     });
     if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
-    const [leagueLogo, teamLogo] = await Promise.all([
+    const [leagueLogo, teamLogo, ...playerPhotos] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
       fetchLogoAsDataUri(team.logoUrl),
+      ...team.players.map(p => fetchLogoAsDataUri(p.photoUrl)),
     ]);
-    svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, team.players, team.manager?.name ?? null, team.assistant?.name ?? null);
+    const players: RosterPlayer[] = team.players.map((p, i) => ({ ...p, photoUri: playerPhotos[i] ?? null }));
+    svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, players, team.managerId, team.assistantId);
   } else {
     return NextResponse.json({ error: "type + gameId or seasonId required" }, { status: 400 });
   }
