@@ -233,24 +233,31 @@ async function buildTeamSvg(
 
   const rows   = Math.ceil(sorted.length / COLS) || 1;
   const availH = 1080 - HEADER_H - FOOTER_H;
-  const ROW_H  = Math.max(110, Math.min(210, Math.floor(availH / rows)));
+
+  // Size elements based on how much vertical space each row can get
+  const targetRowH = Math.max(100, Math.min(210, Math.floor(availH / rows)));
+  const CARD_PAD   = 4; // gap between adjacent card borders
+  const avatarR    = Math.round(Math.max(28, Math.min(50, targetRowH * 0.28)));
+  const numFontSz  = Math.round(Math.max(11, Math.min(15, targetRowH * 0.09)));
+  const nameFontSz = Math.round(Math.max(10, Math.min(14, targetRowH * 0.085)));
+
+  // Card height is exactly the content stack — no extra dead space
+  const CARD_H = 5 + avatarR * 2 + 4 + numFontSz + 3 + nameFontSz + 6;
+  const ROW_H  = CARD_H + CARD_PAD * 2;
   const svgH   = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
 
-  const CELL_W    = 1080 / COLS; // 270
-  const CARD_PAD  = 3;
-  const avatarR   = Math.round(Math.max(26, Math.min(44, ROW_H * 0.25)));
-  const numFontSz = Math.round(Math.max(11, Math.min(15, ROW_H * 0.09)));
-  const nameFontSz = Math.round(Math.max(10, Math.min(14, ROW_H * 0.085)));
+  const CELL_W = 1080 / COLS; // 270
 
   const cards = sorted.map((p, i) => {
-    const col  = i % COLS;
-    const row  = Math.floor(i / COLS);
-    const rowY = HEADER_H + row * ROW_H;
-    const cx   = col * CELL_W + CELL_W / 2;
+    const col   = i % COLS;
+    const row   = Math.floor(i / COLS);
+    const rowY  = HEADER_H + row * ROW_H;
+    const cardY = rowY + CARD_PAD;
+    const cx    = col * CELL_W + CELL_W / 2;
 
-    const avatarCy = rowY + CARD_PAD + 4 + avatarR;
-    const numY     = avatarCy + avatarR + numFontSz + 3;
-    const nameY    = numY + nameFontSz + 2;
+    const avatarCy = cardY + 5 + avatarR;
+    const numY     = avatarCy + avatarR + 4 + numFontSz;
+    const nameY    = numY + 3 + nameFontSz;
     const roleY    = nameY + 11;
 
     const isMgr  = !!managerId  && p.userId === managerId;
@@ -265,7 +272,7 @@ async function buildTeamSvg(
       ? `<text x="${cx}" y="${roleY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="#c084fc" font-weight="bold" letter-spacing="1">ASSISTANT</text>`
       : "";
 
-    return `<rect x="${col * CELL_W + CARD_PAD}" y="${rowY + CARD_PAD}" width="${CELL_W - CARD_PAD * 2}" height="${ROW_H - CARD_PAD * 2}" rx="10" fill="${cardFill}" stroke="${cardStroke}" stroke-width="1"/>
+    return `<rect x="${col * CELL_W + CARD_PAD}" y="${cardY}" width="${CELL_W - CARD_PAD * 2}" height="${CARD_H}" rx="10" fill="${cardFill}" stroke="${cardStroke}" stroke-width="1"/>
     ${logoCircle(p.photoUri ?? null, cx, avatarCy, avatarR, `pClip${i}`, (p.name[0] ?? "?").toUpperCase())}
     ${p.jerseyNumber ? `<text x="${cx}" y="${numY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${numFontSz}" fill="${C.green}" font-weight="bold">#${esc(p.jerseyNumber)}</text>` : ""}
     <text x="${cx}" y="${nameY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.white}" font-weight="bold">${esc(trunc(p.name, 16))}</text>
