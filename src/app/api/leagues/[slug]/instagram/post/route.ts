@@ -236,23 +236,24 @@ async function buildTeamSvg(
 
   // Size elements based on how much vertical space each row can get
   const targetRowH = Math.max(100, Math.min(210, Math.floor(availH / rows)));
-  const CARD_PAD   = 4; // gap between adjacent card borders
+  const CARD_PAD_H = 4;  // horizontal gap between card border and cell edge (left/right only)
+  const ROW_GAP    = 8;  // vertical gap between rows (only between rows, not above/below the grid)
   const avatarR    = Math.round(Math.max(28, Math.min(50, targetRowH * 0.28)));
   const numFontSz  = Math.round(Math.max(11, Math.min(15, targetRowH * 0.09)));
   const nameFontSz = Math.round(Math.max(10, Math.min(14, targetRowH * 0.085)));
 
-  // Card height is exactly the content stack — no extra dead space
-  const CARD_H = 5 + avatarR * 2 + 4 + numFontSz + 3 + nameFontSz + 6;
-  const ROW_H  = CARD_H + CARD_PAD * 2;
-  const svgH   = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
+  // Card height is exactly the content stack — no wasted space
+  const CARD_H  = 5 + avatarR * 2 + 4 + numFontSz + 3 + nameFontSz + 6;
+  // Total grid height: n cards + (n-1) gaps — no leading/trailing gap
+  const gridH   = rows * CARD_H + (rows - 1) * ROW_GAP;
+  const svgH    = Math.max(1080, HEADER_H + gridH + FOOTER_H);
 
   const CELL_W = 1080 / COLS; // 270
 
   const cards = sorted.map((p, i) => {
     const col   = i % COLS;
     const row   = Math.floor(i / COLS);
-    const rowY  = HEADER_H + row * ROW_H;
-    const cardY = rowY + CARD_PAD;
+    const cardY = HEADER_H + row * (CARD_H + ROW_GAP);
     const cx    = col * CELL_W + CELL_W / 2;
 
     const avatarCy = cardY + 5 + avatarR;
@@ -272,7 +273,7 @@ async function buildTeamSvg(
       ? `<text x="${cx}" y="${roleY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="10" fill="#c084fc" font-weight="bold" letter-spacing="1">ASSISTANT</text>`
       : "";
 
-    return `<rect x="${col * CELL_W + CARD_PAD}" y="${cardY}" width="${CELL_W - CARD_PAD * 2}" height="${CARD_H}" rx="10" fill="${cardFill}" stroke="${cardStroke}" stroke-width="1"/>
+    return `<rect x="${col * CELL_W + CARD_PAD_H}" y="${cardY}" width="${CELL_W - CARD_PAD_H * 2}" height="${CARD_H}" rx="10" fill="${cardFill}" stroke="${cardStroke}" stroke-width="1"/>
     ${logoCircle(p.photoUri ?? null, cx, avatarCy, avatarR, `pClip${i}`, (p.name[0] ?? "?").toUpperCase())}
     ${p.jerseyNumber ? `<text x="${cx}" y="${numY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${numFontSz}" fill="${C.green}" font-weight="bold">#${esc(p.jerseyNumber)}</text>` : ""}
     <text x="${cx}" y="${nameY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${nameFontSz}" fill="${C.white}" font-weight="bold">${esc(trunc(p.name, 16))}</text>
