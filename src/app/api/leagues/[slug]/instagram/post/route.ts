@@ -537,10 +537,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!league.instagramEnabled) return NextResponse.json({ error: "Instagram publishing is not enabled for this league" }, { status: 403 });
 
   const body = await req.json() as { type: "game" | "standings" | "schedule" | "team"; gameId?: string; seasonId?: string; group?: string; dayKey?: string; gameIds?: string[]; teamId?: string };
+
+  // Non-admins may only post their own team's roster
+  if (!isAdmin && body.type !== "team") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   async function postOneImage(svg: string, caption: string): Promise<{ ok: boolean; postId?: string; error?: string; detail?: unknown }> {
     const jpeg = await generateJpeg(svg);
@@ -695,6 +697,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id: body.teamId, leagueId: league.id },
       select: {
         name: true, logoUrl: true,
+        managerId: true, assistantId: true,
         manager:   { select: { name: true } },
         assistant: { select: { name: true } },
         players: {
@@ -705,6 +708,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       },
     });
     if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    const isTeamStaff = team.managerId === userId || team.assistantId === userId;
+    if (!isAdmin && !isTeamStaff) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const [leagueLogo, teamLogo] = await Promise.all([
       fetchLogoAsDataUri(league.logoUrl),
