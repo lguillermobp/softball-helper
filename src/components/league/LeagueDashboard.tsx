@@ -1004,7 +1004,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 >
                   🖨 Roster
                 </button>
-                {igEnabled && isStaff && (
+                {igEnabled && (isAdmin || isStaff) && (
                   <button
                     onClick={postTeamToInstagram}
                     disabled={igTeamPosting}
