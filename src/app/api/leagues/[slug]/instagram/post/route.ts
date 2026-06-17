@@ -233,11 +233,11 @@ async function buildTeamSvg(
 
   const rows   = Math.ceil(sorted.length / COLS) || 1;
   const availH = 1080 - HEADER_H - FOOTER_H;
-  const ROW_H  = Math.max(130, Math.min(210, Math.floor(availH / rows)));
+  const ROW_H  = Math.max(110, Math.min(210, Math.floor(availH / rows)));
   const svgH   = Math.max(1080, HEADER_H + rows * ROW_H + FOOTER_H);
 
   const CELL_W    = 1080 / COLS; // 270
-  const CARD_PAD  = 5;
+  const CARD_PAD  = 3;
   const avatarR   = Math.round(Math.max(26, Math.min(44, ROW_H * 0.25)));
   const numFontSz = Math.round(Math.max(11, Math.min(15, ROW_H * 0.09)));
   const nameFontSz = Math.round(Math.max(10, Math.min(14, ROW_H * 0.085)));
@@ -248,10 +248,10 @@ async function buildTeamSvg(
     const rowY = HEADER_H + row * ROW_H;
     const cx   = col * CELL_W + CELL_W / 2;
 
-    const avatarCy = rowY + CARD_PAD + 8 + avatarR;
-    const numY     = avatarCy + avatarR + numFontSz + 5;
-    const nameY    = numY + nameFontSz + 4;
-    const roleY    = nameY + 12;
+    const avatarCy = rowY + CARD_PAD + 4 + avatarR;
+    const numY     = avatarCy + avatarR + numFontSz + 3;
+    const nameY    = numY + nameFontSz + 2;
+    const roleY    = nameY + 11;
 
     const isMgr  = !!managerId  && p.userId === managerId;
     const isAsst = !!assistantId && p.userId === assistantId;
