@@ -114,7 +114,7 @@ function buildScheduleSvg(
   league: string, season: string, dateLabel: string,
   groups: ScheduleGroup[], leagueLogo: string | null = null,
 ): string {
-  const FIELD_H = 40; const GAME_H = 90; const HEADER_H = 210;
+  const FIELD_H = 40; const GAME_H = 100; const HEADER_H = 210;
   let contentH = 0;
   for (const g of groups) { if (g.field) contentH += FIELD_H; contentH += g.games.length * GAME_H; }
   const svgH = Math.max(1080, HEADER_H + contentH + 52);
@@ -127,7 +127,7 @@ function buildScheduleSvg(
     if (group.field) {
       body += `<rect x="0" y="${y}" width="1080" height="${FIELD_H}" fill="rgba(34,197,94,0.06)"/>
         <rect x="0" y="${y}" width="4" height="${FIELD_H}" fill="${C.green}"/>
-        <text x="18" y="${y + FIELD_H / 2 + 6}" font-family="DejaVu Sans,sans-serif" font-size="13" fill="${C.green}" font-weight="bold" letter-spacing="1">${esc(group.field.toUpperCase())}</text>
+        <text x="18" y="${y + FIELD_H / 2 + 6}" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold" letter-spacing="1">${esc(group.field.toUpperCase())}</text>
         <line x1="0" y1="${y + FIELD_H}" x2="1080" y2="${y + FIELD_H}" stroke="${C.divider}" stroke-width="1"/>`;
       y += FIELD_H;
     }
@@ -158,10 +158,10 @@ function buildScheduleSvg(
         : `<text x="540" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="15" fill="${C.muted}">vs</text>`;
       const awayFill = done ? (awayWins ? C.white : C.muted) : C.text;
       const homeFill = done ? (homeWins ? C.white : C.muted) : C.text;
-      const nameSz   = done ? 19 : 21;
+      const nameSz   = done ? 23 : 25;
       body += `${idx % 2 === 1 ? `<rect x="0" y="${y}" width="1080" height="${GAME_H}" fill="rgba(255,255,255,0.018)"/>` : ""}
         <line x1="0" y1="${y + GAME_H}" x2="1080" y2="${y + GAME_H}" stroke="${C.divider}" stroke-width="1"/>
-        <text x="64" y="${textY - 4}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
+        <text x="64" y="${textY - 4}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.green}" font-weight="bold">${esc(g.time)}</text>
         <line x1="120" y1="${y + 12}" x2="120" y2="${y + GAME_H - 12}" stroke="${C.divider}" stroke-width="1"/>
         ${awLogo}
         <text x="200" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameSz}" fill="${awayFill}" font-weight="${awayWins ? "bold" : "normal"}">${esc(trunc(g.away, 14))}</text>
@@ -178,9 +178,9 @@ function buildScheduleSvg(
   <rect width="1080" height="${svgH}" fill="${C.bg}"/>
   <circle cx="1080" cy="0" r="500" fill="rgba(34,197,94,0.02)"/>
   ${logoCircle(leagueLogo, 76, 100, 52, "lgClip", league[0] ?? "L")}
-  <text x="148" y="68" font-family="DejaVu Sans,sans-serif" font-size="19" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="148" y="68" font-family="DejaVu Sans,sans-serif" font-size="23" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
   <text x="148" y="124" font-family="DejaVu Sans,sans-serif" font-size="42" fill="${C.white}" font-weight="bold">${esc(dateLabel)}</text>
-  <text x="148" y="170" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
+  <text x="148" y="170" font-family="DejaVu Sans,sans-serif" font-size="24" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
   <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
   ${body}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
@@ -323,21 +323,21 @@ async function buildGameSvg(
   <circle cx="1080" cy="0" r="480" fill="rgba(34,197,94,0.025)"/>
   <circle cx="0" cy="1080" r="360" fill="rgba(34,197,94,0.02)"/>
   ${logoCircle(leagueLogo, 540, 82, 48, "lgClip", league[0] ?? "L")}
-  <text x="540" y="158" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="540" y="158" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="26" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
   <rect x="420" y="184" width="240" height="40" rx="20" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.35)" stroke-width="1.5"/>
-  <text x="540" y="210" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}" font-weight="bold" letter-spacing="4">FINAL</text>
+  <text x="540" y="210" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.green}" font-weight="bold" letter-spacing="4">FINAL</text>
   ${protestBadge}
   ${logoCircle(awayLogo, 220, 368, 75, "awClip", away[0] ?? "A")}
   <text x="220" y="496" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 44 : 36}" fill="${awayFill}" font-weight="bold">${esc(trunc(away, 16))}</text>
-  <text x="220" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">AWAY</text>
+  <text x="220" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}" font-weight="bold" letter-spacing="2">AWAY</text>
   <text x="390" y="678" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${awayWins ? 114 : 90}" fill="${aScoreFill}" font-weight="bold">${as_}</text>
   <text x="540" y="660" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="40" fill="${C.dim}">—</text>
   <text x="690" y="678" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 114 : 90}" fill="${hScoreFill}" font-weight="bold">${hs}</text>
   ${logoCircle(homeLogo, 860, 368, 75, "hmClip", home[0] ?? "H")}
   <text x="860" y="496" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${homeWins ? 44 : 36}" fill="${homeFill}" font-weight="bold">${esc(trunc(home, 16))}</text>
-  <text x="860" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">HOME</text>
+  <text x="860" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}" font-weight="bold" letter-spacing="2">HOME</text>
   <line x1="40" y1="876" x2="1040" y2="876" stroke="${C.divider}" stroke-width="1"/>
-  <text x="540" y="914" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}">${esc(footer)}</text>
+  <text x="540" y="914" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.dim}">${esc(footer)}</text>
   <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">softballhelper.com</text>
 </svg>`;
 }
@@ -442,9 +442,9 @@ function buildStandingsSvg(
   const LOGO_R   = Math.round(20 * scale);
   const LOGO_CX  = 70;
   const NAME_X   = LOGO_CX + LOGO_R + 12;
-  const nameFontBase = Math.round(19 * scale);
-  const cellFont = Math.round(20 * scale);
-  const rankFont = Math.round(17 * scale);
+  const nameFontBase = Math.round(22 * scale);
+  const cellFont = Math.round(23 * scale);
+  const rankFont = Math.round(20 * scale);
 
   const COL_HDR_Y = HEADER_H + 28;
   const STATS = showPct
@@ -457,7 +457,7 @@ function buildStandingsSvg(
   const RANK_CX = 28;
 
   const headerCols = STATS.map((h, i) =>
-    `<text x="${cx(i)}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold" letter-spacing="0.5">${h}</text>`
+    `<text x="${cx(i)}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.muted}" font-weight="bold" letter-spacing="0.5">${h}</text>`
   ).join("");
 
   const dataRows = display.map((row, i) => {
@@ -491,7 +491,7 @@ function buildStandingsSvg(
 
   const groupBadge = groupName
     ? `<rect x="160" y="214" width="${groupName.length * 13 + 88}" height="30" rx="15" fill="rgba(34,197,94,0.15)" stroke="rgba(74,222,128,0.3)" stroke-width="1"/>
-       <text x="202" y="234" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.green}" font-weight="bold" letter-spacing="1">GROUP ${esc(groupName.toUpperCase())}</text>`
+       <text x="202" y="234" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.green}" font-weight="bold" letter-spacing="1">GROUP ${esc(groupName.toUpperCase())}</text>`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${svgH}">
@@ -499,13 +499,13 @@ function buildStandingsSvg(
   <rect width="1080" height="${svgH}" fill="${C.bg}"/>
   <circle cx="1080" cy="0" r="500" fill="rgba(34,197,94,0.02)"/>
   ${logoCircle(leagueLogo, 80, 126, 58, "lgClip", league[0] ?? "L")}
-  <text x="158" y="86" font-family="DejaVu Sans,sans-serif" font-size="20" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
+  <text x="158" y="86" font-family="DejaVu Sans,sans-serif" font-size="24" fill="${C.muted}" font-weight="bold">${esc(trunc(league, 36))}</text>
   <text x="158" y="152" font-family="DejaVu Sans,sans-serif" font-size="56" fill="${C.white}" font-weight="bold">Standings</text>
-  <text x="158" y="202" font-family="DejaVu Sans,sans-serif" font-size="24" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
+  <text x="158" y="202" font-family="DejaVu Sans,sans-serif" font-size="28" fill="${C.green}" font-weight="bold">${esc(trunc(season, 40))}</text>
   ${groupBadge}
   <line x1="24" y1="${HEADER_H}" x2="1056" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="${RANK_CX}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold">#</text>
-  <text x="${NAME_X}" y="${COL_HDR_Y}" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.muted}" font-weight="bold">TEAM</text>
+  <text x="${RANK_CX}" y="${COL_HDR_Y}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.muted}" font-weight="bold">#</text>
+  <text x="${NAME_X}" y="${COL_HDR_Y}" font-family="DejaVu Sans,sans-serif" font-size="17" fill="${C.muted}" font-weight="bold">TEAM</text>
   ${headerCols}
   ${dataRows}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
