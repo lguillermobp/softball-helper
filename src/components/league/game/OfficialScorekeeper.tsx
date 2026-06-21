@@ -197,6 +197,8 @@ export function OfficialScorekeeper({
   const [pendingRuns,       setPendingRuns]       = useState<number | null>(null);
   // Carry-over: batting order spot that should lead off next inning
   const [pendingCarryOver,  setPendingCarryOver]  = useState<number | null>(null);
+  // Live run counter — incremented by scorekeeper as runs score during the inning
+  const [liveRuns,          setLiveRuns]          = useState(0);
 
   // Substitution panel
   const [showSubPanel,  setShowSubPanel]  = useState(false);
@@ -335,7 +337,7 @@ export function OfficialScorekeeper({
 
     setAtBats(prev => [...prev, newAb]);
     const newOuts = currentOuts + outCount(outcome);
-    if (newOuts >= 3) setPendingRuns(0);
+    if (newOuts >= 3) setPendingRuns(liveRuns);
 
     const result = await enqueue(
       `/api/leagues/${slug}/games/${gameId}/at-bat`, "POST",
@@ -434,7 +436,7 @@ export function OfficialScorekeeper({
     };
     setRunnerOuts(prev => [...prev, newRO]);
     if (willBe3rd) {
-      setPendingRuns(0);
+      setPendingRuns(liveRuns);
       setPendingCarryOver(carryOver);
     }
 
@@ -480,6 +482,7 @@ export function OfficialScorekeeper({
     setRunnerOuts(prev => prev.filter(ro => !(ro.inningNumber === body.inningNumber && ro.isTop === body.isTop)));
     setPendingRuns(null);
     setPendingCarryOver(null);
+    setLiveRuns(0);
     const result = await enqueue(`/api/leagues/${slug}/games/${gameId}/inning`, "POST", body);
     setSaving(false);
     if (!result.ok) {
@@ -978,6 +981,24 @@ export function OfficialScorekeeper({
               </div>
             </div>
 
+            {/* Live run counter */}
+            <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--sh-muted)" }}>Runs this inning</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setLiveRuns(r => Math.max(0, r - 1))}
+                  className="w-7 h-7 rounded-lg font-bold text-base border transition-all"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
+                >−</button>
+                <span className="text-lg font-bold w-8 text-center tabular-nums" style={{ color: liveRuns > 0 ? "var(--sh-primary)" : "var(--sh-text)" }}>{liveRuns}</span>
+                <button
+                  onClick={() => setLiveRuns(r => r + 1)}
+                  className="w-7 h-7 rounded-lg font-bold text-base border transition-all"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
+                >+</button>
+              </div>
+            </div>
+
             {/* Outcome buttons */}
             {canEdit && (
               <div className="space-y-1.5">
@@ -1074,7 +1095,7 @@ export function OfficialScorekeeper({
                 </button>
                 {pendingRuns === null && currentOuts === 3 && (
                   <button
-                    onClick={() => setPendingRuns(0)}
+                    onClick={() => setPendingRuns(liveRuns)}
                     className="text-xs px-3 py-1.5 rounded-lg border font-semibold"
                     style={{ borderColor: "var(--sh-warn)", color: "var(--sh-warn)" }}
                   >
