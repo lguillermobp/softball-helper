@@ -113,7 +113,7 @@ export default async function GameScoringPage({ params }: PageProps) {
   const canViewHomeScorebookTab = isAdmin || isHomeManager;
   const canViewAwayScorebookTab = isAdmin || isAwayManager;
   const canScore  = isAdmin || isAssignedScorer || isPractice && hasAnyRole;
-  const canReset       = isPractice && hasAnyRole;
+  const canReset       = isPractice && (isAdmin || hasAnyRole);
   const canEditResult  = isAdmin;
 
   // Load scorebooks
