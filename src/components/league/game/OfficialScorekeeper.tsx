@@ -772,10 +772,65 @@ export function OfficialScorekeeper({
           <div className="text-sm font-bold text-center" style={{ color: "var(--sh-warn)" }}>
             3 outs — {currentInning.isTop ? awayTeam.name : homeTeam.name} half-inning over
           </div>
+          {/* Play sequence — lets the scorekeeper count and verify runs */}
+          {(currentHalfABs.length > 0 || currentHalfROs.length > 0) && (
+            <div className="rounded-xl p-3 text-xs" style={{ background: "var(--sh-bg-card2)", border: "1px solid var(--sh-border2)" }}>
+              <p className="font-semibold uppercase tracking-wide mb-2 text-center" style={{ color: "var(--sh-muted)" }}>Play sequence</p>
+              <div className="space-y-1 max-h-44 overflow-y-auto">
+                {[
+                  ...currentHalfABs.map(ab => ({ type: "ab" as const, seq: ab.sequence, ab })),
+                  ...currentHalfROs.map(ro => ({ type: "ro" as const, seq: ro.sequence, ro })),
+                ].sort((a, b) => a.seq - b.seq).map((item, idx) => {
+                  if (item.type === "ro") {
+                    return (
+                      <div key={`ro-${item.seq}`} className="flex items-center gap-2">
+                        <span className="w-5 text-right shrink-0" style={{ color: "var(--sh-muted)" }}>{idx + 1}.</span>
+                        <span className="font-bold w-8 shrink-0" style={{ color: "#ef4444" }}>RO</span>
+                        <span style={{ color: "var(--sh-muted)" }}>Runner out</span>
+                      </div>
+                    );
+                  }
+                  const ab = item.ab;
+                  const batter = [...homeTeam.players, ...awayTeam.players].find(p => p.id === ab.batterId);
+                  const label = OUTCOME_LABEL[ab.outcome] ?? ab.outcome;
+                  const outcomeColor =
+                    ab.outcome === "HOME_RUN"                              ? "#f87171"
+                    : ["SINGLE","DOUBLE","TRIPLE"].includes(ab.outcome)   ? "#4ade80"
+                    : ab.outcome === "WALK"                               ? "#a78bfa"
+                    : ab.outcome === "ERROR"                              ? "#fb923c"
+                    : "#6b7280";
+                  return (
+                    <div key={ab.id} className="flex items-center gap-2">
+                      <span className="w-5 text-right shrink-0" style={{ color: "var(--sh-muted)" }}>{idx + 1}.</span>
+                      <span className="font-bold w-8 shrink-0" style={{ color: outcomeColor }}>{label}</span>
+                      <span className="truncate" style={{ color: "var(--sh-text)" }}>{batter?.name ?? "—"}</span>
+                      {batter?.jerseyNumber && <span className="shrink-0" style={{ color: "var(--sh-muted)" }}>#{batter.jerseyNumber}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {/* Run count selector */}
           <div>
-            <p className="text-xs mb-2 text-center" style={dim}>Runs scored this half-inning:</p>
+            <p className="text-xs mb-3 text-center" style={dim}>Runs scored this half-inning:</p>
+            {/* Stepper — no upper limit */}
+            <div className="flex items-center justify-center gap-4 mb-3">
+              <button
+                onClick={() => setPendingRuns(Math.max(0, pendingRuns - 1))}
+                className="w-10 h-10 rounded-xl font-bold text-xl border transition-all"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
+              >−</button>
+              <span className="text-4xl font-bold w-12 text-center" style={{ color: "var(--sh-text)" }}>{pendingRuns}</span>
+              <button
+                onClick={() => setPendingRuns(pendingRuns + 1)}
+                className="w-10 h-10 rounded-xl font-bold text-xl border transition-all"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
+              >+</button>
+            </div>
+            {/* Quick-tap pills */}
             <div className="flex gap-2 justify-center flex-wrap">
-              {[0, 1, 2, 3, 4, 5, 6, 7].map(r => (
+              {[0,1,2,3,4,5,6,7,8,9].map(r => (
                 <button
                   key={r}
                   onClick={() => setPendingRuns(r)}
