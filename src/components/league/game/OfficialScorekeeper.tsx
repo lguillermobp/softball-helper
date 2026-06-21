@@ -818,7 +818,7 @@ export function OfficialScorekeeper({
           <div>
             <p className="text-xs mb-3 text-center" style={dim}>Runs scored this half-inning:</p>
             {/* Stepper — no upper limit */}
-            <div className="flex items-center justify-center gap-4 mb-3">
+            <div className="flex items-center justify-center gap-4">
               <button
                 onClick={() => setPendingRuns(Math.max(0, pendingRuns - 1))}
                 className="w-10 h-10 rounded-xl font-bold text-xl border transition-all"
@@ -830,21 +830,6 @@ export function OfficialScorekeeper({
                 className="w-10 h-10 rounded-xl font-bold text-xl border transition-all"
                 style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
               >+</button>
-            </div>
-            {/* Quick-tap pills */}
-            <div className="flex gap-2 justify-center flex-wrap">
-              {[0,1,2,3,4,5,6,7,8,9].map(r => (
-                <button
-                  key={r}
-                  onClick={() => setPendingRuns(r)}
-                  className="w-10 h-10 rounded-xl font-bold text-sm border transition-all"
-                  style={pendingRuns === r
-                    ? { background: "var(--sh-primary-dark)", color: "#fff", borderColor: "var(--sh-primary)" }
-                    : { borderColor: "var(--sh-border2)", color: "var(--sh-text)", background: "var(--sh-bg-card2)" }}
-                >
-                  {r}
-                </button>
-              ))}
             </div>
           </div>
           {pendingCarryOver != null && currentBatter && (
