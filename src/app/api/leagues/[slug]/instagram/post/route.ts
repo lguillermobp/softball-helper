@@ -448,9 +448,9 @@ function buildStandingsSvg(
 
   const COL_HDR_Y = HEADER_H + 28;
   const STATS = showPct
-    ? ["GP","W","L","T","Pts","RF","RA","RD","PCT"]
-    : ["GP","W","L","T","Pts","RF","RA","RD"];
-  const TEAM_END = Math.round(NAME_X + 18 * 14); const STAT_RIGHT = 1058;
+    ? ["GP","W","L","T","Pts","RD","PCT"]
+    : ["GP","W","L","T","Pts","RD"];
+  const TEAM_END = NAME_X + 350; const STAT_RIGHT = 1058;
   const colW = (STAT_RIGHT - TEAM_END) / STATS.length;
   const cx = (i: number) => TEAM_END + (i + 0.5) * colW;
 
@@ -470,12 +470,12 @@ function buildStandingsSvg(
     const rdColor = rd > 0 ? C.green : rd < 0 ? C.red : C.muted;
     const rdText  = rd > 0 ? `+${rd}` : `${rd}`;
     const vals = showPct
-      ? [row.gp, row.w, row.l, row.t, row.pts, row.rf, row.ra, rdText, row.pct]
-      : [row.gp, row.w, row.l, row.t, row.pts, row.rf, row.ra, rdText];
+      ? [row.gp, row.w, row.l, row.t, row.pts, rdText, row.pct]
+      : [row.gp, row.w, row.l, row.t, row.pts, rdText];
     const fills = showPct
-      ? [C.muted, C.green, C.red, C.muted, C.white, C.muted, C.muted, rdColor, C.muted]
-      : [C.muted, C.green, C.red, C.muted, C.white, C.muted, C.muted, rdColor];
-    const bolds = [false, true, false, false, true, false, false, true, false];
+      ? [C.muted, C.green, C.red, C.muted, C.white, rdColor, C.muted]
+      : [C.muted, C.green, C.red, C.muted, C.white, rdColor];
+    const bolds = [false, true, false, false, true, true, false];
     const cells = vals.map((v, j) =>
       `<text x="${cx(j)}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${cellFont}" fill="${fills[j]}" font-weight="${bolds[j] ? "bold" : "normal"}">${v}</text>`
     ).join("");
@@ -485,7 +485,7 @@ function buildStandingsSvg(
       <line x1="24" y1="${y + ROW_H}" x2="1056" y2="${y + ROW_H}" stroke="${C.divider}" stroke-width="1"/>
       <text x="${RANK_CX}" y="${textY}" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="${rankFont}" fill="${isTop ? C.green : C.muted}" font-weight="${isTop ? "bold" : "normal"}">${row.rank}</text>
       ${tLogo}
-      <text x="${NAME_X}" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameFont}" fill="${isTop ? C.white : C.text}" font-weight="${isTop ? "bold" : "normal"}">${esc(trunc(row.name, 22))}</text>
+      <text x="${NAME_X}" y="${textY}" font-family="DejaVu Sans,sans-serif" font-size="${nameFont}" fill="${isTop ? C.white : C.text}" font-weight="${isTop ? "bold" : "normal"}">${esc(trunc(row.name, 18))}</text>
       ${cells}`;
   }).join("");
 
