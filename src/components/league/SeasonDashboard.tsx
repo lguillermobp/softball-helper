@@ -8,6 +8,7 @@ import { EditGameDialog } from "@/components/league/EditGameDialog";
 import { AddGameDialog } from "@/components/league/AddGameDialog";
 import { RescheduleGameDialog } from "@/components/league/RescheduleGameDialog";
 import { ScheduleGeneratorDialog } from "@/components/league/ScheduleGeneratorDialog";
+import { BulkRescheduleDialog } from "@/components/league/BulkRescheduleDialog";
 import { TeamAvatar } from "@/components/ui/TeamAvatar";
 import { flagUrl } from "@/lib/countries";
 import type { OfficialBatterStat, OfficialPitcherStat } from "@/lib/stats";
@@ -718,6 +719,7 @@ ${body}
                 fields={fields}
                 teamCount={teams.length}
               />
+              <BulkRescheduleDialog slug={slug} seasonId={seasonId} games={games} fields={fields} />
               <AddGameDialog slug={slug} seasonId={seasonId} teams={teams} categories={categories} fields={fields} defaultTwinGames={liveConfig.defaultTwinGames} />
             </>
           )}
