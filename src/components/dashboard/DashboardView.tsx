@@ -98,35 +98,24 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
         {/* ══ Master Admin ══ */}
         {isMasterAdmin && (
           <>
-            <div className="mb-8 flex items-center justify-between">
+            {/* Title row */}
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>{d.systemOverview}</h1>
                 <p className="text-sm mt-1" style={{ color: "var(--sh-purple)" }}>
                   {allLeagues.length} {d.systemSubtitle}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Link href="/support"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
-                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-                  🎫 Support
-                </Link>
-                <Link href="/admin/users"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm border transition-colors hover:opacity-80"
-                  style={{ borderColor: "var(--sh-purple-border)", color: "var(--sh-purple)", background: "var(--sh-purple-bg)" }}>
-                  👥 Users
-                </Link>
-                <Link href="/register">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
-                    style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
-                    <span>+</span> {d.newLeague}
-                  </button>
-                </Link>
-              </div>
+              <Link href="/register">
+                <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
+                  style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "#fff", boxShadow: "0 0 16px rgba(74,222,128,0.25)" }}>
+                  <span>+</span> {d.newLeague}
+                </button>
+              </Link>
             </div>
 
             {/* Summary stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
                 { label: d.totalLeagues,  value: allLeagues.length },
                 { label: d.activeLeagues, value: allLeagues.filter((l) => l.status === "ACTIVE").length },
@@ -141,6 +130,33 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
               ))}
             </div>
 
+            {/* System tools */}
+            <div className="mb-8">
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--sh-muted)" }}>System Tools</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {[
+                  { href: "/admin/users",   icon: "👥", label: "Users",    desc: "Manage accounts" },
+                  { href: "/admin/plans",   icon: "📋", label: "Plans",    desc: "Subscription plans" },
+                  { href: "/admin/coupons", icon: "🏷️", label: "Coupons",  desc: "Discount codes" },
+                  { href: "/admin/audit",   icon: "📜", label: "Audit Log", desc: "Activity history" },
+                  { href: "/admin/cleanup", icon: "🗑️", label: "Cleanup",  desc: "Data maintenance" },
+                  { href: "/support",       icon: "🎫", label: "Support",   desc: "Tickets & help" },
+                ].map(({ href, icon, label, desc }) => (
+                  <Link key={href} href={href}
+                    className="group rounded-xl border p-4 flex flex-col items-center gap-2 text-center transition-all hover:scale-[1.03] hover:shadow-md"
+                    style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+                    <span className="text-2xl">{icon}</span>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: "var(--sh-text)" }}>{label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>{desc}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Leagues table */}
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--sh-muted)" }}>Leagues</p>
             {allLeagues.length === 0 ? (
               <div className="rounded-2xl border py-16 text-center text-sm"
                 style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)", color: "var(--sh-primary)" }}>
