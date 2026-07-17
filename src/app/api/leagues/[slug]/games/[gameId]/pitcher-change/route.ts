@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isScorer = league.userRoles.some(r => r.role === "SCOREKEEPER");
   if (!isAdmin && !isScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const game = await prisma.game.findFirst({ where: { id: gameId, leagueId: league.id } });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });

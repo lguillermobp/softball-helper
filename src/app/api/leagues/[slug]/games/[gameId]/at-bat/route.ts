@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { league, game, allowed } = await resolvePermission(slug, gameId, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
   if (!game || game.status !== "IN_PROGRESS")
     return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
@@ -61,6 +62,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { league, game, allowed } = await resolvePermission(slug, gameId, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
   if (!game || game.status !== "IN_PROGRESS")
     return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 

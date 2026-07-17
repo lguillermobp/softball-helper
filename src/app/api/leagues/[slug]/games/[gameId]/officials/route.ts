@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -24,6 +24,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const league = await getLeagueWithRole(slug, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isUmpire = league.userRoles.some(r => r.role === "UMPIRE");

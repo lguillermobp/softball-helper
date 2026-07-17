@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
@@ -158,6 +158,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const isAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const { recipients, includeRoster, includeConditions, includeSchedule, seasonId, weekStart, weekEnd }
     : {

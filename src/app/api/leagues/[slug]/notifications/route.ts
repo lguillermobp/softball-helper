@@ -13,11 +13,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    select: { id: true, userRoles: { where: { userId: me.id, role: "LEAGUE_ADMIN" }, select: { id: true } } },
+    select: { id: true, status: true, userRoles: { where: { userId: me.id, role: "LEAGUE_ADMIN" }, select: { id: true } } },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!me.isMasterAdmin && league.userRoles.length === 0)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const { notifyGameEnd, notifyEmail, notifyManagers, instagramEnabled, timezone } = await req.json();
 

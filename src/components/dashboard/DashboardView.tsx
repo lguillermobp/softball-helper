@@ -49,10 +49,104 @@ function roleColor(r: string) {
 
 type UserTab = "leagues" | "schedule";
 
+function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDeleted: () => void }) {
+  const [open, setOpen]     = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState("");
+
+  async function handleDelete() {
+    setLoading(true); setError("");
+    const res = await fetch(`/api/admin/leagues/${league.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmName: confirm }),
+    });
+    setLoading(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Something went wrong");
+      return;
+    }
+    setOpen(false);
+    onDeleted();
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => { setOpen(true); setConfirm(""); setError(""); }}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+        style={{ borderColor: "#ef4444", color: "#ef4444", background: "transparent" }}>
+        Delete
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
+      <div className="rounded-2xl border p-6 w-full max-w-md shadow-xl" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--sh-text)" }}>Delete League</h3>
+        <p className="text-sm mb-4" style={{ color: "var(--sh-muted)" }}>
+          This will permanently delete <strong style={{ color: "var(--sh-text)" }}>{league.name}</strong> and all of its data
+          (seasons, games, teams, players, fields, members). The Stripe subscription will be cancelled.
+          This action cannot be undone.
+        </p>
+        <p className="text-sm mb-2" style={{ color: "var(--sh-muted)" }}>
+          Type <strong style={{ color: "#ef4444" }}>{league.name}</strong> to confirm:
+        </p>
+        <input
+          value={confirm}
+          onChange={e => setConfirm(e.target.value)}
+          placeholder={league.name}
+          className="w-full rounded-lg border px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+          style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+        />
+        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => setOpen(false)}
+            className="px-4 py-2 text-sm rounded-lg border transition-colors hover:opacity-80"
+            style={{ borderColor: "var(--sh-border2)", color: "var(--sh-muted)", background: "transparent" }}>
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading || confirm !== league.name}
+            className="px-4 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-40"
+            style={{ background: "#ef4444", color: "#fff" }}>
+            {loading ? "Deleting…" : "Delete permanently"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, allLeagues, leagueRoles, scheduleGames = [], stats = [], hasPlayingRole = false }: Props) {
   const { t } = useLanguage();
   const d = t.dashboard;
   const [userTab, setUserTab] = useState<UserTab>("leagues");
+  const [leagues, setLeagues] = useState(allLeagues);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function toggleStatus(league: LeagueSummary) {
+    const next = league.status === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+    setTogglingId(league.id);
+    const res = await fetch(`/api/admin/leagues/${league.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    setTogglingId(null);
+    if (res.ok) {
+      setLeagues(prev => prev.map(l => l.id === league.id ? { ...l, status: next } : l));
+    }
+  }
+
+  function removeLeague(id: string) {
+    setLeagues(prev => prev.filter(l => l.id !== id));
+  }
 
   function statusInfo(s: string) {
     if (s === "ACTIVE")    return { color: "#4ade80", label: d.active };
@@ -117,10 +211,10 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
             {/* Summary stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
-                { label: d.totalLeagues,  value: allLeagues.length },
-                { label: d.activeLeagues, value: allLeagues.filter((l) => l.status === "ACTIVE").length },
-                { label: d.totalTeams,    value: allLeagues.reduce((s, l) => s + l._count.teams, 0) },
-                { label: d.totalPlayers,  value: allLeagues.reduce((s, l) => s + l._count.players, 0) },
+                { label: d.totalLeagues,  value: leagues.length },
+                { label: d.activeLeagues, value: leagues.filter((l) => l.status === "ACTIVE").length },
+                { label: d.totalTeams,    value: leagues.reduce((s, l) => s + l._count.teams, 0) },
+                { label: d.totalPlayers,  value: leagues.reduce((s, l) => s + l._count.players, 0) },
               ].map((stat) => (
                 <div key={stat.label} className="rounded-2xl border p-4 text-center"
                   style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
@@ -157,7 +251,7 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
 
             {/* Leagues table */}
             <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--sh-muted)" }}>Leagues</p>
-            {allLeagues.length === 0 ? (
+            {leagues.length === 0 ? (
               <div className="rounded-2xl border py-16 text-center text-sm"
                 style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)", color: "var(--sh-primary)" }}>
                 {d.noLeagues}
@@ -178,8 +272,9 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
                     </tr>
                   </thead>
                   <tbody>
-                    {allLeagues.map((league) => {
+                    {leagues.map((league) => {
                       const dot = statusInfo(league.status);
+                      const isSuspended = league.status === "SUSPENDED";
                       return (
                         <tr key={league.id} className="transition-colors hover:brightness-110"
                           style={{ borderBottom: "1px solid var(--sh-border)" }}>
@@ -211,11 +306,25 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <Link href={`/league/${league.slug}`}
-                              className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
-                              {d.open}
-                            </Link>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Link href={`/league/${league.slug}`}
+                                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
+                                {d.open}
+                              </Link>
+                              <button
+                                onClick={() => toggleStatus(league)}
+                                disabled={togglingId === league.id}
+                                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80 disabled:opacity-50 hidden sm:inline-flex"
+                                style={{
+                                  borderColor: isSuspended ? "#22c55e" : "#f59e0b",
+                                  color: isSuspended ? "#22c55e" : "#f59e0b",
+                                  background: "transparent",
+                                }}>
+                                {togglingId === league.id ? "…" : isSuspended ? "Activate" : "Suspend"}
+                              </button>
+                              <DeleteLeagueDialog league={league} onDeleted={() => removeLeague(league.id)} />
+                            </div>
                           </td>
                         </tr>
                       );

@@ -31,7 +31,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const result = await resolveAdminGame(slug, gameId, session.user.id!, isMasterAdmin);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
 
-  const { game } = result;
+  const { league, game } = result;
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
   const { teamId, comment } = await req.json();
 
   if (!teamId) return NextResponse.json({ error: "teamId is required" }, { status: 400 });

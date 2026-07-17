@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const league = await getAdminLeague(slug, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const date = req.nextUrl.searchParams.get("date");
   const fieldId = req.nextUrl.searchParams.get("fieldId") || null;
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const league = await getAdminLeague(slug, userId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const body = await req.json() as { date: string; fieldId?: string | null; newDate: string };
   const { date, fieldId, newDate } = body;

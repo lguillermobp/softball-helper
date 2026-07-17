@@ -323,6 +323,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [timezone,       setTimezone]       = useState(league.timezone || "UTC");
   const [savingNotify,   setSavingNotify]   = useState(false);
   const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
+  const isSuspended = league.status === "SUSPENDED";
 
   async function saveNotifications() {
     setSavingNotify(true); setNotifyMsg(null);
@@ -460,7 +461,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.overview.title}</h2>
-        {isAdmin && (
+        {isAdmin && !isSuspended && (
           <BroadcastDialog
             slug={slug}
             teams={teams.filter((t) => t.isActive).map((t) => ({
@@ -507,7 +508,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       </div>
 
       {/* Admin settings cards */}
-      {isAdmin && (
+      {isAdmin && !isSuspended && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {/* Branding */}
           <div className="rounded-2xl border p-5" style={card}>
@@ -678,7 +679,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.seasons.title}</h2>
-        {isAdmin && <AddSeasonDialog slug={slug} />}
+        {isAdmin && !isSuspended && <AddSeasonDialog slug={slug} />}
       </div>
       {seasons.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
@@ -714,7 +715,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.categories.title}</h2>
-        {isAdmin && <AddCategoryDialog slug={slug} />}
+        {isAdmin && !isSuspended && <AddCategoryDialog slug={slug} />}
       </div>
       {categories.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
@@ -1019,7 +1020,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     {igTeamPosting ? "Posting..." : igTeamResult === "ok" ? "Posted!" : igTeamResult === "error" ? "Failed" : "IG Roster"}
                   </button>
                 )}
-                {!inactive && canEdit && (
+                {!inactive && canEdit && !isSuspended && (
                   <>
                     <EditTeamDialog
                       slug={slug}
@@ -1036,7 +1037,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                   </>
                 )}
                 {/* Approve / Unapprove — admin only */}
-                {isAdmin && !inactive && (
+                {isAdmin && !inactive && !isSuspended && (
                   <button
                     onClick={() => toggleStatus(team)}
                     className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
@@ -1047,7 +1048,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     {approved ? tl.teams.unapprove : tl.teams.approve}
                   </button>
                 )}
-                {isAdmin && (
+                {isAdmin && !isSuspended && (
                   <>
                     <button
                       onClick={() => toggleActive(team)}
@@ -1084,7 +1085,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 <span style={head}>{team.manager.name ?? "—"}</span>
                 <span className="ml-1 break-all" style={dim}>{team.manager.email}</span>
               </p>
-            ) : isAdmin && (
+            ) : isAdmin && !isSuspended && (
               <AssignManagerInline slug={slug} teamId={team.id} />
             )}
             {team.assistant && (
@@ -1098,7 +1099,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
           </div>
 
           {/* Logo upload — visible to managers and admins */}
-          {canEdit && (
+          {canEdit && !isSuspended && (
             <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
               <TeamLogoUpload
                 slug={slug}
@@ -1187,7 +1188,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => saveTeamPp(team.id)}
-                        disabled={!!teamPpSaving[team.id]}
+                        disabled={!!teamPpSaving[team.id] || isSuspended}
                         className="text-xs px-4 py-1.5 rounded-lg font-bold disabled:opacity-40"
                         style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
                       >
@@ -1262,7 +1263,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                             {p.name.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        {canEdit && (
+                        {canEdit && !isSuspended && (
                           <PlayerPhotoDialog
                             slug={slug}
                             playerId={p.id}
@@ -1305,8 +1306,8 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                     {(canEdit || canRemovePlayer) && (
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {canEdit && <EditPlayerDialog slug={slug} player={p} requireDob={team.requireDob} />}
-                          {canEdit && p.invitePending && (
+                          {canEdit && !isSuspended && <EditPlayerDialog slug={slug} player={p} requireDob={team.requireDob} />}
+                          {canEdit && !isSuspended && p.invitePending && (
                             <button
                               onClick={() => resendInvite(p.id)}
                               disabled={resending === p.id || sentId === p.id}
@@ -1319,7 +1320,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                               {resending === p.id ? "Sending…" : sentId === p.id ? "✓ Sent" : "Resend invite"}
                             </button>
                           )}
-                          {(isAdmin || isManager) && p.userId !== team.manager?.id && (
+                          {(isAdmin || isManager) && !isSuspended && p.userId !== team.manager?.id && (
                             p.userId === team.assistant?.id ? (
                               <span className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: "var(--sh-border)", color: "var(--sh-muted)", opacity: 0.5 }}>
                                 Asst.
@@ -1336,7 +1337,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                               </button>
                             )
                           )}
-                          {canRemovePlayer && (
+                          {canRemovePlayer && !isSuspended && (
                             <button
                               onClick={() => removePlayer(p.id)}
                               disabled={removingId === p.id}
@@ -1400,7 +1401,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               {showInactive ? tl.teams.hideInactive : tl.teams.showInactive} ({inactiveTeams.length})
             </button>
           )}
-          {isAdmin && <AddTeamDialog slug={slug} seasons={seasons.map((s) => ({ id: s.id, name: s.name }))} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />}
+          {isAdmin && !isSuspended && <AddTeamDialog slug={slug} seasons={seasons.map((s) => ({ id: s.id, name: s.name }))} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />}
         </div>
       </div>
 
@@ -1435,7 +1436,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.fields.title}</h2>
-        {isAdmin && <AddFieldDialog slug={slug} officials={officials} />}
+        {isAdmin && !isSuspended && <AddFieldDialog slug={slug} officials={officials} />}
       </div>
       {fields.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
@@ -1460,7 +1461,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                       })}
                 </div>
               </div>
-              {isAdmin && (
+              {isAdmin && !isSuspended && (
                 <div className="flex items-center gap-2 ml-3 shrink-0">
                   <AddFieldDialog
                     slug={slug}
@@ -1594,7 +1595,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       <div className="flex items-center gap-3">
         <button
           onClick={saveLeaguePp}
-          disabled={ppSaving}
+          disabled={ppSaving || isSuspended}
           className="px-5 py-2 rounded-xl text-sm font-bold disabled:opacity-40"
           style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff" }}
         >
@@ -1615,7 +1616,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     conditions: (
       <ConditionsSection
         slug={slug}
-        isAdmin={isAdmin}
+        isAdmin={isAdmin && !isSuspended}
         conditions={conditions}
       />
     ),
@@ -1626,6 +1627,16 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="flex flex-col lg:flex-row gap-6">
       {Sidebar}
       <div className="flex-1 min-w-0">
+        {league.status === "SUSPENDED" && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm font-medium flex items-center gap-2"
+            style={{ background: "#450a0a", color: "#fca5a5", borderColor: "#ef4444" }}>
+            <span>⚠️</span>
+            <span>
+              This league is currently <strong>suspended</strong> by a system administrator.
+              Some features may be restricted. Contact support for more information.
+            </span>
+          </div>
+        )}
         {stripeParam === "success" && (
           <div className="mb-4 rounded-xl border px-4 py-3 text-sm font-medium" style={{ background: "#14532d", color: "#86efac", borderColor: "#16a34a" }}>
             Subscription activated. Your league is now on the paid plan.

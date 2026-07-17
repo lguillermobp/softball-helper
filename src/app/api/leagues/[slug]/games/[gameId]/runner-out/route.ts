@@ -18,6 +18,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   ]);
   if (!league || !game || game.leagueId !== league.id)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const isAdmin          = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
@@ -61,6 +62,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   ]);
   if (!league || !game || game.leagueId !== league.id)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const isAdmin          = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
   const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");

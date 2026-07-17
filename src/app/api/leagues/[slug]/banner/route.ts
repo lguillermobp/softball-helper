@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const isLeagueAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isLeagueAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const { dataUrl } = await req.json() as { dataUrl: string };
   if (!dataUrl?.startsWith("data:image/"))
@@ -63,6 +64,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const isLeagueAdmin = isMasterAdmin || league.userRoles.some((r) => r.role === "LEAGUE_ADMIN");
   if (!isLeagueAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   await prisma.league.update({ where: { id: league.id }, data: { bannerUrl: null } });
 

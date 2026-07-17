@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
   if (!isAdmin && !isAssignedScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
   if (game.status !== "IN_PROGRESS") return NextResponse.json({ error: "Game is not in progress" }, { status: 409 });
 
   const { inningNumber, isTop, runsScored, carryOverBattingOrder } = await req.json();

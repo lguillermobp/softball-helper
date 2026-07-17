@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const isMasterAdmin = (session.user as any).isMasterAdmin;
   const league = await getAdminLeague(slug, session.user.id!, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const existing = await prisma.condition.findFirst({ where: { id, leagueId: league.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -96,6 +97,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const isMasterAdmin = (session.user as any).isMasterAdmin;
   const league = await getAdminLeague(slug, session.user.id!, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const existing = await prisma.condition.findFirst({ where: { id, leagueId: league.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });

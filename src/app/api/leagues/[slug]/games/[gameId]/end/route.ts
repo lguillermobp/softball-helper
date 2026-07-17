@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const league = await prisma.league.findUnique({
     where: { slug },
     select: {
-      id: true, name: true, logoUrl: true,
+      id: true, name: true, logoUrl: true, status: true,
       notifyGameEnd: true, notifyEmail: true,
       notifyManagers: true, instagramEnabled: true, timezone: true,
       userRoles: { where: { userId }, select: { role: true } },
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
 
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
   const isAssignedScorer = game.officials.some(o => o.userId === userId && o.role === "SCOREKEEPER");
   if (!isAdmin && !isAssignedScorer) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (game.status !== "IN_PROGRESS")

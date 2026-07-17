@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit, getRequestMeta } from "@/lib/audit";
@@ -27,6 +27,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const league = await getLeagueAndCheck(slug, actorId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const membership = await prisma.userLeagueRole.findFirst({
     where: { id: memberId, leagueId: league.id },
@@ -78,6 +79,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const league = await getLeagueAndCheck(slug, actorId, isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
   const membership = await prisma.userLeagueRole.findFirst({
     where: { id: memberId, leagueId: league.id },
