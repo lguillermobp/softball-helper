@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { LanguageSelector } from "@/components/ui/language-selector";
@@ -50,10 +51,13 @@ function roleColor(r: string) {
 type UserTab = "leagues" | "schedule";
 
 function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDeleted: () => void }) {
-  const [open, setOpen]     = useState(false);
+  const [open, setOpen]       = useState(false);
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState("");
+  const [error, setError]     = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   async function handleDelete() {
     setLoading(true); setError("");
@@ -72,18 +76,7 @@ function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDe
     onDeleted();
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => { setOpen(true); setConfirm(""); setError(""); }}
-        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-        style={{ borderColor: "#ef4444", color: "#ef4444", background: "transparent" }}>
-        Delete
-      </button>
-    );
-  }
-
-  return (
+  const modal = open && mounted ? createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
       <div className="rounded-2xl border p-6 w-full max-w-md shadow-xl" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
         <h3 className="text-lg font-bold mb-2" style={{ color: "var(--sh-text)" }}>Delete League</h3>
@@ -96,6 +89,7 @@ function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDe
           Type <strong style={{ color: "#ef4444" }}>{league.name}</strong> to confirm:
         </p>
         <input
+          autoFocus
           value={confirm}
           onChange={e => setConfirm(e.target.value)}
           placeholder={league.name}
@@ -119,7 +113,20 @@ function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDe
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <>
+      <button
+        onClick={() => { setOpen(true); setConfirm(""); setError(""); }}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+        style={{ borderColor: "#ef4444", color: "#ef4444", background: "transparent" }}>
+        Delete
+      </button>
+      {modal}
+    </>
   );
 }
 
