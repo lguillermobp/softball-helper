@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const league = await getLeagueAndCheckAdmin(slug, session.user.id!, (session.user as any).isMasterAdmin);
   if (!league) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, types, slotStartTime, slotDurationMins, slotsMonday, slotsTuesday, slotsWednesday, slotsThursday, slotsFriday, slotsSaturday, slotsSunday, defaultScorekeeperUserId, defaultUmpireUserId } = await req.json();
+  const { name, types, timezone, slotStartTime, slotDurationMins, slotsMonday, slotsTuesday, slotsWednesday, slotsThursday, slotsFriday, slotsSaturday, slotsSunday, defaultScorekeeperUserId, defaultUmpireUserId } = await req.json();
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const field = await prisma.field.findFirst({ where: { id: fieldId, leagueId: league.id } });
@@ -32,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     where: { id: fieldId },
     data: {
       name, types: types ?? [],
+      timezone: timezone || "UTC",
       slotStartTime: slotStartTime || null,
       slotDurationMins: slotDurationMins ?? 90,
       slotsMonday: slotsMonday ?? 0, slotsTuesday: slotsTuesday ?? 0,

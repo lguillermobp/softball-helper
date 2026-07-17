@@ -275,6 +275,7 @@ model Field {
   slotsSunday              Int         @default(0)
   defaultScorekeeperUserId String?
   defaultUmpireUserId      String?
+  timezone                 String      @default("UTC")
   createdAt                DateTime    @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)

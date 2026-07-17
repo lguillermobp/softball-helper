@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TIMEZONES } from "@/lib/timezones";
 
 const TYPES = [
   { value: "MORNING", label: "Morning" },
@@ -27,6 +28,7 @@ type DayKey = typeof DAYS[number]["key"];
 
 interface FieldData {
   id: string; name: string; types: string[];
+  timezone?: string | null;
   slotStartTime?: string | null;
   slotDurationMins?: number;
   slotsMonday?: number; slotsTuesday?: number; slotsWednesday?: number;
@@ -53,6 +55,7 @@ export function AddFieldDialog({ slug, field, officials = [], trigger, onClose }
   const [selected, setSelected] = useState<string[]>(field?.types ?? []);
   const [defaultScorekeeperUserId, setDefaultScorekeeperUserId] = useState(field?.defaultScorekeeperUserId ?? "");
   const [defaultUmpireUserId, setDefaultUmpireUserId]           = useState(field?.defaultUmpireUserId ?? "");
+  const [timezone, setTimezone] = useState(field?.timezone ?? "UTC");
   const [slotStartTime, setSlotStartTime] = useState(field?.slotStartTime ?? "");
   const [slotDurationMins, setSlotDurationMins] = useState(String(field?.slotDurationMins ?? 90));
   const [daySlots, setDaySlots] = useState<Record<DayKey, number>>({
@@ -83,6 +86,7 @@ export function AddFieldDialog({ slug, field, officials = [], trigger, onClose }
       body: JSON.stringify({
         name: fd.get("name"),
         types: selected,
+        timezone: timezone || "UTC",
         slotStartTime: slotStartTime || null,
         slotDurationMins: parseInt(slotDurationMins) || 90,
         ...daySlots,
@@ -117,6 +121,24 @@ export function AddFieldDialog({ slug, field, officials = [], trigger, onClose }
           <div className="space-y-1">
             <Label htmlFor="name">Field name *</Label>
             <Input id="name" name="name" defaultValue={field?.name} placeholder="e.g. Field 1 - Central Park" required />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="timezone">Timezone</Label>
+            <select
+              id="timezone"
+              value={timezone}
+              onChange={e => setTimezone(e.target.value)}
+              className={inputCls}
+              style={inputStyle}
+            >
+              {TIMEZONES.map(tz => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
+            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+              Used to display game times for this venue correctly.
+            </p>
           </div>
 
           <div className="space-y-2">
