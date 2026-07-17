@@ -56,6 +56,8 @@ export function RegisterForm({ loggedInUser }: Props) {
   const [categories,    setCategories]    = useState<string[]>([""]);
   const [teams,         setTeams]         = useState<string[]>([""]);
   const [selectedPlan,  setSelectedPlan]  = useState("");
+  const [logoDataUrl,   setLogoDataUrl]   = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [couponCode,    setCouponCode]    = useState("");
   const [couponState,   setCouponState]   = useState<
     { status: "idle" } |
@@ -115,8 +117,8 @@ export function RegisterForm({ loggedInUser }: Props) {
     setError("");
     try {
       const payload = loggedInUser
-        ? { userId: loggedInUser.id, ...registrationData, teams: filledTeams }
-        : { ...registrationData, teams: filledTeams };
+        ? { userId: loggedInUser.id, ...registrationData, teams: filledTeams, logoDataUrl: logoDataUrl ?? undefined }
+        : { ...registrationData, teams: filledTeams, logoDataUrl: logoDataUrl ?? undefined };
 
       const res = await fetch("/api/register", {
         method: "POST",
@@ -218,6 +220,62 @@ export function RegisterForm({ loggedInUser }: Props) {
               </CardHeader>
               <CardContent>
                 <form onSubmit={leagueForm.handleSubmit(handleLeagueSubmit)} className="space-y-4">
+                  {/* Logo picker */}
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-opacity hover:opacity-80 focus:outline-none"
+                      style={{ border: "2px dashed rgba(255,255,255,0.2)" }}
+                      title="Upload league logo (optional)"
+                    >
+                      {logoDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={logoDataUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                          <span className="text-lg">🖼️</span>
+                          <span className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>LOGO</span>
+                        </div>
+                      )}
+                    </button>
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                        style={{ borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", background: "transparent" }}
+                      >
+                        {logoDataUrl ? "Change logo" : "Upload logo"}
+                      </button>
+                      {logoDataUrl && (
+                        <button
+                          type="button"
+                          onClick={() => { setLogoDataUrl(null); if (logoInputRef.current) logoInputRef.current.value = ""; }}
+                          className="block text-xs px-2 py-1 rounded transition-colors hover:opacity-80"
+                          style={{ color: "rgba(239,68,68,0.7)", background: "transparent" }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Optional · PNG, JPG · max 5 MB</p>
+                    </div>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setLogoDataUrl(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </div>
+
                   <div className="space-y-1">
                     <Label className={labelCls}>{r.steps.league.name}</Label>
                     <Input className={inputCls} placeholder={r.steps.league.namePlaceholder} {...leagueForm.register("name")} />

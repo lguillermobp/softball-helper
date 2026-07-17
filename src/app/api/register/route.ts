@@ -2,9 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cloudinary } from "@/lib/cloudinary";
 import { slugify } from "@/lib/utils";
 import { registerSchema, leagueSetupSchema, seasonSchema } from "@/lib/validations";
 import { sendVerificationEmail } from "@/lib/email";
+
+async function uploadLogo(leagueId: string, dataUrl: string): Promise<string | null> {
+  try {
+    const result = await cloudinary.uploader.upload(dataUrl, {
+      folder:         `softball-helper/${leagueId}/league`,
+      public_id:      "logo",
+      overwrite:      true,
+      transformation: [{ width: 400, height: 400, crop: "fill" }],
+      format:         "png",
+    });
+    return result.secure_url;
+  } catch {
+    return null;
+  }
+}
 
 async function resolveCoupon(couponCode: string | undefined, email: string) {
   if (!couponCode?.trim()) return null;
@@ -33,8 +49,9 @@ export async function POST(req: NextRequest) {
 
     const { name: leagueName, city, state, planId, couponCode } = leagueParsed.data;
     const { name: seasonName, startDate, endDate } = seasonParsed.data;
-    const categories: string[] = body.categories ?? [];
-    const teams: string[]      = body.teams      ?? [];
+    const categories: string[]    = body.categories  ?? [];
+    const teams: string[]         = body.teams        ?? [];
+    const logoDataUrl: string | undefined = body.logoDataUrl;
 
     // Resolve the selected plan
     const plan = await prisma.plan.findFirst({ where: { id: planId, isActive: true } });
@@ -92,6 +109,12 @@ export async function POST(req: NextRequest) {
 
         return { league };
       });
+
+      // Upload logo outside the transaction (optional — failure doesn't block registration)
+      if (logoDataUrl?.startsWith("data:image/")) {
+        const logoUrl = await uploadLogo(result.league.id, logoDataUrl);
+        if (logoUrl) await prisma.league.update({ where: { id: result.league.id }, data: { logoUrl } });
+      }
 
       return NextResponse.json({ success: true, leagueSlug: result.league.slug });
     }
@@ -155,6 +178,11 @@ export async function POST(req: NextRequest) {
     sendVerificationEmail(email, name).catch((e) =>
       console.error("[REGISTER] verification email failed:", e)
     );
+
+    if (logoDataUrl?.startsWith("data:image/")) {
+      const logoUrl = await uploadLogo(result.league.id, logoDataUrl);
+      if (logoUrl) await prisma.league.update({ where: { id: result.league.id }, data: { logoUrl } });
+    }
 
     return NextResponse.json({ success: true, leagueSlug: result.league.slug });
   } catch (err) {
