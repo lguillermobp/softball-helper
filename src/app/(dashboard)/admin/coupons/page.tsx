@@ -1,18 +1,18 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AdminPlansView } from "@/components/admin/AdminPlansView";
-import { ChangePasswordButton } from "@/components/ui/change-password-button";
 import { prisma } from "@/lib/prisma";
+import { AdminCouponsView } from "@/components/admin/AdminCouponsView";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPlansPage() {
+export default async function AdminCouponsPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
 
-  const plans = await prisma.plan.findMany({
-    orderBy: { price: "asc" },
+  const coupons = await prisma.coupon.findMany({
+    orderBy: { createdAt: "desc" },
     include: { _count: { select: { leagues: true } } },
   });
 
@@ -38,9 +38,9 @@ export default async function AdminPlansPage() {
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
               Users
             </Link>
-            <Link href="/admin/coupons" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+            <Link href="/admin/plans" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
-              Coupons
+              Plans
             </Link>
             <Link href="/admin/audit" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
@@ -55,16 +55,20 @@ export default async function AdminPlansPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <AdminPlansView initialPlans={plans.map((p) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          maxTeams: p.maxTeams,
-          maxSeasons: p.maxSeasons,
-          maxPlayers: p.maxPlayers,
-          isActive: p.isActive,
-          stripePriceId: p.stripePriceId,
-          leagueCount: p._count.leagues,
+        <AdminCouponsView initialCoupons={coupons.map(c => ({
+          id:                    c.id,
+          code:                  c.code,
+          type:                  c.type,
+          email:                 c.email,
+          percentOff:            c.percentOff,
+          duration:              c.duration,
+          expiresAt:             c.expiresAt.toISOString(),
+          maxRedemptions:        c.maxRedemptions,
+          redemptionCount:       c.redemptionCount,
+          active:                c.active,
+          stripePromotionCodeId: c.stripePromotionCodeId,
+          createdAt:             c.createdAt.toISOString(),
+          leagueCount:           c._count.leagues,
         }))} />
       </main>
     </div>

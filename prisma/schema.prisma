@@ -124,6 +124,8 @@ model League {
   notifyManagers       Boolean          @default(false)
   instagramEnabled     Boolean          @default(false)
   timezone             String           @default("UTC")
+  appliedCouponId      String?
+  appliedCoupon        Coupon?          @relation(fields: [appliedCouponId], references: [id])
 
   plan       Plan             @relation(fields: [planId], references: [id])
   userRoles   UserLeagueRole[]
@@ -620,6 +622,38 @@ model AuditLog {
   @@index([leagueId])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+// ─── Coupons ─────────────────────────────────────────────────────────────────
+
+enum CouponType {
+  GENERAL
+  PERSONALIZED
+}
+
+enum CouponDuration {
+  ONCE
+  FOREVER
+}
+
+model Coupon {
+  id                    String         @id @default(cuid())
+  code                  String         @unique
+  type                  CouponType     @default(GENERAL)
+  email                 String?
+  percentOff            Float
+  duration              CouponDuration @default(ONCE)
+  expiresAt             DateTime
+  maxRedemptions        Int?
+  redemptionCount       Int            @default(0)
+  active                Boolean        @default(true)
+  stripePromotionCodeId String?
+  stripeCouponId        String?
+  createdAt             DateTime       @default(now())
+
+  leagues League[]
+
+  @@map("coupons")
 }
 
 // ─── Support Tickets ──────────────────────────────────────────────────────────

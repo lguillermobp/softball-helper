@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -21,7 +21,7 @@ import {
   type SeasonInput,
 } from "@/lib/validations";
 
-interface LoggedInUser { id: string; name: string | null }
+interface LoggedInUser { id: string; name: string | null; email: string | null }
 
 interface Props { loggedInUser: LoggedInUser | null }
 
@@ -56,6 +56,35 @@ export function RegisterForm({ loggedInUser }: Props) {
   const [categories,    setCategories]    = useState<string[]>([""]);
   const [teams,         setTeams]         = useState<string[]>([""]);
   const [selectedPlan,  setSelectedPlan]  = useState("");
+  const [couponCode,    setCouponCode]    = useState("");
+  const [couponState,   setCouponState]   = useState<
+    { status: "idle" } |
+    { status: "checking" } |
+    { status: "valid";   percentOff: number; duration: "ONCE" | "FOREVER"; message: string } |
+    { status: "invalid"; message: string }
+  >({ status: "idle" });
+  const couponTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced coupon validation
+  useEffect(() => {
+    if (!couponCode.trim()) { setCouponState({ status: "idle" }); return; }
+    setCouponState({ status: "checking" });
+    if (couponTimer.current) clearTimeout(couponTimer.current);
+    couponTimer.current = setTimeout(async () => {
+      const email = loggedInUser?.email ?? registrationData.account?.email ?? "";
+      const res = await fetch(
+        `/api/coupons/validate?code=${encodeURIComponent(couponCode.trim())}&email=${encodeURIComponent(email)}`
+      );
+      const data = await res.json();
+      if (data.valid) {
+        setCouponState({ status: "valid", percentOff: data.percentOff, duration: data.duration, message: data.message });
+      } else {
+        setCouponState({ status: "invalid", message: data.message });
+      }
+    }, 500);
+    return () => { if (couponTimer.current) clearTimeout(couponTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponCode]);
 
   function handleAccountSubmit(data: RegisterInput) {
     setRegistrationData((prev) => ({ ...prev, account: data }));
@@ -63,7 +92,10 @@ export function RegisterForm({ loggedInUser }: Props) {
   }
 
   function handleLeagueSubmit(data: LeagueSetupInput) {
-    setRegistrationData((prev) => ({ ...prev, league: data }));
+    setRegistrationData((prev) => ({
+      ...prev,
+      league: { ...data, couponCode: couponCode.trim() || undefined },
+    }));
     setStep(3);
   }
 
@@ -204,20 +236,53 @@ export function RegisterForm({ loggedInUser }: Props) {
                   <div className="space-y-2">
                     <Label className={labelCls}>{r.steps.league.selectPlan}</Label>
                     <div className="grid gap-3">
-                      {PLANS.map((plan) => (
-                        <label key={plan.id} className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${selectedPlan === plan.id ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/20"}`}>
-                          <input type="radio" className="sr-only" value={plan.id} {...leagueForm.register("planId")} onChange={() => setSelectedPlan(plan.id)} />
-                          <div>
-                            <p className="font-semibold text-white">{plan.name}</p>
-                            <p className="text-sm text-white/40">{plan.description}</p>
-                          </div>
-                          <span className="text-lg font-bold text-green-400">
-                            {`$${plan.price}/mo`}
-                          </span>
-                        </label>
-                      ))}
+                      {PLANS.map((plan) => {
+                        const disc = couponState.status === "valid" ? couponState.percentOff : 0;
+                        const discountedPrice = disc > 0 ? (plan.price * (1 - disc / 100)).toFixed(2) : null;
+                        return (
+                          <label key={plan.id} className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${selectedPlan === plan.id ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/20"}`}>
+                            <input type="radio" className="sr-only" value={plan.id} {...leagueForm.register("planId")} onChange={() => setSelectedPlan(plan.id)} />
+                            <div>
+                              <p className="font-semibold text-white">{plan.name}</p>
+                              <p className="text-sm text-white/40">{plan.description}</p>
+                            </div>
+                            <div className="text-right">
+                              {discountedPrice ? (
+                                <>
+                                  <span className="text-sm line-through text-white/30">${plan.price}/mo</span>
+                                  <span className="block text-lg font-bold text-green-400">${discountedPrice}/mo</span>
+                                </>
+                              ) : (
+                                <span className="text-lg font-bold text-green-400">${plan.price}/mo</span>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
                     </div>
                     {leagueForm.formState.errors.planId && <p className="text-xs text-red-400">{leagueForm.formState.errors.planId.message}</p>}
+                  </div>
+
+                  {/* Coupon code */}
+                  <div className="space-y-1">
+                    <Label className={labelCls}>Coupon code (optional)</Label>
+                    <div className="relative">
+                      <Input
+                        className={inputCls}
+                        placeholder="ENTER CODE"
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      />
+                      {couponState.status === "checking" && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">Checking…</span>
+                      )}
+                      {couponState.status === "valid" && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green-400">✓ {couponState.message}</span>
+                      )}
+                    </div>
+                    {couponState.status === "invalid" && (
+                      <p className="text-xs text-red-400">{couponState.message}</p>
+                    )}
                   </div>
                   <div className="flex gap-3">
                     <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent"

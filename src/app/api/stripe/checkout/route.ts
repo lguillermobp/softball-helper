@@ -16,13 +16,14 @@ export async function POST(req: NextRequest) {
   const league = await prisma.league.findUnique({
     where: { slug: leagueSlug },
     include: {
-      plan:      true,
-      userRoles: { where: { userId } },
-    },
-  });
+      plan:          true,
+      appliedCoupon: true,
+      userRoles:     { where: { userId } },
+    } as any,
+  }) as any;
   if (!league) return NextResponse.json({ error: "League not found" }, { status: 404 });
 
-  const isAdmin = isMasterAdmin || league.userRoles.some(r => r.role === "LEAGUE_ADMIN");
+  const isAdmin = isMasterAdmin || league.userRoles.some((r: any) => r.role === "LEAGUE_ADMIN");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (!league.plan.stripePriceId)
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
 
   const origin = req.nextUrl.origin;
 
+  // Apply stored coupon if still valid
+  const coupon = league.appliedCoupon;
+  const couponStillValid =
+    coupon?.active &&
+    coupon.stripePromotionCodeId &&
+    coupon.expiresAt > new Date() &&
+    (coupon.maxRedemptions === null || coupon.redemptionCount < coupon.maxRedemptions);
+
+  const discounts = couponStillValid
+    ? [{ promotion_code: coupon!.stripePromotionCodeId! }]
+    : [];
+
   const checkoutSession = await stripe.checkout.sessions.create({
     mode:                 "subscription",
     payment_method_types: ["card"],
@@ -40,6 +53,7 @@ export async function POST(req: NextRequest) {
     ...(league.stripeCustomerId
       ? { customer: league.stripeCustomerId }
       : { customer_email: session.user.email ?? undefined }),
+    ...(discounts.length ? { discounts } : {}),
     metadata: {
       leagueId:   league.id,
       leagueSlug: league.slug,

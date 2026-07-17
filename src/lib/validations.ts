@@ -20,6 +20,7 @@ export const leagueSetupSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   planId: z.string().min(1, "Please select a plan"),
+  couponCode: z.string().optional(),
 });
 
 export const seasonSchema = z.object({
