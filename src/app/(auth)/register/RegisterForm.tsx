@@ -15,10 +15,8 @@ import { useLanguage } from "@/context/language-context";
 import {
   registerSchema,
   leagueSetupSchema,
-  seasonSchema,
   type RegisterInput,
   type LeagueSetupInput,
-  type SeasonInput,
 } from "@/lib/validations";
 
 interface LoggedInUser { id: string; name: string | null; email: string | null }
@@ -41,20 +39,11 @@ export function RegisterForm({ loggedInUser }: Props) {
   const [step, setStep] = useState(loggedInUser ? 2 : 1);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [registrationData, setRegistrationData] = useState<{
-    account?: RegisterInput;
-    league?: LeagueSetupInput;
-    season?: SeasonInput;
-    categories: string[];
-    teams: string[];
-  }>({ categories: [], teams: [] });
+  const [accountData, setAccountData] = useState<RegisterInput | null>(null);
 
   const accountForm = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
   const leagueForm  = useForm<LeagueSetupInput>({ resolver: zodResolver(leagueSetupSchema) });
-  const seasonForm  = useForm<SeasonInput>({ resolver: zodResolver(seasonSchema) });
 
-  const [categories,    setCategories]    = useState<string[]>([""]);
-  const [teams,         setTeams]         = useState<string[]>([""]);
   const [selectedPlan,  setSelectedPlan]  = useState("");
   const [logoDataUrl,   setLogoDataUrl]   = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +62,7 @@ export function RegisterForm({ loggedInUser }: Props) {
     setCouponState({ status: "checking" });
     if (couponTimer.current) clearTimeout(couponTimer.current);
     couponTimer.current = setTimeout(async () => {
-      const email = loggedInUser?.email ?? registrationData.account?.email ?? "";
+      const email = loggedInUser?.email ?? accountData?.email ?? "";
       const res = await fetch(
         `/api/coupons/validate?code=${encodeURIComponent(couponCode.trim())}&email=${encodeURIComponent(email)}`
       );
@@ -89,36 +78,24 @@ export function RegisterForm({ loggedInUser }: Props) {
   }, [couponCode]);
 
   function handleAccountSubmit(data: RegisterInput) {
-    setRegistrationData((prev) => ({ ...prev, account: data }));
+    setAccountData(data);
     setStep(2);
   }
 
-  function handleLeagueSubmit(data: LeagueSetupInput) {
-    setRegistrationData((prev) => ({
-      ...prev,
-      league: { ...data, couponCode: couponCode.trim() || undefined },
-    }));
-    setStep(3);
+  async function handleLeagueNext() {
+    const valid = await leagueForm.trigger(["name"]);
+    if (valid) setStep(3);
   }
 
-  function handleSeasonSubmit(data: SeasonInput) {
-    setRegistrationData((prev) => ({ ...prev, season: data }));
-    setStep(4);
-  }
-
-  function handleCategoriesNext() {
-    setRegistrationData((prev) => ({ ...prev, categories: categories.filter((c) => c.trim()) }));
-    setStep(5);
-  }
-
-  async function handleFinalSubmit() {
-    const filledTeams = teams.filter((t) => t.trim());
+  async function handleFinalSubmit(data: LeagueSetupInput) {
     setIsLoading(true);
     setError("");
     try {
+      const leaguePayload = { ...data, couponCode: couponCode.trim() || undefined };
+
       const payload = loggedInUser
-        ? { userId: loggedInUser.id, ...registrationData, teams: filledTeams, logoDataUrl: logoDataUrl ?? undefined }
-        : { ...registrationData, teams: filledTeams, logoDataUrl: logoDataUrl ?? undefined };
+        ? { userId: loggedInUser.id, league: leaguePayload, logoDataUrl: logoDataUrl ?? undefined }
+        : { account: accountData, league: leaguePayload, logoDataUrl: logoDataUrl ?? undefined };
 
       const res = await fetch("/api/register", {
         method: "POST",
@@ -128,7 +105,6 @@ export function RegisterForm({ loggedInUser }: Props) {
       const json = await res.json();
       if (!res.ok) { setError(json.error || "Something went wrong"); setIsLoading(false); return; }
 
-      // Logged-in users go directly to their new league; new users go to login
       if (loggedInUser && json.leagueSlug) {
         router.push(`/league/${json.leagueSlug}`);
       } else {
@@ -170,7 +146,7 @@ export function RegisterForm({ loggedInUser }: Props) {
 
         <div className="mt-6">
 
-          {/* ── Step 1 — Account (skipped for logged-in users) ── */}
+          {/* ── Step 1 — Account ── */}
           {step === 1 && (
             <Card className="bg-white/5 border-white/10 text-white">
               <CardHeader>
@@ -211,115 +187,139 @@ export function RegisterForm({ loggedInUser }: Props) {
             </Card>
           )}
 
-          {/* ── Step 2 — League ── */}
+          {/* ── Step 2 — League Setup ── */}
           {step === 2 && (
             <Card className="bg-white/5 border-white/10 text-white">
               <CardHeader>
                 <CardTitle className="text-white">{r.steps.league.title}</CardTitle>
                 <CardDescription className="text-white/40">{r.steps.league.subtitle}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={leagueForm.handleSubmit(handleLeagueSubmit)} className="space-y-4">
-                  {/* Logo picker */}
-                  <div className="flex items-center gap-4">
+              <CardContent className="space-y-4">
+                {/* Logo picker */}
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-opacity hover:opacity-80 focus:outline-none"
+                    style={{ border: "2px dashed rgba(255,255,255,0.2)" }}
+                    title="Upload league logo (optional)"
+                  >
+                    {logoDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoDataUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                        <span className="text-lg">🖼️</span>
+                        <span className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>LOGO</span>
+                      </div>
+                    )}
+                  </button>
+                  <div className="space-y-1">
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
-                      className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-opacity hover:opacity-80 focus:outline-none"
-                      style={{ border: "2px dashed rgba(255,255,255,0.2)" }}
-                      title="Upload league logo (optional)"
+                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                      style={{ borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", background: "transparent" }}
                     >
-                      {logoDataUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logoDataUrl} alt="Logo preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
-                          <span className="text-lg">🖼️</span>
-                          <span className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>LOGO</span>
-                        </div>
-                      )}
+                      {logoDataUrl ? "Change logo" : "Upload logo"}
                     </button>
-                    <div className="space-y-1">
+                    {logoDataUrl && (
                       <button
                         type="button"
-                        onClick={() => logoInputRef.current?.click()}
-                        className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                        style={{ borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", background: "transparent" }}
+                        onClick={() => { setLogoDataUrl(null); if (logoInputRef.current) logoInputRef.current.value = ""; }}
+                        className="block text-xs px-2 py-1 rounded transition-colors hover:opacity-80"
+                        style={{ color: "rgba(239,68,68,0.7)", background: "transparent" }}
                       >
-                        {logoDataUrl ? "Change logo" : "Upload logo"}
+                        Remove
                       </button>
-                      {logoDataUrl && (
-                        <button
-                          type="button"
-                          onClick={() => { setLogoDataUrl(null); if (logoInputRef.current) logoInputRef.current.value = ""; }}
-                          className="block text-xs px-2 py-1 rounded transition-colors hover:opacity-80"
-                          style={{ color: "rgba(239,68,68,0.7)", background: "transparent" }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Optional · PNG, JPG · max 5 MB</p>
-                    </div>
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => setLogoDataUrl(ev.target?.result as string);
-                        reader.readAsDataURL(file);
-                      }}
-                    />
+                    )}
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Optional · PNG, JPG · max 5 MB</p>
                   </div>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setLogoDataUrl(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
 
+                <div className="space-y-1">
+                  <Label className={labelCls}>{r.steps.league.name}</Label>
+                  <Input className={inputCls} placeholder={r.steps.league.namePlaceholder} {...leagueForm.register("name")} />
+                  {leagueForm.formState.errors.name && <p className="text-xs text-red-400">{leagueForm.formState.errors.name.message}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className={labelCls}>{r.steps.league.name}</Label>
-                    <Input className={inputCls} placeholder={r.steps.league.namePlaceholder} {...leagueForm.register("name")} />
-                    {leagueForm.formState.errors.name && <p className="text-xs text-red-400">{leagueForm.formState.errors.name.message}</p>}
+                    <Label className={labelCls}>{r.steps.league.city}</Label>
+                    <Input className={inputCls} placeholder={r.steps.league.cityPlaceholder} {...leagueForm.register("city")} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className={labelCls}>{r.steps.league.city}</Label>
-                      <Input className={inputCls} placeholder={r.steps.league.cityPlaceholder} {...leagueForm.register("city")} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className={labelCls}>{r.steps.league.state}</Label>
-                      <Input className={inputCls} placeholder={r.steps.league.statePlaceholder} maxLength={20} {...leagueForm.register("state")} />
-                    </div>
+                  <div className="space-y-1">
+                    <Label className={labelCls}>{r.steps.league.state}</Label>
+                    <Input className={inputCls} placeholder={r.steps.league.statePlaceholder} maxLength={20} {...leagueForm.register("state")} />
                   </div>
-                  <div className="space-y-2">
-                    <Label className={labelCls}>{r.steps.league.selectPlan}</Label>
-                    <div className="grid gap-3">
-                      {PLANS.map((plan) => {
-                        const disc = couponState.status === "valid" ? couponState.percentOff : 0;
-                        const discountedPrice = disc > 0 ? (plan.price * (1 - disc / 100)).toFixed(2) : null;
-                        return (
-                          <label key={plan.id} className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${selectedPlan === plan.id ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/20"}`}>
-                            <input type="radio" className="sr-only" value={plan.id} {...leagueForm.register("planId")} onChange={() => setSelectedPlan(plan.id)} />
-                            <div>
-                              <p className="font-semibold text-white">{plan.name}</p>
-                              <p className="text-sm text-white/40">{plan.description}</p>
-                            </div>
-                            <div className="text-right">
-                              {discountedPrice ? (
-                                <>
-                                  <span className="text-sm line-through text-white/30">${plan.price}/mo</span>
-                                  <span className="block text-lg font-bold text-green-400">${discountedPrice}/mo</span>
-                                </>
-                              ) : (
-                                <span className="text-lg font-bold text-green-400">${plan.price}/mo</span>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    {leagueForm.formState.errors.planId && <p className="text-xs text-red-400">{leagueForm.formState.errors.planId.message}</p>}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent"
+                    onClick={() => loggedInUser ? router.push("/dashboard") : setStep(1)}>
+                    {r.steps.league.back}
+                  </Button>
+                  <Button type="button" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg"
+                    onClick={handleLeagueNext}>
+                    {r.steps.league.continue}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Step 3 — Plan ── */}
+          {step === 3 && (
+            <Card className="bg-white/5 border-white/10 text-white">
+              <CardHeader>
+                <CardTitle className="text-white">{r.steps.league.selectPlan}</CardTitle>
+                <CardDescription className="text-white/40">Pick the plan that fits your league.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={leagueForm.handleSubmit(handleFinalSubmit)} className="space-y-4">
+                  {error && (
+                    <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">{error}</div>
+                  )}
+
+                  <div className="grid gap-3">
+                    {PLANS.map((plan) => {
+                      const disc = couponState.status === "valid" ? couponState.percentOff : 0;
+                      const discountedPrice = disc > 0 ? (plan.price * (1 - disc / 100)).toFixed(2) : null;
+                      return (
+                        <label key={plan.id} className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${selectedPlan === plan.id ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/20"}`}>
+                          <input type="radio" className="sr-only" value={plan.id} {...leagueForm.register("planId")} onChange={() => setSelectedPlan(plan.id)} />
+                          <div>
+                            <p className="font-semibold text-white">{plan.name}</p>
+                            <p className="text-sm text-white/40">{plan.description}</p>
+                          </div>
+                          <div className="text-right">
+                            {discountedPrice ? (
+                              <>
+                                <span className="text-sm line-through text-white/30">${plan.price}/mo</span>
+                                <span className="block text-lg font-bold text-green-400">${discountedPrice}/mo</span>
+                              </>
+                            ) : (
+                              <span className="text-lg font-bold text-green-400">${plan.price}/mo</span>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
+                  {leagueForm.formState.errors.planId && <p className="text-xs text-red-400">{leagueForm.formState.errors.planId.message}</p>}
 
                   {/* Coupon code */}
                   <div className="space-y-1">
@@ -342,116 +342,17 @@ export function RegisterForm({ loggedInUser }: Props) {
                       <p className="text-xs text-red-400">{couponState.message}</p>
                     )}
                   </div>
-                  <div className="flex gap-3">
+
+                  <div className="flex gap-3 pt-2">
                     <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent"
-                      onClick={() => loggedInUser ? router.push("/dashboard") : setStep(1)}>
+                      onClick={() => setStep(2)}>
                       {r.steps.league.back}
                     </Button>
-                    <Button type="submit" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg">{r.steps.league.continue}</Button>
+                    <Button type="submit" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg" disabled={isLoading}>
+                      {isLoading ? r.steps.teams.finishing : r.steps.teams.finish}
+                    </Button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── Step 3 — Season ── */}
-          {step === 3 && (
-            <Card className="bg-white/5 border-white/10 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">{r.steps.season.title}</CardTitle>
-                <CardDescription className="text-white/40">{r.steps.season.subtitle}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={seasonForm.handleSubmit(handleSeasonSubmit)} className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className={labelCls}>{r.steps.season.name}</Label>
-                    <Input className={inputCls} placeholder={r.steps.season.namePlaceholder} {...seasonForm.register("name")} />
-                    {seasonForm.formState.errors.name && <p className="text-xs text-red-400">{seasonForm.formState.errors.name.message}</p>}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className={labelCls}>{r.steps.season.startDate}</Label>
-                      <Input className={inputCls} type="date" {...seasonForm.register("startDate")} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className={labelCls}>{r.steps.season.endDate}</Label>
-                      <Input className={inputCls} type="date" {...seasonForm.register("endDate")} />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent" onClick={() => setStep(2)}>{r.steps.season.back}</Button>
-                    <Button type="submit" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg">{r.steps.season.continue}</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── Step 4 — Categories ── */}
-          {step === 4 && (
-            <Card className="bg-white/5 border-white/10 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">{r.steps.categories.title}</CardTitle>
-                <CardDescription className="text-white/40">{r.steps.categories.subtitle}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  {categories.map((cat, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input className={inputCls} placeholder={`${r.steps.categories.placeholder} ${i + 1}`} value={cat}
-                        onChange={(e) => { const n = [...categories]; n[i] = e.target.value; setCategories(n); }} />
-                      {categories.length > 1 && (
-                        <Button type="button" variant="outline" size="icon" className="border-white/10 text-white hover:bg-white/10 bg-transparent"
-                          onClick={() => setCategories(categories.filter((_, j) => j !== i))}>×</Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button type="button" variant="ghost" className="w-full border border-dashed border-white/20 text-white/50 hover:text-white hover:bg-white/5"
-                    onClick={() => setCategories([...categories, ""])}>
-                    {r.steps.categories.addBtn}
-                  </Button>
-                </div>
-                <div className="flex gap-3">
-                  <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent" onClick={() => setStep(3)}>{r.steps.categories.back}</Button>
-                  <Button type="button" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg" onClick={handleCategoriesNext}>{r.steps.categories.continue}</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── Step 5 — Teams ── */}
-          {step === 5 && (
-            <Card className="bg-white/5 border-white/10 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">{r.steps.teams.title}</CardTitle>
-                <CardDescription className="text-white/40">{r.steps.teams.subtitle}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">{error}</div>
-                )}
-                <div className="space-y-2">
-                  {teams.map((team, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input className={inputCls} placeholder={`${r.steps.teams.placeholder} ${i + 1}`} value={team}
-                        onChange={(e) => { const n = [...teams]; n[i] = e.target.value; setTeams(n); }} />
-                      {teams.length > 1 && (
-                        <Button type="button" variant="outline" size="icon" className="border-white/10 text-white hover:bg-white/10 bg-transparent"
-                          onClick={() => setTeams(teams.filter((_, j) => j !== i))}>×</Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button type="button" variant="ghost" className="w-full border border-dashed border-white/20 text-white/50 hover:text-white hover:bg-white/5"
-                    onClick={() => setTeams([...teams, ""])}>
-                    {r.steps.teams.addBtn}
-                  </Button>
-                </div>
-                <div className="flex gap-3">
-                  <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent" onClick={() => setStep(4)}>{r.steps.teams.back}</Button>
-                  <Button type="button" className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold" size="lg" disabled={isLoading} onClick={handleFinalSubmit}>
-                    {isLoading ? r.steps.teams.finishing : r.steps.teams.finish}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}

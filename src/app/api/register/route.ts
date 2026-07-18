@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cloudinary } from "@/lib/cloudinary";
 import { slugify } from "@/lib/utils";
-import { registerSchema, leagueSetupSchema, seasonSchema } from "@/lib/validations";
+import { registerSchema, leagueSetupSchema } from "@/lib/validations";
 import { sendVerificationEmail } from "@/lib/email";
 
 async function uploadLogo(leagueId: string, dataUrl: string): Promise<string | null> {
@@ -40,20 +40,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const leagueParsed = leagueSetupSchema.safeParse(body.league);
-    const seasonParsed = seasonSchema.safeParse(body.season);
-
     if (!leagueParsed.success)
       return NextResponse.json({ error: "Invalid league data" }, { status: 400 });
-    if (!seasonParsed.success)
-      return NextResponse.json({ error: "Invalid season data" }, { status: 400 });
 
     const { name: leagueName, city, state, planId, couponCode } = leagueParsed.data;
-    const { name: seasonName, startDate, endDate } = seasonParsed.data;
-    const categories: string[]    = body.categories  ?? [];
-    const teams: string[]         = body.teams        ?? [];
     const logoDataUrl: string | undefined = body.logoDataUrl;
 
-    // Resolve the selected plan
     const plan = await prisma.plan.findFirst({ where: { id: planId, isActive: true } });
     if (!plan) return NextResponse.json({ error: "Selected plan not found" }, { status: 400 });
 
@@ -61,7 +53,7 @@ export async function POST(req: NextRequest) {
     const existingLeague = await prisma.league.findUnique({ where: { slug } });
     const finalSlug = existingLeague ? `${slug}-${Date.now()}` : slug;
 
-    // ── Logged-in path: use existing user ──────────────────────────────────────
+    // ── Logged-in path ─────────────────────────────────────────────────────────
     if (body.userId) {
       const session = await auth();
       if (!session?.user?.id || session.user.id !== body.userId)
@@ -89,28 +81,9 @@ export async function POST(req: NextRequest) {
           data: { userId: body.userId, leagueId: league.id, role: "LEAGUE_ADMIN" },
         });
 
-        const season = await tx.season.create({
-          data: { leagueId: league.id, name: seasonName, startDate: new Date(startDate), endDate: new Date(endDate) },
-        });
-
-        const createdCategories = await Promise.all(
-          categories.filter((c) => c.trim()).map((catName) =>
-            tx.category.create({ data: { leagueId: league.id, name: catName.trim() } })
-          )
-        );
-
-        await Promise.all(
-          teams.filter((t) => t.trim()).map((teamName) =>
-            tx.team.create({
-              data: { leagueId: league.id, seasonId: season.id, categoryId: createdCategories[0]?.id, name: teamName.trim() },
-            })
-          )
-        );
-
         return { league };
       });
 
-      // Upload logo outside the transaction (optional — failure doesn't block registration)
       if (logoDataUrl?.startsWith("data:image/")) {
         const logoUrl = await uploadLogo(result.league.id, logoDataUrl);
         if (logoUrl) await prisma.league.update({ where: { id: result.league.id }, data: { logoUrl } });
@@ -119,7 +92,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, leagueSlug: result.league.slug });
     }
 
-    // ── New user path: create account + league ─────────────────────────────────
+    // ── New user path ──────────────────────────────────────────────────────────
     const accountParsed = registerSchema.safeParse(body.account);
     if (!accountParsed.success)
       return NextResponse.json({ error: "Invalid account data" }, { status: 400 });
@@ -153,24 +126,6 @@ export async function POST(req: NextRequest) {
       await tx.userLeagueRole.create({
         data: { userId: user.id, leagueId: league.id, role: "LEAGUE_ADMIN" },
       });
-
-      const season = await tx.season.create({
-        data: { leagueId: league.id, name: seasonName, startDate: new Date(startDate), endDate: new Date(endDate) },
-      });
-
-      const createdCategories = await Promise.all(
-        categories.filter((c) => c.trim()).map((catName) =>
-          tx.category.create({ data: { leagueId: league.id, name: catName.trim() } })
-        )
-      );
-
-      await Promise.all(
-        teams.filter((t) => t.trim()).map((teamName) =>
-          tx.team.create({
-            data: { leagueId: league.id, seasonId: season.id, categoryId: createdCategories[0]?.id, name: teamName.trim() },
-          })
-        )
-      );
 
       return { user, league };
     });
