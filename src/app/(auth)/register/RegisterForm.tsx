@@ -31,9 +31,10 @@ export function RegisterForm({ loggedInUser }: Props) {
   const p = r.plans;
 
   const PLANS = [
-    { id: "basic",   name: p.basic.name,   price: 9,  description: p.basic.description },
-    { id: "starter", name: p.starter.name, price: 29, description: p.starter.description },
-    { id: "pro",     name: p.pro.name,     price: 79, description: p.pro.description },
+    { id: "single",  name: "Single",  price: 99.90,  description: "Up to 100 games / year" },
+    { id: "double",  name: "Double",  price: 189.90, description: "Up to 200 games / year" },
+    { id: "triple",  name: "Triple",  price: 279.90, description: "Up to 300 games / year" },
+    { id: "homerun", name: "Homerun", price: 379.90, description: "Up to 500 games / year" },
   ];
 
   // Logged-in users skip step 1
@@ -340,11 +341,11 @@ export function RegisterForm({ loggedInUser }: Props) {
                           <div className="text-right">
                             {discountedPrice ? (
                               <>
-                                <span className="text-sm line-through text-white/30">${plan.price}/mo</span>
-                                <span className="block text-lg font-bold text-green-400">${discountedPrice}/mo</span>
+                                <span className="text-sm line-through text-white/30">${plan.price}/yr</span>
+                                <span className="block text-lg font-bold text-green-400">${discountedPrice}/yr</span>
                               </>
                             ) : (
-                              <span className="text-lg font-bold text-green-400">${plan.price}/mo</span>
+                              <span className="text-lg font-bold text-green-400">${plan.price}/yr</span>
                             )}
                           </div>
                         </label>

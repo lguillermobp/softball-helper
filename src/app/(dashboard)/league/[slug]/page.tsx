@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getLeagueSubscriptionInfo } from "@/lib/subscription";
 import { computeSeasonStats, computeGameStats, type BatterRow } from "@/lib/stats";
 import Link from "next/link";
 import { LeagueDashboard } from "@/components/league/LeagueDashboard";
@@ -328,6 +329,9 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const isAdmin = isMasterAdmin || role === "LEAGUE_ADMIN";
 
+  // Load subscription info
+  const subInfo = await getLeagueSubscriptionInfo(league.id);
+
   // Load technician info for master admin
   const [technicianData, availableTechnicians] = isMasterAdmin
     ? await Promise.all([
@@ -413,6 +417,15 @@ export default async function LeaguePage({ params }: PageProps) {
           technician={technicianData}
           availableTechnicians={availableTechnicians}
           league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, logoUrl: fullLeague.logoUrl ?? null, bannerUrl: fullLeague.bannerUrl ?? null, plan: { name: league.plan.name, stripePriceId: league.plan.stripePriceId ?? null }, stripeCustomerId: league.stripeCustomerId ?? null, subscriptionStatus: league.subscriptionStatus ?? null, notifyGameEnd: fullLeague.notifyGameEnd, notifyEmail: fullLeague.notifyEmail ?? null, notifyManagers: fullLeague.notifyManagers, instagramEnabled: fullLeague.instagramEnabled, timezone: fullLeague.timezone }}
+          subscription={{
+            effectiveStatus: subInfo.effectiveStatus,
+            gamesUsed: subInfo.gamesUsed,
+            daysRemaining: subInfo.daysRemaining,
+            plan: subInfo.subscription ? { name: subInfo.subscription.plan.name, price: subInfo.subscription.plan.price } : null,
+            maxGames: subInfo.subscription?.maxGames ?? 0,
+            startDate: subInfo.subscription?.startDate.toISOString() ?? null,
+            endDate: subInfo.subscription?.endDate.toISOString() ?? null,
+          }}
           seasons={seasons}
           categories={categories}
           teams={teams}

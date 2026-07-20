@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getLeagueSubscriptionInfo } from "@/lib/subscription";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -57,6 +58,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Subscription enforcement
+  const subInfo = await getLeagueSubscriptionInfo(league.id);
+  const gamesNeeded = isTwin && !isPractice ? 2 : 1;
+  if (subInfo.effectiveStatus !== "ACTIVE")
+    return NextResponse.json({ error: subInfo.effectiveStatus === "EXPIRED" ? "Your subscription has expired." : subInfo.effectiveStatus === "LIMIT_REACHED" ? "You have reached your plan's game limit." : "No active subscription found." }, { status: 402 });
+  if (subInfo.subscription!.maxGames - subInfo.gamesUsed < gamesNeeded)
+    return NextResponse.json({ error: `Not enough games remaining in your plan (need ${gamesNeeded}, have ${subInfo.subscription!.maxGames - subInfo.gamesUsed}).` }, { status: 402 });
 
   if (!seasonId || !homeTeamId || !awayTeamId || !scheduledAt)
     return NextResponse.json(

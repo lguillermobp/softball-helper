@@ -102,12 +102,23 @@ interface Condition {
 
 interface TechnicianOption { id: string; name: string | null; email: string }
 
+interface SubscriptionProp {
+  effectiveStatus: "ACTIVE" | "EXPIRED" | "LIMIT_REACHED" | "NO_SUBSCRIPTION";
+  gamesUsed: number;
+  daysRemaining: number;
+  plan: { name: string; price: number } | null;
+  maxGames: number;
+  startDate: string | null;
+  endDate: string | null;
+}
+
 interface Props {
   slug: string;
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
   league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string };
+  subscription?: SubscriptionProp | null;
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
   seasons: Season[];
@@ -300,7 +311,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
+export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, subscription, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stripeParam  = searchParams.get("stripe");
@@ -665,10 +676,65 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
             </div>
           )}
 
-          {/* Billing */}
+          {/* Subscription */}
           <div className="rounded-2xl border p-5" style={card}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>💳 Billing</p>
-            <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={dim}>📊 Subscription</p>
+            {subscription ? (() => {
+              const s = subscription;
+              const statusColor = s.effectiveStatus === "ACTIVE" ? "#22c55e"
+                                : s.effectiveStatus === "EXPIRED" ? "#ef4444"
+                                : s.effectiveStatus === "LIMIT_REACHED" ? "#f59e0b"
+                                : "var(--sh-muted)";
+              const statusLabel = s.effectiveStatus === "ACTIVE" ? "Active"
+                                : s.effectiveStatus === "EXPIRED" ? "Expired"
+                                : s.effectiveStatus === "LIMIT_REACHED" ? "Limit Reached"
+                                : "No Subscription";
+              const pct = s.maxGames > 0 ? Math.min(100, Math.round((s.gamesUsed / s.maxGames) * 100)) : 0;
+              const barColor = pct >= 100 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "#22c55e";
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold" style={{ color: "var(--sh-text)" }}>
+                      {s.plan ? s.plan.name : "No Plan"}
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: statusColor + "22", color: statusColor }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                  {s.maxGames > 0 && (
+                    <div>
+                      <div className="flex justify-between text-xs mb-1" style={{ color: "var(--sh-muted)" }}>
+                        <span>Games used</span>
+                        <span>{s.gamesUsed} / {s.maxGames}</span>
+                      </div>
+                      <div className="w-full rounded-full h-2" style={{ background: "var(--sh-border)" }}>
+                        <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, background: barColor }} />
+                      </div>
+                    </div>
+                  )}
+                  {s.endDate && (
+                    <div className="flex items-center justify-between text-xs" style={{ color: "var(--sh-muted)" }}>
+                      <span>Expires {new Date(s.endDate).toLocaleDateString()}</span>
+                      {s.effectiveStatus === "ACTIVE" && (
+                        <span style={{ color: s.daysRemaining <= 30 ? "#f59e0b" : "var(--sh-muted)" }}>
+                          {s.daysRemaining} day{s.daysRemaining !== 1 ? "s" : ""} left
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {s.plan && (
+                    <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                      ${s.plan.price.toFixed(2)} / year
+                    </p>
+                  )}
+                </div>
+              );
+            })() : (
+              <p className="text-sm" style={{ color: "var(--sh-muted)" }}>No subscription data</p>
+            )}
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--sh-border)" }}>
+              <SubscriptionPanel slug={slug} league={league} isAdmin={isAdmin} />
+            </div>
           </div>
         </div>
       )}

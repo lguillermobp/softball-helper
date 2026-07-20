@@ -234,14 +234,15 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
             {/* System tools */}
             <div className="mb-8">
               <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--sh-muted)" }}>System Tools</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {[
-                  { href: "/admin/users",   icon: "👥", label: "Users",    desc: "Manage accounts" },
-                  { href: "/admin/plans",   icon: "📋", label: "Plans",    desc: "Subscription plans" },
-                  { href: "/admin/coupons", icon: "🏷️", label: "Coupons",  desc: "Discount codes" },
-                  { href: "/admin/audit",   icon: "📜", label: "Audit Log", desc: "Activity history" },
-                  { href: "/admin/cleanup", icon: "🗑️", label: "Cleanup",  desc: "Data maintenance" },
-                  { href: "/support",       icon: "🎫", label: "Support",   desc: "Tickets & help" },
+                  { href: "/admin/users",         icon: "👥", label: "Users",         desc: "Manage accounts" },
+                  { href: "/admin/plans",         icon: "📋", label: "Plans",         desc: "Subscription plans" },
+                  { href: "/admin/subscriptions", icon: "📊", label: "Subscriptions", desc: "League subscriptions" },
+                  { href: "/admin/coupons",       icon: "🏷️", label: "Coupons",       desc: "Discount codes" },
+                  { href: "/admin/audit",         icon: "📜", label: "Audit Log",     desc: "Activity history" },
+                  { href: "/admin/cleanup",       icon: "🗑️", label: "Cleanup",       desc: "Data maintenance" },
+                  { href: "/support",             icon: "🎫", label: "Support",       desc: "Tickets & help" },
                 ].map(({ href, icon, label, desc }) => (
                   <Link key={href} href={href}
                     className="group rounded-xl border p-4 flex flex-col items-center gap-2 text-center transition-all hover:scale-[1.03] hover:shadow-md"

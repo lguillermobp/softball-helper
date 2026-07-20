@@ -22,18 +22,19 @@ export async function POST(req: NextRequest) {
   if (!(session?.user as any)?.isMasterAdmin)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, price, maxTeams, maxSeasons, maxPlayers, stripePriceId } = await req.json();
+  const { name, price, maxTeams, maxSeasons, maxPlayers, maxGames, stripePriceId } = await req.json();
 
-  if (!name || price == null || !maxTeams || !maxSeasons || !maxPlayers)
+  if (!name || price == null || !maxTeams || !maxSeasons || !maxPlayers || !maxGames)
     return NextResponse.json({ error: "All fields except Stripe Price ID are required" }, { status: 400 });
 
   const plan = await prisma.plan.create({
     data: {
       name,
-      price: parseFloat(price),
-      maxTeams: parseInt(maxTeams),
-      maxSeasons: parseInt(maxSeasons),
-      maxPlayers: parseInt(maxPlayers),
+      price:         parseFloat(price),
+      maxTeams:      parseInt(maxTeams),
+      maxSeasons:    parseInt(maxSeasons),
+      maxPlayers:    parseInt(maxPlayers),
+      maxGames:      parseInt(maxGames),
       stripePriceId: stripePriceId || null,
     },
   });

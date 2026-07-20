@@ -23,14 +23,42 @@ export async function POST(req: NextRequest) {
       const leagueId = session.metadata?.leagueId;
       if (!leagueId) break;
 
+      const stripeSubId = session.subscription as string | null;
+
       await prisma.league.update({
         where: { id: leagueId },
         data: {
           stripeCustomerId:     session.customer as string,
-          stripeSubscriptionId: session.subscription as string,
+          stripeSubscriptionId: stripeSubId ?? undefined,
           subscriptionStatus:   "active",
         },
       });
+
+      // Create subscription record
+      await createLeagueSubscription(leagueId, stripeSubId);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      const invoice  = event.data.object as Stripe.Invoice;
+      const subRaw   = invoice.parent?.subscription_details?.subscription;
+      const subId    = typeof subRaw === "string" ? subRaw : subRaw?.id;
+      if (!subId) break;
+
+      // Only act on renewals (billing_reason = subscription_cycle), not the initial invoice
+      if (invoice.billing_reason === "subscription_cycle") {
+        const league = await prisma.league.findFirst({
+          where: { stripeSubscriptionId: subId },
+        });
+        if (league) {
+          // Cancel any currently active subscription records
+          await prisma.leagueSubscription.updateMany({
+            where: { leagueId: league.id, status: "ACTIVE" },
+            data:  { status: "CANCELLED", cancelledAt: new Date() },
+          });
+          await createLeagueSubscription(league.id, subId);
+        }
+      }
       break;
     }
 
@@ -53,6 +81,10 @@ export async function POST(req: NextRequest) {
         where: { stripeSubscriptionId: sub.id },
         data:  { subscriptionStatus: "cancelled" },
       });
+      await prisma.leagueSubscription.updateMany({
+        where: { stripeSubscriptionId: sub.id, status: "ACTIVE" },
+        data:  { status: "CANCELLED", cancelledAt: new Date() },
+      });
       break;
     }
 
@@ -70,4 +102,34 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function createLeagueSubscription(leagueId: string, stripeSubId: string | null) {
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId },
+    include: { plan: true },
+  });
+  if (!league) return;
+
+  const now      = new Date();
+  const endDate  = new Date(now);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+
+  // Cancel any currently active subscription records
+  await prisma.leagueSubscription.updateMany({
+    where: { leagueId, status: "ACTIVE" },
+    data:  { status: "CANCELLED", cancelledAt: now },
+  });
+
+  await prisma.leagueSubscription.create({
+    data: {
+      leagueId,
+      planId:               league.planId,
+      stripeSubscriptionId: stripeSubId,
+      maxGames:             league.plan.maxGames,
+      startDate:            now,
+      endDate,
+      status:               "ACTIVE",
+    },
+  });
 }

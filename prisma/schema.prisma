@@ -89,11 +89,13 @@ model Plan {
   maxTeams      Int
   maxSeasons    Int
   maxPlayers    Int
+  maxGames      Int     @default(100)
   price         Float
   isActive      Boolean @default(true)
   stripePriceId String?
 
-  leagues League[]
+  leagues       League[]
+  subscriptions LeagueSubscription[]
 
   @@map("plans")
 }
@@ -127,17 +129,18 @@ model League {
   appliedCouponId      String?
   appliedCoupon        Coupon?          @relation(fields: [appliedCouponId], references: [id])
 
-  plan       Plan             @relation(fields: [planId], references: [id])
-  userRoles   UserLeagueRole[]
-  seasons     Season[]
-  categories  Category[]
-  teams       Team[]
-  games       Game[]
-  players     Player[]
-  fields      Field[]
-  conditions  Condition[]
-  publicPage  LeaguePublicPage?
-  tickets     Ticket[]
+  plan          Plan             @relation(fields: [planId], references: [id])
+  userRoles     UserLeagueRole[]
+  seasons       Season[]
+  categories    Category[]
+  teams         Team[]
+  games         Game[]
+  players       Player[]
+  fields        Field[]
+  conditions    Condition[]
+  publicPage    LeaguePublicPage?
+  tickets       Ticket[]
+  subscriptions LeagueSubscription[]
 
   @@map("leagues")
 }
@@ -147,6 +150,37 @@ enum LeagueStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
+}
+
+// ─── League Subscriptions ─────────────────────────────────────────────────────
+
+enum LeagueSubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  LIMIT_REACHED
+  CANCELLED
+}
+
+model LeagueSubscription {
+  id                   String                   @id @default(cuid())
+  leagueId             String
+  planId               String
+  stripeSubscriptionId String?
+  maxGames             Int
+  startDate            DateTime
+  endDate              DateTime
+  status               LeagueSubscriptionStatus @default(ACTIVE)
+  cancelledAt          DateTime?
+  note                 String?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@index([leagueId])
+  @@index([status])
+  @@map("league_subscriptions")
 }
 
 // ─── Role-Based Access Control ───────────────────────────────────────────────

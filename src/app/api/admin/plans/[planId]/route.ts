@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.maxTeams     != null) data.maxTeams      = parseInt(body.maxTeams);
   if (body.maxSeasons   != null) data.maxSeasons    = parseInt(body.maxSeasons);
   if (body.maxPlayers   != null) data.maxPlayers    = parseInt(body.maxPlayers);
+  if (body.maxGames     != null) data.maxGames      = parseInt(body.maxGames);
   if (body.isActive     != null) data.isActive      = body.isActive;
   if ("stripePriceId" in body)   data.stripePriceId = body.stripePriceId || null;
 

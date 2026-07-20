@@ -10,6 +10,7 @@ interface Plan {
   maxTeams: number;
   maxSeasons: number;
   maxPlayers: number;
+  maxGames: number;
   isActive: boolean;
   stripePriceId: string | null;
   leagueCount: number;
@@ -22,7 +23,7 @@ const input = "w-full rounded-md border px-3 py-2 text-sm outline-none";
 const inputStyle = { background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" };
 
 const EMPTY: Omit<Plan, "id" | "leagueCount"> = {
-  name: "", price: 0, maxTeams: 4, maxSeasons: 1, maxPlayers: 40,
+  name: "", price: 0, maxTeams: 4, maxSeasons: 1, maxPlayers: 40, maxGames: 100,
   isActive: true, stripePriceId: null,
 };
 
@@ -43,6 +44,7 @@ export function AdminPlansView({ initialPlans }: { initialPlans: Plan[] }) {
     setForm({
       name: plan.name, price: plan.price,
       maxTeams: plan.maxTeams, maxSeasons: plan.maxSeasons, maxPlayers: plan.maxPlayers,
+      maxGames: plan.maxGames,
       isActive: plan.isActive, stripePriceId: plan.stripePriceId,
     });
   }
@@ -114,11 +116,12 @@ export function AdminPlansView({ initialPlans }: { initialPlans: Plan[] }) {
     <div className="rounded-2xl border p-6 space-y-4 mb-6" style={card}>
       <h2 className="text-base font-bold" style={head}>{creating ? "New plan" : "Edit plan"}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {field("name",          "Plan name",        "text",   "e.g. Basic")}
-        {field("price",         "Monthly price ($)", "number", "9")}
+        {field("name",          "Plan name",        "text",   "e.g. Single")}
+        {field("price",         "Yearly price ($)",  "number", "99.90")}
         {field("maxTeams",      "Max teams",         "number", "4")}
         {field("maxSeasons",    "Max seasons",       "number", "1")}
         {field("maxPlayers",    "Max players",       "number", "40")}
+        {field("maxGames",      "Max games/year",    "number", "100")}
         {field("stripePriceId", "Stripe Price ID",   "text",   "price_xxx (optional)")}
       </div>
       {field("isActive", "Active")}
@@ -160,7 +163,7 @@ export function AdminPlansView({ initialPlans }: { initialPlans: Plan[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--sh-border)" }}>
-              {["Plan", "Price/mo", "Teams", "Seasons", "Players", "Leagues", "Status", "Stripe ID", ""].map((h, i) => (
+              {["Plan", "Price/yr", "Teams", "Seasons", "Players", "Games", "Leagues", "Status", "Stripe ID", ""].map((h, i) => (
                 <th key={i} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={dim}>{h}</th>
               ))}
             </tr>
@@ -169,10 +172,11 @@ export function AdminPlansView({ initialPlans }: { initialPlans: Plan[] }) {
             {plans.map((plan) => (
               <tr key={plan.id} style={{ borderBottom: "1px solid #0f2310" }}>
                 <td className="px-4 py-3 font-semibold" style={head}>{plan.name}</td>
-                <td className="px-4 py-3" style={dim}>${plan.price}/mo</td>
+                <td className="px-4 py-3" style={dim}>${plan.price}/yr</td>
                 <td className="px-4 py-3" style={dim}>{plan.maxTeams >= 9999 ? "∞" : plan.maxTeams}</td>
                 <td className="px-4 py-3" style={dim}>{plan.maxSeasons >= 9999 ? "∞" : plan.maxSeasons}</td>
                 <td className="px-4 py-3" style={dim}>{plan.maxPlayers >= 9999 ? "∞" : plan.maxPlayers}</td>
+                <td className="px-4 py-3" style={dim}>{plan.maxGames >= 9999 ? "∞" : plan.maxGames}</td>
                 <td className="px-4 py-3 font-semibold" style={{ color: "var(--sh-primary)" }}>{plan.leagueCount}</td>
                 <td className="px-4 py-3">
                   <span className="text-xs font-semibold rounded-full px-2.5 py-0.5"

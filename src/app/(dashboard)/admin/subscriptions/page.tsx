@@ -1,20 +1,31 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AdminPlansView } from "@/components/admin/AdminPlansView";
-import { ChangePasswordButton } from "@/components/ui/change-password-button";
 import { prisma } from "@/lib/prisma";
+import { AdminSubscriptionsView } from "@/components/admin/AdminSubscriptionsView";
+import { ChangePasswordButton } from "@/components/ui/change-password-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPlansPage() {
+export default async function AdminSubscriptionsPage() {
   const session = await auth();
   if (!(session?.user as any)?.isMasterAdmin) redirect("/dashboard");
 
-  const plans = await prisma.plan.findMany({
-    orderBy: { price: "asc" },
-    include: { _count: { select: { leagues: true } } },
-  });
+  const [leagues, plans] = await Promise.all([
+    prisma.league.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        plan: { select: { name: true } },
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          orderBy: { startDate: "desc" },
+          take: 1,
+          include: { plan: { select: { id: true, name: true, price: true, maxGames: true } } },
+        },
+      },
+    }),
+    prisma.plan.findMany({ orderBy: { price: "asc" } }),
+  ]);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
@@ -38,6 +49,10 @@ export default async function AdminPlansPage() {
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
               Users
             </Link>
+            <Link href="/admin/plans" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
+              style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+              Plans
+            </Link>
             <Link href="/admin/coupons" className="text-sm px-3 py-1.5 rounded-md border transition-colors"
               style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
               Coupons
@@ -55,18 +70,33 @@ export default async function AdminPlansPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <AdminPlansView initialPlans={plans.map((p) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          maxTeams: p.maxTeams,
-          maxSeasons: p.maxSeasons,
-          maxPlayers: p.maxPlayers,
-          maxGames: p.maxGames,
-          isActive: p.isActive,
-          stripePriceId: p.stripePriceId,
-          leagueCount: p._count.leagues,
-        }))} />
+        <AdminSubscriptionsView
+          leagues={leagues.map(l => ({
+            id: l.id,
+            name: l.name,
+            slug: l.slug,
+            status: l.status,
+            plan: { name: l.plan.name },
+            activeSub: l.subscriptions[0] ? {
+              id: l.subscriptions[0].id,
+              planId: l.subscriptions[0].planId,
+              maxGames: l.subscriptions[0].maxGames,
+              startDate: l.subscriptions[0].startDate.toISOString(),
+              endDate: l.subscriptions[0].endDate.toISOString(),
+              status: l.subscriptions[0].status,
+              cancelledAt: l.subscriptions[0].cancelledAt?.toISOString() ?? null,
+              note: l.subscriptions[0].note,
+              stripeSubscriptionId: l.subscriptions[0].stripeSubscriptionId,
+              plan: l.subscriptions[0].plan,
+            } : null,
+          }))}
+          plans={plans.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            maxGames: p.maxGames,
+          }))}
+        />
       </main>
     </div>
   );

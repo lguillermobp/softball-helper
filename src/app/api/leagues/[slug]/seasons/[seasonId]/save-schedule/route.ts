@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getLeagueSubscriptionInfo } from "@/lib/subscription";
 import type { ProposedGame } from "../generate-schedule/route";
 
 interface Params { params: Promise<{ slug: string; seasonId: string }> }
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { games }: { games: ProposedGame[] } = await req.json();
   if (!Array.isArray(games) || games.length === 0)
     return NextResponse.json({ error: "No games to save" }, { status: 400 });
+
+  // Subscription enforcement
+  const subInfo = await getLeagueSubscriptionInfo(league.id);
+  if (subInfo.effectiveStatus !== "ACTIVE")
+    return NextResponse.json({ error: subInfo.effectiveStatus === "EXPIRED" ? "Your subscription has expired." : subInfo.effectiveStatus === "LIMIT_REACHED" ? "You have reached your plan's game limit." : "No active subscription found." }, { status: 402 });
+  const remaining = subInfo.subscription!.maxGames - subInfo.gamesUsed;
+  if (games.length > remaining)
+    return NextResponse.json({ error: `Schedule has ${games.length} games but only ${remaining} remain in your plan.` }, { status: 402 });
 
   const created = await prisma.$transaction(
     games.map(g => {
