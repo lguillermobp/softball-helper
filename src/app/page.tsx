@@ -93,8 +93,6 @@ const FLAGS = [
   { code: "jp", name: "Japón" },
 ];
 
-const DEMO_VIDEO_ID = "";
-
 const CARD_ACCENT = [
   { border: "rgba(234,179,8,0.3)",  stripe: "#eab308", tag: "rgba(234,179,8,0.12)",  tagText: "#eab308" },
   { border: "rgba(74,222,128,0.3)", stripe: "#4ade80", tag: "rgba(74,222,128,0.12)", tagText: "#4ade80" },
@@ -102,8 +100,9 @@ const CARD_ACCENT = [
 ];
 
 function DemoSection({ onRequestDemo }: { onRequestDemo: () => void }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const td = t.demo;
+  const demoSrc = `/demo/subscriptions-${locale === "es" ? "es" : "en"}.mp4`;
 
   return (
     <section id="demo" className="border-y py-24" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-hero-bg)" }}>
@@ -115,25 +114,18 @@ function DemoSection({ onRequestDemo }: { onRequestDemo: () => void }) {
         </div>
 
         <div className="rounded-2xl overflow-hidden border shadow-xl mb-8" style={{ borderColor: "var(--sh-border-soft)" }}>
-          {DEMO_VIDEO_ID ? (
-            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?rel=0&modestbranding=1`}
-                title="SoftballHelper Demo"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-4 py-24 px-8 text-center" style={{ background: "var(--sh-section-bg)" }}>
-              <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl" style={{ background: "rgba(74,222,128,0.08)", border: "2px solid rgba(74,222,128,0.3)" }}>
-                ▶
-              </div>
-              <p className="text-lg font-black uppercase tracking-wide" style={{ color: "var(--sh-text)" }}>{td.placeholder}</p>
-              <p className="max-w-md text-sm" style={{ color: "var(--sh-text-muted)" }}>{td.placeholderSub}</p>
-            </div>
-          )}
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <video
+              key={locale}
+              className="absolute inset-0 w-full h-full"
+              src={demoSrc}
+              title={td.title}
+              controls
+              playsInline
+              preload="metadata"
+              poster="/demo/subscriptions-poster.png"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
