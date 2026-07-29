@@ -12,18 +12,24 @@ interface Faq {
   answerEs: string;
   order: number;
   active: boolean;
+  status: string;              // PUBLISHED | PENDING
+  submitterEmail: string | null;
 }
 
-type Draft = Omit<Faq, "id">;
+type Draft = Pick<Faq, "category" | "questionEn" | "questionEs" | "answerEn" | "answerEs" | "order" | "active">;
 
 const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 const inputStyle = { background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" };
 const inputCls = "w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500";
 
 const EMPTY: Draft = { category: "General", questionEn: "", questionEs: "", answerEn: "", answerEs: "", order: 0, active: true };
+const toDraft = (f: Faq): Draft => ({
+  category: f.category, questionEn: f.questionEn, questionEs: f.questionEs,
+  answerEn: f.answerEn, answerEs: f.answerEs, order: f.order, active: f.active,
+});
 
-function FaqForm({ initial, onSave, onCancel, saving }: {
-  initial: Draft; onSave: (d: Draft) => void; onCancel: () => void; saving: boolean;
+function FaqForm({ initial, onSave, onCancel, saving, submitLabel = "Save" }: {
+  initial: Draft; onSave: (d: Draft) => void; onCancel: () => void; saving: boolean; submitLabel?: string;
 }) {
   const [d, setD] = useState<Draft>(initial);
   const set = (k: keyof Draft, v: unknown) => setD((p) => ({ ...p, [k]: v }));
@@ -66,7 +72,7 @@ function FaqForm({ initial, onSave, onCancel, saving }: {
           style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>Cancel</button>
         <button onClick={() => onSave(d)} disabled={saving}
           className="text-sm px-4 py-1.5 rounded-md font-semibold disabled:opacity-50"
-          style={{ background: "var(--sh-primary)", color: "#04120a" }}>{saving ? "Saving…" : "Save"}</button>
+          style={{ background: "var(--sh-primary)", color: "#04120a" }}>{saving ? "Saving…" : submitLabel}</button>
       </div>
     </div>
   );
@@ -87,27 +93,37 @@ export function AdminFaqsView({ initialFaqs }: { initialFaqs: Faq[] }) {
     if (!res.ok) { setError((await res.json()).error ?? "Failed to create"); return; }
     setAdding(false); router.refresh();
   }
-  async function updateFaq(id: string, d: Draft) {
+  async function saveFaq(id: string, d: Draft, status?: string) {
     setSaving(true); setError("");
-    const res = await fetch(`/api/admin/faqs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
+    const res = await fetch(`/api/admin/faqs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...d, ...(status ? { status } : {}) }) });
     setSaving(false);
     if (!res.ok) { setError((await res.json()).error ?? "Failed to update"); return; }
     setEditingId(null); router.refresh();
   }
-  async function deleteFaq(id: string) {
-    if (!confirm("Delete this FAQ?")) return;
+  function publish(id: string, d: Draft) {
+    if (!d.questionEn.trim() || !d.questionEs.trim() || !d.answerEn.trim() || !d.answerEs.trim()) {
+      setError("Fill in the question and answer in both languages before publishing.");
+      return;
+    }
+    setError("");
+    saveFaq(id, d, "PUBLISHED");
+  }
+  async function deleteFaq(id: string, isPending: boolean) {
+    if (!confirm(isPending ? "Reject and delete this submission?" : "Delete this FAQ?")) return;
     const res = await fetch(`/api/admin/faqs/${id}`, { method: "DELETE" });
     if (res.ok) router.refresh(); else setError("Failed to delete");
   }
 
-  const categories = [...new Set(faqs.map((f) => f.category))];
+  const pending = faqs.filter((f) => f.status === "PENDING");
+  const published = faqs.filter((f) => f.status !== "PENDING");
+  const categories = [...new Set(published.map((f) => f.category))];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black" style={{ color: "var(--sh-text)" }}>Manage FAQs</h1>
-          <p className="text-sm" style={{ color: "var(--sh-muted)" }}>{faqs.length} question{faqs.length !== 1 ? "s" : ""} · shown on the Help page in English &amp; Spanish.</p>
+          <p className="text-sm" style={{ color: "var(--sh-muted)" }}>{published.length} published · {pending.length} pending · shown on the Help page in English &amp; Spanish.</p>
         </div>
         {!adding && (
           <button onClick={() => { setAdding(true); setEditingId(null); }}
@@ -119,17 +135,45 @@ export function AdminFaqsView({ initialFaqs }: { initialFaqs: Faq[] }) {
 
       {adding && (
         <div className="rounded-xl border p-4" style={card}>
-          <FaqForm initial={EMPTY} onSave={createFaq} onCancel={() => setAdding(false)} saving={saving} />
+          <FaqForm initial={EMPTY} onSave={createFaq} onCancel={() => setAdding(false)} saving={saving} submitLabel="Create" />
         </div>
       )}
 
+      {/* ── Pending public submissions ── */}
+      {pending.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pending review · {pending.length}</h2>
+          {pending.map((f) => (
+            <div key={f.id} className="rounded-xl border p-4" style={{ borderColor: "#4a3a12", background: "var(--sh-bg-card)" }}>
+              {editingId === f.id ? (
+                <FaqForm initial={toDraft(f)} onSave={(d) => publish(f.id, d)} onCancel={() => setEditingId(null)} saving={saving} submitLabel="Publish" />
+              ) : (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold" style={{ color: "var(--sh-text)" }}>{f.questionEn || f.questionEs}</p>
+                    {f.submitterEmail && <p className="text-xs mt-0.5" style={{ color: "var(--sh-muted)" }}>from {f.submitterEmail}</p>}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => { setEditingId(f.id); setAdding(false); }} className="text-xs px-2 py-1 rounded-md font-semibold"
+                      style={{ background: "var(--sh-primary)", color: "#04120a" }}>Answer &amp; publish</button>
+                    <button onClick={() => deleteFaq(f.id, true)} className="text-xs px-2 py-1 rounded-md border"
+                      style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}>Reject</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Published FAQs by category ── */}
       {categories.map((cat) => (
         <div key={cat} className="space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>{cat}</h2>
-          {faqs.filter((f) => f.category === cat).map((f) => (
+          {published.filter((f) => f.category === cat).map((f) => (
             <div key={f.id} className="rounded-xl border p-4" style={card}>
               {editingId === f.id ? (
-                <FaqForm initial={f} onSave={(d) => updateFaq(f.id, d)} onCancel={() => setEditingId(null)} saving={saving} />
+                <FaqForm initial={toDraft(f)} onSave={(d) => saveFaq(f.id, d)} onCancel={() => setEditingId(null)} saving={saving} />
               ) : (
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -143,7 +187,7 @@ export function AdminFaqsView({ initialFaqs }: { initialFaqs: Faq[] }) {
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => { setEditingId(f.id); setAdding(false); }} className="text-xs px-2 py-1 rounded-md border"
                       style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>Edit</button>
-                    <button onClick={() => deleteFaq(f.id)} className="text-xs px-2 py-1 rounded-md border"
+                    <button onClick={() => deleteFaq(f.id, false)} className="text-xs px-2 py-1 rounded-md border"
                       style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}>Delete</button>
                   </div>
                 </div>

@@ -233,7 +233,7 @@ function ContactSection({ defaultSubject }: { defaultSubject?: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [demoSubject, setDemoSubject] = useState("");
 
   function requestDemo() {
@@ -268,6 +268,7 @@ export default function HomePage() {
 
           <div className="flex items-center gap-2 shrink-0">
             <a href="#demo" className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80" style={{ color: "var(--sh-text-dim)" }}>{t.nav.watchDemo}</a>
+            <Link href="/help" className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80" style={{ color: "var(--sh-text-dim)" }}>{locale === "es" ? "Ayuda" : "Help"}</Link>
             <a href="#contact" className="hidden sm:inline-flex text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hover:opacity-80" style={{ color: "var(--sh-text-dim)" }}>{t.nav.contactUs}</a>
             <Link href="/login">
               <Button variant="ghost" size="sm" style={{ color: "var(--sh-text-dim)" }}>{t.nav.signin}</Button>

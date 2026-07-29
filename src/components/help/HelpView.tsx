@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/context/language-context";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -56,13 +57,68 @@ const TUTORIALS: Tutorial[] = [
 interface Faq { id: string; category: string; questionEn: string; questionEs: string; answerEn: string; answerEs: string; }
 
 const UI = {
-  en: { title: "Help & Tutorials", subtitle: "Short walkthroughs for the tasks you do most.", forYou: "For you", back: "Dashboard", none: "No tutorials available yet.",
-    faqTitle: "Frequently Asked Questions", faqSubtitle: "Quick answers to common questions.", manageFaqs: "Manage FAQs" },
-  es: { title: "Ayuda y tutoriales", subtitle: "Guías breves para las tareas más comunes.", forYou: "Para ti", back: "Panel", none: "Aún no hay tutoriales disponibles.",
-    faqTitle: "Preguntas frecuentes", faqSubtitle: "Respuestas rápidas a dudas comunes.", manageFaqs: "Gestionar FAQs" },
+  en: { title: "Help & Tutorials", subtitle: "Short walkthroughs for the tasks you do most.", forYou: "For you", back: "Dashboard", home: "Home", signIn: "Sign in", none: "No tutorials available yet.",
+    faqTitle: "Frequently Asked Questions", faqSubtitle: "Quick answers to common questions.", manageFaqs: "Manage FAQs",
+    askTitle: "Have a question?", askSubtitle: "Ask below — we review every question and publish helpful answers here.",
+    askPlaceholder: "Type your question…", askEmail: "Your email (optional, so we can follow up)", askSubmit: "Submit question", askSending: "Sending…",
+    askThanks: "Thanks! Your question was submitted and will appear here once we review it.", askAnother: "Ask another" },
+  es: { title: "Ayuda y tutoriales", subtitle: "Guías breves para las tareas más comunes.", forYou: "Para ti", back: "Panel", home: "Inicio", signIn: "Iniciar sesión", none: "Aún no hay tutoriales disponibles.",
+    faqTitle: "Preguntas frecuentes", faqSubtitle: "Respuestas rápidas a dudas comunes.", manageFaqs: "Gestionar FAQs",
+    askTitle: "¿Tienes una pregunta?", askSubtitle: "Escríbela abajo — revisamos cada pregunta y publicamos aquí las respuestas útiles.",
+    askPlaceholder: "Escribe tu pregunta…", askEmail: "Tu correo (opcional, para poder responderte)", askSubmit: "Enviar pregunta", askSending: "Enviando…",
+    askThanks: "¡Gracias! Tu pregunta fue enviada y aparecerá aquí cuando la revisemos.", askAnother: "Enviar otra" },
 };
 
-export function HelpView({ roles, isMasterAdmin, userName, faqs }: { roles: string[]; isMasterAdmin: boolean; userName: string | null; faqs: Faq[] }) {
+const askInputStyle = { background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" };
+const askInputCls = "w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500";
+
+function AskForm({ locale, L }: { locale: Locale; L: (typeof UI)["en"] }) {
+  const [q, setQ] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
+  const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [err, setErr] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setState("sending"); setErr("");
+    const res = await fetch("/api/help/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, email, website, locale }),
+    });
+    if (res.ok) { setState("done"); setQ(""); setEmail(""); }
+    else { setState("error"); setErr((await res.json().catch(() => ({}))).error ?? "Something went wrong"); }
+  }
+
+  if (state === "done") {
+    return (
+      <div className="rounded-2xl border p-6" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+        <p className="font-semibold mb-3" style={{ color: "var(--sh-primary)" }}>✓ {L.askThanks}</p>
+        <button onClick={() => setState("idle")} className="text-sm px-3 py-1.5 rounded-md border"
+          style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>{L.askAnother}</button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-2xl border p-6 space-y-3" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+      <textarea required minLength={8} maxLength={500} rows={3} value={q} onChange={(e) => setQ(e.target.value)}
+        className={askInputCls} style={askInputStyle} placeholder={L.askPlaceholder} />
+      {/* honeypot — hidden from real users */}
+      <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
+        style={{ position: "absolute", left: "-9999px", width: 1, height: 1 }} aria-hidden="true" />
+      <input type="email" maxLength={200} value={email} onChange={(e) => setEmail(e.target.value)}
+        className={askInputCls} style={askInputStyle} placeholder={L.askEmail} />
+      {state === "error" && <p className="text-sm" style={{ color: "#f87171" }}>{err}</p>}
+      <div className="flex justify-end">
+        <button type="submit" disabled={state === "sending"} className="text-sm px-4 py-2 rounded-md font-semibold disabled:opacity-50"
+          style={{ background: "var(--sh-primary)", color: "#04120a" }}>{state === "sending" ? L.askSending : L.askSubmit}</button>
+      </div>
+    </form>
+  );
+}
+
+export function HelpView({ roles, isMasterAdmin, isAuthed, userName, faqs }: { roles: string[]; isMasterAdmin: boolean; isAuthed: boolean; userName: string | null; faqs: Faq[] }) {
   const { locale: rawLocale } = useLanguage();
   const locale: Locale = rawLocale === "es" ? "es" : "en";
   const ui = UI[locale];
@@ -77,17 +133,22 @@ export function HelpView({ roles, isMasterAdmin, userName, faqs }: { roles: stri
       <header className="border-b sticky top-0 z-10" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-header)" }}>
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-sm flex items-center gap-1 transition-colors hover:opacity-80" style={{ color: "var(--sh-primary)" }}>
-              ← {ui.back}
+            <Link href={isAuthed ? "/dashboard" : "/"} className="text-sm flex items-center gap-1 transition-colors hover:opacity-80" style={{ color: "var(--sh-primary)" }}>
+              ← {isAuthed ? ui.back : ui.home}
             </Link>
             <span style={{ color: "var(--sh-border2)" }}>|</span>
             <span className="font-bold" style={{ color: "var(--sh-text)" }}>{ui.title}</span>
           </div>
           <div className="flex items-center gap-2">
-            {userName && <span className="hidden sm:inline text-sm" style={{ color: "var(--sh-secondary)" }}>{userName}</span>}
+            {isAuthed && userName && <span className="hidden sm:inline text-sm" style={{ color: "var(--sh-secondary)" }}>{userName}</span>}
             <ThemeToggle />
             <LanguageSelector />
-            <SignOutButton />
+            {isAuthed ? (
+              <SignOutButton />
+            ) : (
+              <Link href="/login" className="text-sm font-medium px-3 py-1.5 rounded-md border transition-colors hover:opacity-80"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)" }}>{ui.signIn}</Link>
+            )}
           </div>
         </div>
       </header>
@@ -168,6 +229,12 @@ export function HelpView({ roles, isMasterAdmin, userName, faqs }: { roles: stri
             ))}
           </section>
         )}
+
+        <section className="mt-14 max-w-2xl">
+          <h2 className="text-2xl font-black mb-1" style={{ color: "var(--sh-text)" }}>{ui.askTitle}</h2>
+          <p className="mb-5" style={{ color: "var(--sh-muted)" }}>{ui.askSubtitle}</p>
+          <AskForm locale={locale} L={ui} />
+        </section>
       </main>
     </div>
   );

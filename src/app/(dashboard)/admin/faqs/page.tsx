@@ -40,6 +40,7 @@ export default async function AdminFaqsPage() {
           questionEn: f.questionEn, questionEs: f.questionEs,
           answerEn: f.answerEn, answerEs: f.answerEs,
           order: f.order, active: f.active,
+          status: f.status, submitterEmail: f.submitterEmail,
         }))} />
       </main>
     </div>

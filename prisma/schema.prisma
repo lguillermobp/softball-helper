@@ -694,16 +694,18 @@ model Coupon {
 // ─── FAQs (admin-editable Help content) ───────────────────────────────────────
 
 model Faq {
-  id         String   @id @default(cuid())
-  category   String   @default("General")
-  questionEn String
-  questionEs String
-  answerEn   String
-  answerEs   String
-  order      Int      @default(0)
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  category       String   @default("General")
+  questionEn     String
+  questionEs     String
+  answerEn       String
+  answerEs       String
+  order          Int      @default(0)
+  active         Boolean  @default(true)
+  status         String   @default("PUBLISHED") // PUBLISHED | PENDING (public submission awaiting review)
+  submitterEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("faqs")
 }
