@@ -131,7 +131,7 @@ function DeleteLeagueDialog({ league, onDeleted }: { league: LeagueSummary; onDe
 }
 
 export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, allLeagues, leagueRoles, scheduleGames = [], stats = [], hasPlayingRole = false }: Props) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const d = t.dashboard;
   const [userTab, setUserTab] = useState<UserTab>("leagues");
   const [leagues, setLeagues] = useState(allLeagues);
@@ -186,6 +186,10 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
               </div>
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{userName}</span>
             </div>
+            <Link href="/help" className="text-sm font-medium px-2.5 py-1 rounded-lg transition-colors hover:opacity-80"
+              style={{ color: "var(--sh-primary)" }}>
+              {locale === "es" ? "Ayuda" : "Help"}
+            </Link>
             <ThemeToggle />
             <LanguageSelector />
             <ChangePasswordButton />

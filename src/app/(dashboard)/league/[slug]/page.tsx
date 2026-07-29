@@ -88,6 +88,10 @@ export default async function LeaguePage({ params }: PageProps) {
               {role.replace(/_/g, " ")}
             </span>
           )}
+          <Link href="/help" className="text-sm font-medium px-2.5 py-1 rounded-lg transition-colors hover:opacity-80"
+            style={{ color: "var(--sh-primary)" }}>
+            Help
+          </Link>
           <ThemeToggle />
           <LanguageSelector />
           <ChangePasswordButton />
