@@ -7,6 +7,7 @@ import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/language-context";
 
 interface Props {
   slug: string;
@@ -17,6 +18,49 @@ interface Props {
 }
 
 type Step = "select" | "camera" | "crop" | "uploading";
+
+const STR = {
+  en: {
+    updatePhoto: "Update photo", photo: "Photo", addPhoto: "+ Photo",
+    title: (n: string) => `Player Photo — ${n}`,
+    guidelinesTitle: "Photo guidelines",
+    guidelines: [
+      "Plain light background (white or off-white)",
+      "Face centred, looking straight at the camera",
+      "Good lighting — no harsh shadows",
+      "No sunglasses or hats",
+      "Neutral expression or slight smile",
+    ],
+    upload: "↑ Upload from device", camera: "📷 Use camera",
+    cancel: "Cancel", back: "← Back", capture: "📸 Capture",
+    cameraHint: "Centre your face inside the oval guide, then tap Capture.",
+    camDenied: "Camera access denied. Please allow camera permission and try again.",
+    camUnavailable: "Could not access camera. Make sure it is connected and not in use by another app.",
+    cropHint: "Drag to adjust the crop. The photo will be saved as a square.",
+    savePhoto: "Save photo", uploading: "Uploading photo…",
+    uploadFailed: "Upload failed", uploadRetry: "Upload failed. Please try again.",
+  },
+  es: {
+    updatePhoto: "Actualizar foto", photo: "Foto", addPhoto: "+ Foto",
+    title: (n: string) => `Foto del jugador — ${n}`,
+    guidelinesTitle: "Guía para la foto",
+    guidelines: [
+      "Fondo claro y liso (blanco o hueso)",
+      "Rostro centrado, mirando a la cámara",
+      "Buena iluminación — sin sombras fuertes",
+      "Sin lentes de sol ni gorras",
+      "Expresión neutral o sonrisa leve",
+    ],
+    upload: "↑ Subir desde el dispositivo", camera: "📷 Usar cámara",
+    cancel: "Cancelar", back: "← Atrás", capture: "📸 Capturar",
+    cameraHint: "Centra tu rostro dentro de la guía ovalada y toca Capturar.",
+    camDenied: "Acceso a la cámara denegado. Permite el acceso e inténtalo de nuevo.",
+    camUnavailable: "No se pudo acceder a la cámara. Verifica que esté conectada y no la use otra app.",
+    cropHint: "Arrastra para ajustar el recorte. La foto se guardará como cuadrado.",
+    savePhoto: "Guardar foto", uploading: "Subiendo foto…",
+    uploadFailed: "Error al subir", uploadRetry: "Error al subir. Inténtalo de nuevo.",
+  },
+};
 
 function centerAspectCrop(width: number, height: number): Crop {
   return centerCrop(
@@ -44,17 +88,11 @@ function getCroppedDataUrl(image: HTMLImageElement, crop: Crop): string {
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
-const GUIDELINES = [
-  "Plain light background (white or off-white)",
-  "Face centred, looking straight at the camera",
-  "Good lighting — no harsh shadows",
-  "No sunglasses or hats",
-  "Neutral expression or slight smile",
-];
-
 export function PlayerPhotoDialog({
   slug, playerId, playerName, currentPhotoUrl, onUpdated,
 }: Props) {
+  const { locale } = useLanguage();
+  const L = STR[locale === "es" ? "es" : "en"];
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("select");
   const [srcUrl, setSrcUrl] = useState<string | null>(null);
@@ -120,8 +158,8 @@ export function PlayerPhotoDialog({
       const msg = err instanceof Error ? err.message : "Camera unavailable";
       setCameraError(
         msg.includes("Permission") || msg.includes("NotAllowed")
-          ? "Camera access denied. Please allow camera permission and try again."
-          : "Could not access camera. Make sure it is connected and not in use by another app."
+          ? L.camDenied
+          : L.camUnavailable
       );
     }
   }
@@ -158,11 +196,11 @@ export function PlayerPhotoDialog({
         body: JSON.stringify({ dataUrl }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Upload failed"); setStep("crop"); return; }
+      if (!res.ok) { setError(data.error ?? L.uploadFailed); setStep("crop"); return; }
       onUpdated(data.photoUrl);
       handleClose();
     } catch {
-      setError("Upload failed. Please try again.");
+      setError(L.uploadRetry);
       setStep("crop");
     }
   }
@@ -173,15 +211,15 @@ export function PlayerPhotoDialog({
         <button
           className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
           style={{ borderColor: "#2d5a2d", color: "#4ade80", background: "transparent" }}
-          title="Update photo"
+          title={L.updatePhoto}
         >
-          {currentPhotoUrl ? "Photo" : "+ Photo"}
+          {currentPhotoUrl ? L.photo : L.addPhoto}
         </button>
       </DialogTrigger>
 
       <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Player Photo — {playerName}</DialogTitle>
+          <DialogTitle>{L.title(playerName)}</DialogTitle>
         </DialogHeader>
 
         {/* ── Step 1: Select ── */}
@@ -189,10 +227,10 @@ export function PlayerPhotoDialog({
           <div className="space-y-4">
             <div className="rounded-lg p-3 space-y-1.5" style={{ background: "#0f2310", border: "1px solid #1e3a1e" }}>
               <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>
-                Photo guidelines
+                {L.guidelinesTitle}
               </p>
               <ul className="space-y-1">
-                {GUIDELINES.map((g) => (
+                {L.guidelines.map((g) => (
                   <li key={g} className="text-xs flex items-start gap-1.5" style={{ color: "#86efac" }}>
                     <span style={{ color: "#4ade80" }}>•</span> {g}
                   </li>
@@ -226,20 +264,20 @@ export function PlayerPhotoDialog({
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer font-medium text-sm transition-opacity hover:opacity-80"
                 style={{ borderColor: "#16a34a", border: "1px solid #16a34a", color: "#ffffff", background: "#16a34a" }}
               >
-                ↑ Upload from device
+                {L.upload}
               </label>
               <button
                 onClick={startCamera}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-medium text-sm transition-colors hover:opacity-80"
                 style={{ borderColor: "#16a34a", color: "#16a34a", background: "transparent" }}
               >
-                📷 Use camera
+                {L.camera}
               </button>
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="flex justify-end">
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button variant="outline" onClick={handleClose}>{L.cancel}</Button>
             </div>
           </div>
         )}
@@ -253,7 +291,6 @@ export function PlayerPhotoDialog({
               </div>
             ) : (
               <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "4/3" }}>
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   ref={videoRef}
                   autoPlay
@@ -280,18 +317,18 @@ export function PlayerPhotoDialog({
             )}
 
             <p className="text-xs text-center" style={{ color: "#6b7280" }}>
-              Centre your face inside the oval guide, then tap Capture.
+              {L.cameraHint}
             </p>
 
             <div className="flex justify-between gap-2">
               <Button variant="outline" onClick={() => { stopStream(); setStep("select"); }}>
-                ← Back
+                {L.back}
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                <Button variant="outline" onClick={handleClose}>{L.cancel}</Button>
                 {!cameraError && (
                   <Button onClick={captureFrame}>
-                    📸 Capture
+                    {L.capture}
                   </Button>
                 )}
               </div>
@@ -303,7 +340,7 @@ export function PlayerPhotoDialog({
         {step === "crop" && srcUrl && (
           <div className="space-y-4">
             <p className="text-sm" style={{ color: "#86efac" }}>
-              Drag to adjust the crop. The photo will be saved as a square.
+              {L.cropHint}
             </p>
 
             <div className="relative flex justify-center">
@@ -345,12 +382,12 @@ export function PlayerPhotoDialog({
 
             <div className="flex justify-between gap-2">
               <Button variant="outline" onClick={() => { setSrcUrl(null); setStep("select"); }}>
-                ← Back
+                {L.back}
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                <Button variant="outline" onClick={handleClose}>{L.cancel}</Button>
                 <Button onClick={handleUpload} disabled={!completedCrop}>
-                  Save photo
+                  {L.savePhoto}
                 </Button>
               </div>
             </div>
@@ -364,7 +401,7 @@ export function PlayerPhotoDialog({
               className="w-10 h-10 rounded-full border-4 animate-spin"
               style={{ borderColor: "#4ade80", borderTopColor: "transparent" }}
             />
-            <p className="text-sm" style={{ color: "#86efac" }}>Uploading photo…</p>
+            <p className="text-sm" style={{ color: "#86efac" }}>{L.uploading}</p>
           </div>
         )}
       </DialogContent>

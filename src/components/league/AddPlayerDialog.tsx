@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COUNTRIES } from "@/lib/countries";
+import { useLanguage } from "@/context/language-context";
 
 interface Props {
   slug: string;
@@ -15,8 +16,29 @@ interface Props {
   requireDob?: boolean;
 }
 
+const STR = {
+  en: {
+    trigger: "+ Add player", title: (t: string) => `Add Player to ${t}`,
+    fullName: "Full name", email: "Email address",
+    emailPlaceholder: "player@example.com (optional)",
+    emailHelp: "Optional. If provided, the player will be linked to their account or receive an invitation. Can be added later.",
+    jersey: "Jersey number", dob: "Date of birth", nationality: "Nationality",
+    none: "— None —", cancel: "Cancel", add: "Add player", adding: "Adding…", oops: "Something went wrong",
+  },
+  es: {
+    trigger: "+ Agregar jugador", title: (t: string) => `Agregar jugador a ${t}`,
+    fullName: "Nombre completo", email: "Correo electrónico",
+    emailPlaceholder: "jugador@ejemplo.com (opcional)",
+    emailHelp: "Opcional. Si lo agregas, el jugador se vinculará a su cuenta o recibirá una invitación. Puedes agregarlo después.",
+    jersey: "Número de camiseta", dob: "Fecha de nacimiento", nationality: "Nacionalidad",
+    none: "— Ninguna —", cancel: "Cancelar", add: "Agregar jugador", adding: "Agregando…", oops: "Algo salió mal",
+  },
+};
+
 export function AddPlayerDialog({ slug, teamId, teamName, requireDob = false }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const L = STR[locale === "es" ? "es" : "en"];
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +63,7 @@ export function AddPlayerDialog({ slug, teamId, teamName, requireDob = false }: 
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Something went wrong");
+      setError(data.error ?? L.oops);
       return;
     }
     setOpen(false);
@@ -51,38 +73,38 @@ export function AddPlayerDialog({ slug, teamId, teamName, requireDob = false }: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">+ Add player</Button>
+        <Button size="sm" variant="outline">{L.trigger}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Player to {teamName}</DialogTitle>
+          <DialogTitle>{L.title(teamName)}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="name">Full name *</Label>
+            <Label htmlFor="name">{L.fullName} *</Label>
             <Input id="name" name="name" placeholder="Jane Smith" required />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="email">Email address</Label>
-            <Input id="email" name="email" type="email" placeholder="player@example.com (optional)" />
+            <Label htmlFor="email">{L.email}</Label>
+            <Input id="email" name="email" type="email" placeholder={L.emailPlaceholder} />
             <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
-              Optional. If provided, the player will be linked to their account or receive an invitation. Can be added later.
+              {L.emailHelp}
             </p>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="jerseyNumber">Jersey number</Label>
+            <Label htmlFor="jerseyNumber">{L.jersey}</Label>
             <Input id="jerseyNumber" name="jerseyNumber" placeholder="e.g. 7" />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="dob">Date of birth{requireDob ? " *" : ""}</Label>
+            <Label htmlFor="dob">{L.dob}{requireDob ? " *" : ""}</Label>
             <Input id="dob" name="dob" type="date" required={requireDob} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nationality">Nationality</Label>
+            <Label htmlFor="nationality">{L.nationality}</Label>
             <select id="nationality" name="nationality"
               className="w-full rounded-md border px-3 py-2 text-sm outline-none"
               style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border)", color: "var(--sh-text)" }}>
-              <option value="">— None —</option>
+              <option value="">{L.none}</option>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
@@ -90,8 +112,8 @@ export function AddPlayerDialog({ slug, teamId, teamName, requireDob = false }: 
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Adding…" : "Add player"}</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{L.cancel}</Button>
+            <Button type="submit" disabled={loading}>{loading ? L.adding : L.add}</Button>
           </div>
         </form>
       </DialogContent>

@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/context/language-context";
 
 interface Season { id: string; name: string }
 interface Category { id: string; name: string }
@@ -13,22 +14,51 @@ interface Category { id: string; name: string }
 const selectClass =
   "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
-function StaffFields({ prefix, label, required }: { prefix: string; label: string; required?: boolean }) {
+const STR = {
+  en: {
+    trigger: "+ Add team", title: "New Team", teamName: "Team name",
+    season: "Season (optional)", noSeason: "— No season —",
+    category: "Category (optional)", noCategory: "— No category —",
+    manager: "Manager", assistant: "Assistant",
+    fullName: "Full name", email: "Email address", phone: "Mobile phone (optional)",
+    managerPlays: "Manager also plays (Manager-player)", removeManager: "Remove manager",
+    addManager: "+ Add manager (optional)",
+    assistantPlays: "Assistant also plays (Assistant-player)", removeAssistant: "Remove assistant",
+    addAssistant: "+ Add assistant (optional)",
+    cancel: "Cancel", create: "Create team", saving: "Saving…", oops: "Something went wrong",
+  },
+  es: {
+    trigger: "+ Agregar equipo", title: "Nuevo equipo", teamName: "Nombre del equipo",
+    season: "Temporada (opcional)", noSeason: "— Sin temporada —",
+    category: "Categoría (opcional)", noCategory: "— Sin categoría —",
+    manager: "Manager", assistant: "Asistente",
+    fullName: "Nombre completo", email: "Correo electrónico", phone: "Teléfono móvil (opcional)",
+    managerPlays: "El manager también juega (Manager-jugador)", removeManager: "Quitar manager",
+    addManager: "+ Agregar manager (opcional)",
+    assistantPlays: "El asistente también juega (Asistente-jugador)", removeAssistant: "Quitar asistente",
+    addAssistant: "+ Agregar asistente (opcional)",
+    cancel: "Cancelar", create: "Crear equipo", saving: "Guardando…", oops: "Algo salió mal",
+  },
+};
+
+type Strings = typeof STR.en;
+
+function StaffFields({ prefix, label, required, L }: { prefix: string; label: string; required?: boolean; L: Strings }) {
   return (
     <div className="space-y-3 rounded-xl p-3" style={{ background: "var(--sh-bg-card2)", border: "1px solid var(--sh-border)" }}>
       <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--sh-primary)" }}>
         {label}{required && " *"}
       </p>
       <div className="space-y-1">
-        <Label htmlFor={`${prefix}-name`}>Full name {required && "*"}</Label>
+        <Label htmlFor={`${prefix}-name`}>{L.fullName} {required && "*"}</Label>
         <Input id={`${prefix}-name`} name={`${prefix}-name`} placeholder="Jane Smith" required={required} />
       </div>
       <div className="space-y-1">
-        <Label htmlFor={`${prefix}-email`}>Email address {required && "*"}</Label>
+        <Label htmlFor={`${prefix}-email`}>{L.email} {required && "*"}</Label>
         <Input id={`${prefix}-email`} name={`${prefix}-email`} type="email" placeholder="jane@example.com" required={required} />
       </div>
       <div className="space-y-1">
-        <Label htmlFor={`${prefix}-phone`}>Mobile phone (optional)</Label>
+        <Label htmlFor={`${prefix}-phone`}>{L.phone}</Label>
         <Input id={`${prefix}-phone`} name={`${prefix}-phone`} type="tel" placeholder="+1 555 000 0000" />
       </div>
     </div>
@@ -41,6 +71,8 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   categories: Category[];
 }) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const L = STR[locale === "es" ? "es" : "en"];
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +117,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Something went wrong");
+      setError(data.error ?? L.oops);
       return;
     }
     handleClose();
@@ -95,23 +127,23 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
       <DialogTrigger asChild>
-        <Button size="sm">+ Add team</Button>
+        <Button size="sm">{L.trigger}</Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Team</DialogTitle>
+          <DialogTitle>{L.title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="name">Team name *</Label>
+            <Label htmlFor="name">{L.teamName} *</Label>
             <Input id="name" name="name" placeholder="e.g. Tigers" required />
           </div>
 
           {seasons.length > 0 && (
             <div className="space-y-1">
-              <Label htmlFor="seasonId">Season (optional)</Label>
+              <Label htmlFor="seasonId">{L.season}</Label>
               <select id="seasonId" name="seasonId" className={selectClass}>
-                <option value="">— No season —</option>
+                <option value="">{L.noSeason}</option>
                 {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
@@ -119,9 +151,9 @@ export function AddTeamDialog({ slug, seasons, categories }: {
 
           {categories.length > 0 && (
             <div className="space-y-1">
-              <Label htmlFor="categoryId">Category (optional)</Label>
+              <Label htmlFor="categoryId">{L.category}</Label>
               <select id="categoryId" name="categoryId" className={selectClass}>
-                <option value="">— No category —</option>
+                <option value="">{L.noCategory}</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -129,27 +161,27 @@ export function AddTeamDialog({ slug, seasons, categories }: {
 
           {hasManager ? (
             <div className="space-y-3">
-              <StaffFields prefix="manager" label="Manager" />
+              <StaffFields prefix="manager" label={L.manager} L={L} />
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" checked={managerPlays} onChange={e => setManagerPlays(e.target.checked)}
                   className="w-4 h-4 rounded accent-green-500" />
-                <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>Manager also plays (Manager-player)</span>
+                <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{L.managerPlays}</span>
               </label>
               <button type="button" className="text-xs underline" style={{ color: "var(--sh-danger)" }}
                 onClick={() => { setHasManager(false); setManagerPlays(false); }}>
-                Remove manager
+                {L.removeManager}
               </button>
             </div>
           ) : (
             <button type="button" className="text-sm underline" style={{ color: "var(--sh-primary)" }}
               onClick={() => setHasManager(true)}>
-              + Add manager (optional)
+              {L.addManager}
             </button>
           )}
 
           {hasAssistant ? (
             <div className="space-y-2">
-              <StaffFields prefix="assistant" label="Assistant" />
+              <StaffFields prefix="assistant" label={L.assistant} L={L} />
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -158,7 +190,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
                   className="w-4 h-4 rounded accent-indigo-500"
                 />
                 <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>
-                  Assistant also plays (Assistant-player)
+                  {L.assistantPlays}
                 </span>
               </label>
               <button
@@ -167,7 +199,7 @@ export function AddTeamDialog({ slug, seasons, categories }: {
                 style={{ color: "var(--sh-danger)" }}
                 onClick={() => { setHasAssistant(false); setAssistantPlays(false); }}
               >
-                Remove assistant
+                {L.removeAssistant}
               </button>
             </div>
           ) : (
@@ -177,14 +209,14 @@ export function AddTeamDialog({ slug, seasons, categories }: {
               style={{ color: "var(--sh-primary)" }}
               onClick={() => setHasAssistant(true)}
             >
-              + Add assistant (optional)
+              {L.addAssistant}
             </button>
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Create team"}</Button>
+            <Button type="button" variant="outline" onClick={handleClose}>{L.cancel}</Button>
+            <Button type="submit" disabled={loading}>{loading ? L.saving : L.create}</Button>
           </div>
         </form>
       </DialogContent>
