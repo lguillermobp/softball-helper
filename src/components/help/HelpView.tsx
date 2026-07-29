@@ -53,12 +53,16 @@ const TUTORIALS: Tutorial[] = [
   },
 ];
 
+interface Faq { id: string; category: string; questionEn: string; questionEs: string; answerEn: string; answerEs: string; }
+
 const UI = {
-  en: { title: "Help & Tutorials", subtitle: "Short walkthroughs for the tasks you do most.", forYou: "For you", back: "Dashboard", none: "No tutorials available yet." },
-  es: { title: "Ayuda y tutoriales", subtitle: "Guías breves para las tareas más comunes.", forYou: "Para ti", back: "Panel", none: "Aún no hay tutoriales disponibles." },
+  en: { title: "Help & Tutorials", subtitle: "Short walkthroughs for the tasks you do most.", forYou: "For you", back: "Dashboard", none: "No tutorials available yet.",
+    faqTitle: "Frequently Asked Questions", faqSubtitle: "Quick answers to common questions.", manageFaqs: "Manage FAQs" },
+  es: { title: "Ayuda y tutoriales", subtitle: "Guías breves para las tareas más comunes.", forYou: "Para ti", back: "Panel", none: "Aún no hay tutoriales disponibles.",
+    faqTitle: "Preguntas frecuentes", faqSubtitle: "Respuestas rápidas a dudas comunes.", manageFaqs: "Gestionar FAQs" },
 };
 
-export function HelpView({ roles, isMasterAdmin, userName }: { roles: string[]; isMasterAdmin: boolean; userName: string | null }) {
+export function HelpView({ roles, isMasterAdmin, userName, faqs }: { roles: string[]; isMasterAdmin: boolean; userName: string | null; faqs: Faq[] }) {
   const { locale: rawLocale } = useLanguage();
   const locale: Locale = rawLocale === "es" ? "es" : "en";
   const ui = UI[locale];
@@ -66,6 +70,7 @@ export function HelpView({ roles, isMasterAdmin, userName }: { roles: string[]; 
 
   const relevant = (t: Tutorial) => isMasterAdmin || t.roles.some((r) => mine.has(r));
   const sorted = [...TUTORIALS].sort((a, b) => Number(relevant(b)) - Number(relevant(a)));
+  const faqCategories = [...new Set(faqs.map((f) => f.category))];
 
   return (
     <div className="min-h-screen" style={{ background: "var(--sh-bg-page)" }}>
@@ -129,6 +134,39 @@ export function HelpView({ roles, isMasterAdmin, userName }: { roles: string[]; 
               );
             })}
           </div>
+        )}
+
+        {faqs.length > 0 && (
+          <section className="mt-14">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-2xl font-black mb-1" style={{ color: "var(--sh-text)" }}>{ui.faqTitle}</h2>
+                <p className="mb-6" style={{ color: "var(--sh-muted)" }}>{ui.faqSubtitle}</p>
+              </div>
+              {isMasterAdmin && (
+                <Link href="/admin/faqs" className="text-sm font-medium px-3 py-1.5 rounded-md border transition-colors hover:opacity-80"
+                  style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)" }}>{ui.manageFaqs}</Link>
+              )}
+            </div>
+            {faqCategories.map((cat) => (
+              <div key={cat} className="mb-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>{cat}</h3>
+                <div className="space-y-2">
+                  {faqs.filter((f) => f.category === cat).map((f) => (
+                    <details key={f.id} className="rounded-xl border overflow-hidden group" style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" }}>
+                      <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 font-semibold" style={{ color: "var(--sh-text)" }}>
+                        <span>{locale === "es" ? f.questionEs : f.questionEn}</span>
+                        <span className="shrink-0 transition-transform group-open:rotate-180" style={{ color: "var(--sh-muted)" }}>⌄</span>
+                      </summary>
+                      <div className="px-4 pb-4 text-sm whitespace-pre-line" style={{ color: "var(--sh-muted)" }}>
+                        {locale === "es" ? f.answerEs : f.answerEn}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
         )}
       </main>
     </div>
