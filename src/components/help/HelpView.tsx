@@ -74,7 +74,6 @@ const askInputCls = "w-full rounded-md border px-3 py-2 text-sm outline-none foc
 
 function AskForm({ locale, L }: { locale: Locale; L: (typeof UI)["en"] }) {
   const [q, setQ] = useState("");
-  const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [err, setErr] = useState("");
@@ -84,9 +83,9 @@ function AskForm({ locale, L }: { locale: Locale; L: (typeof UI)["en"] }) {
     setState("sending"); setErr("");
     const res = await fetch("/api/help/ask", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q, email, website, locale }),
+      body: JSON.stringify({ question: q, website, locale }),
     });
-    if (res.ok) { setState("done"); setQ(""); setEmail(""); }
+    if (res.ok) { setState("done"); setQ(""); }
     else { setState("error"); setErr((await res.json().catch(() => ({}))).error ?? "Something went wrong"); }
   }
 
@@ -107,8 +106,6 @@ function AskForm({ locale, L }: { locale: Locale; L: (typeof UI)["en"] }) {
       {/* honeypot — hidden from real users */}
       <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
         style={{ position: "absolute", left: "-9999px", width: 1, height: 1 }} aria-hidden="true" />
-      <input type="email" maxLength={200} value={email} onChange={(e) => setEmail(e.target.value)}
-        className={askInputCls} style={askInputStyle} placeholder={L.askEmail} />
       {state === "error" && <p className="text-sm" style={{ color: "#f87171" }}>{err}</p>}
       <div className="flex justify-end">
         <button type="submit" disabled={state === "sending"} className="text-sm px-4 py-2 rounded-md font-semibold disabled:opacity-50"

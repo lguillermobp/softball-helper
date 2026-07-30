@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // Best-effort in-memory rate limit (the app runs as a single long-lived server).
@@ -15,7 +16,14 @@ function rateLimited(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  let b: { question?: string; email?: string; locale?: string; website?: string };
+  // Signed-in only — the submitter's email comes from their session, not the form.
+  const session = await auth();
+  const email = session?.user?.email?.trim() ?? "";
+  if (!session?.user || !email) {
+    return NextResponse.json({ error: "Please sign in to submit a question." }, { status: 401 });
+  }
+
+  let b: { question?: string; locale?: string; website?: string };
   try {
     b = await req.json();
   } catch {
@@ -31,13 +39,10 @@ export async function POST(req: NextRequest) {
   }
 
   const question = (b.question ?? "").trim();
-  const email = (b.email ?? "").trim();
   const locale = b.locale === "es" ? "es" : "en";
 
   if (question.length < 8 || question.length > 500)
     return NextResponse.json({ error: "Please enter a question between 8 and 500 characters." }, { status: 400 });
-  if (email && (email.length > 200 || !email.includes("@")))
-    return NextResponse.json({ error: "Please enter a valid email or leave it blank." }, { status: 400 });
 
   await prisma.faq.create({
     data: {
