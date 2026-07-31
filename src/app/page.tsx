@@ -7,6 +7,9 @@ import { LanguageSelector } from "@/components/ui/language-selector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useLanguage } from "@/context/language-context";
 
+// FALL2026 promo — bar auto-hides once the coupon expires (matches Coupon.expiresAt).
+const PROMO_EXPIRES_MS = Date.parse("2026-12-21T00:00:00.000Z");
+
 // ── SVG Decorations ───────────────────────────────────────────────────────────
 
 function DiamondFieldSvg({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
@@ -238,9 +241,9 @@ export default function HomePage() {
   const [showPromo, setShowPromo] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("promo-fall2026-dismissed") === "1") {
-      setShowPromo(false);
-    }
+    const dismissed = localStorage.getItem("promo-fall2026-dismissed") === "1";
+    const expired = Date.now() >= PROMO_EXPIRES_MS;
+    if (dismissed || expired) setShowPromo(false);
   }, []);
 
   function dismissPromo() {
