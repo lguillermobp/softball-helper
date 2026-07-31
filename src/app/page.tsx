@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/ui/language-selector";
@@ -235,6 +235,18 @@ function ContactSection({ defaultSubject }: { defaultSubject?: string }) {
 export default function HomePage() {
   const { t, locale } = useLanguage();
   const [demoSubject, setDemoSubject] = useState("");
+  const [showPromo, setShowPromo] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("promo-fall2026-dismissed") === "1") {
+      setShowPromo(false);
+    }
+  }, []);
+
+  function dismissPromo() {
+    setShowPromo(false);
+    try { localStorage.setItem("promo-fall2026-dismissed", "1"); } catch {}
+  }
 
   function requestDemo() {
     setDemoSubject(t.demo.demoSubject);
@@ -243,6 +255,24 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--sh-hero-bg)", color: "var(--sh-text)" }}>
+
+      {/* ── Promo announcement bar ──────────────────────────────────── */}
+      {showPromo && (
+        <div className="relative z-20 text-sm font-semibold" style={{ background: "linear-gradient(90deg, #16a34a, #4ade80)", color: "#04120a" }}>
+          <div className="mx-auto max-w-6xl px-10 py-2 flex items-center justify-center gap-x-2 gap-y-1 flex-wrap text-center">
+            <span>⭐ {t.promo.badge.toUpperCase()} —</span>
+            <span>{t.promo.pre}</span>
+            <span className="font-black tracking-widest px-2 py-0.5 rounded" style={{ background: "#04120a", color: "#4ade80" }}>FALL2026</span>
+            <span>{t.promo.post}</span>
+            <Link href="/register" className="font-black underline underline-offset-2 whitespace-nowrap hover:opacity-70">
+              {t.promo.cta} →
+            </Link>
+          </div>
+          <button onClick={dismissPromo} aria-label="Dismiss" className="absolute right-3 top-1/2 -translate-y-1/2 text-xl leading-none hover:opacity-60" style={{ color: "#04120a" }}>
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ── Nav ─────────────────────────────────────────────────────── */}
       <nav className="relative z-10 backdrop-blur-sm sticky top-0" style={{ background: "var(--sh-nav-bg)", borderBottom: "1px solid var(--sh-border-soft)" }}>

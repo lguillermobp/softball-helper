@@ -10,6 +10,7 @@ export const translations = {
   // ── English ────────────────────────────────────────────────────────────────
   en: {
     nav:      { signin: "Sign in", getStarted: "Get started", contactUs: "Contact Us", watchDemo: "Watch Demo" },
+    promo:    { badge: "Fall promo", pre: "Use code", post: "for 100% off your first season", cta: "Get started" },
     hero: {
       badge: "Multi-league softball management",
       headline1: "Step up to the", headline2: "plate.",
@@ -253,6 +254,7 @@ export const translations = {
   // ── Español ────────────────────────────────────────────────────────────────
   es: {
     nav:      { signin: "Iniciar sesión", getStarted: "Comenzar", contactUs: "Contáctanos", watchDemo: "Ver Demo" },
+    promo:    { badge: "Promo de otoño", pre: "Usa el código", post: "para 100% de descuento en tu primera temporada", cta: "Comenzar" },
     hero: {
       badge: "Gestión de ligas de sóftbol",
       headline1: "Sube al", headline2: "plato.",
@@ -496,6 +498,7 @@ export const translations = {
   // ── 日本語 ─────────────────────────────────────────────────────────────────
   ja: {
     nav:      { signin: "サインイン", getStarted: "始める", contactUs: "お問い合わせ", watchDemo: "デモを見る" },
+    promo:    { badge: "秋のプロモ", pre: "コード", post: "で初シーズンが100%オフ", cta: "始める" },
     hero: {
       badge: "マルチリーグ ソフトボール管理",
       headline1: "打席に", headline2: "立とう。",
