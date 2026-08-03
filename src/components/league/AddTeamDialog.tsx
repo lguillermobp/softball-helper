@@ -8,12 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/language-context";
 
-interface Season { id: string; name: string }
-interface Category { id: string; name: string }
-
-const selectClass =
-  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
-
 const STR = {
   en: {
     trigger: "+ Add team", title: "New Team", teamName: "Team name",
@@ -67,11 +61,7 @@ function StaffFields({ prefix, label, required, L }: { prefix: string; label: st
   );
 }
 
-export function AddTeamDialog({ slug, seasons, categories }: {
-  slug: string;
-  seasons: Season[];
-  categories: Category[];
-}) {
+export function AddTeamDialog({ slug }: { slug: string }) {
   const router = useRouter();
   const { locale } = useLanguage();
   const L = STR[locale === "es" ? "es" : "en"];
@@ -82,17 +72,8 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   const [hasAssistant,  setHasAssistant]  = useState(false);
   const [managerPlays,  setManagerPlays]  = useState(false);
   const [assistantPlays, setAssistantPlays] = useState(false);
-  const [regs, setRegs] = useState<Array<{ seasonId: string; categoryId: string }>>(
-    seasons.length ? [{ seasonId: "", categoryId: "" }] : []
-  );
 
-  function setReg(i: number, patch: Partial<{ seasonId: string; categoryId: string }>) {
-    setRegs((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  }
-  function addReg() { setRegs((rs) => [...rs, { seasonId: "", categoryId: "" }]); }
-  function removeReg(i: number) { setRegs((rs) => rs.filter((_, idx) => idx !== i)); }
-
-  function handleClose() { setOpen(false); setHasManager(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); setRegs(seasons.length ? [{ seasonId: "", categoryId: "" }] : []); }
+  function handleClose() { setOpen(false); setHasManager(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -102,9 +83,6 @@ export function AddTeamDialog({ slug, seasons, categories }: {
 
     const body: Record<string, unknown> = {
       name: fd.get("name"),
-      seasons: regs
-        .filter((r) => r.seasonId)
-        .map((r) => ({ seasonId: r.seasonId, categoryId: r.categoryId || null })),
     };
 
     if (hasManager) {
@@ -150,33 +128,6 @@ export function AddTeamDialog({ slug, seasons, categories }: {
             <Label htmlFor="name">{L.teamName} *</Label>
             <Input id="name" name="name" placeholder="e.g. Tigers" required />
           </div>
-
-          {seasons.length > 0 && (
-            <div className="space-y-2">
-              <Label>{L.seasonsLabel}</Label>
-              {regs.map((r, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <select value={r.seasonId} onChange={(e) => setReg(i, { seasonId: e.target.value })} className={selectClass}>
-                    <option value="">{L.pickSeason}</option>
-                    {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                  {categories.length > 0 && (
-                    <select value={r.categoryId} onChange={(e) => setReg(i, { categoryId: e.target.value })} className={selectClass}>
-                      <option value="">{L.noCategory}</option>
-                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  )}
-                  {regs.length > 1 && (
-                    <button type="button" onClick={() => removeReg(i)} title={L.removeRow}
-                      className="text-lg leading-none px-1" style={{ color: "var(--sh-danger)" }}>×</button>
-                  )}
-                </div>
-              ))}
-              <button type="button" onClick={addReg} className="text-sm underline" style={{ color: "var(--sh-primary)" }}>
-                {L.addSeasonRow}
-              </button>
-            </div>
-          )}
 
           {hasManager ? (
             <div className="space-y-3">

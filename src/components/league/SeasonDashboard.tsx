@@ -90,6 +90,7 @@ interface Props {
   isAdmin: boolean;
   games: Game[];
   teams: Team[];
+  leagueTeams: { id: string; name: string; logoUrl: string | null; participating: boolean; categoryId: string | null }[];
   categories: Category[];
   fields: Field[];
   officials?: Official[];
@@ -104,11 +105,11 @@ interface Props {
   canCreatePractice: boolean;
 }
 
-type Tab = "schedule" | "standings" | "groups" | "hitting" | "pitching";
+type Tab = "schedule" | "standings" | "teams" | "groups" | "hitting" | "pitching";
 
 export function SeasonDashboard({
   slug, seasonId, seasonName, startDate, endDate, seasonStatus,
-  isAdmin, games, teams, categories, fields, officials = [], standings,
+  isAdmin, games, teams, leagueTeams, categories, fields, officials = [], standings,
   seasonConfig,
   leagueName, leagueCity, leagueState, leagueLogoUrl,
   officialBatting, officialPitching, canCreatePractice,
@@ -330,6 +331,34 @@ export function SeasonDashboard({
   const [groupSaved,  setGroupSaved]  = useState<Record<string, boolean>>({});
   const [groupError,  setGroupError]  = useState<Record<string, string>>({});
 
+  // Season participation (which league teams play this season + their division)
+  const [partIn,  setPartIn]  = useState<Record<string, boolean>>(
+    () => Object.fromEntries(leagueTeams.map((t) => [t.id, t.participating]))
+  );
+  const [partCat, setPartCat] = useState<Record<string, string>>(
+    () => Object.fromEntries(leagueTeams.map((t) => [t.id, t.categoryId ?? ""]))
+  );
+  const [partSaving, setPartSaving] = useState(false);
+  const [partSaved,  setPartSaved]  = useState(false);
+  const [partError,  setPartError]  = useState("");
+
+  async function saveParticipation() {
+    setPartSaving(true); setPartSaved(false); setPartError("");
+    const payload = {
+      teams: leagueTeams
+        .filter((t) => partIn[t.id])
+        .map((t) => ({ teamId: t.id, categoryId: partCat[t.id] || null })),
+    };
+    try {
+      const res = await fetch(`/api/leagues/${slug}/seasons/${seasonId}/teams`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      if (res.ok) { setPartSaved(true); router.refresh(); }
+      else { setPartError((await res.json().catch(() => ({}))).error ?? "Something went wrong"); }
+    } catch { setPartError("Something went wrong"); }
+    finally { setPartSaving(false); }
+  }
+
   const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
   const dim  = { color: "var(--sh-muted)" };
 
@@ -478,6 +507,7 @@ ${body}
   const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
     { key: "schedule",  label: ts.tabs.schedule },
     { key: "standings", label: ts.tabs.standings },
+    { key: "teams",     label: ts.tabs.teams, adminOnly: true },
     { key: "groups",    label: ts.tabs.groups, adminOnly: true },
     { key: "hitting",   label: ts.tabs.hitting },
     { key: "pitching",  label: ts.tabs.pitching },
@@ -1329,6 +1359,63 @@ ${body}
       )}
 
       {/* ── Groups (admin only) ── */}
+      {tab === "teams" && isAdmin && (
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>{ts.participation.title}</h2>
+              <p className="text-sm mt-1" style={{ color: "var(--sh-muted)" }}>{ts.participation.hint}</p>
+            </div>
+            <button
+              onClick={saveParticipation}
+              disabled={partSaving}
+              className="text-sm px-4 py-2 rounded-md font-semibold disabled:opacity-50"
+              style={{ background: "var(--sh-primary)", color: "#04120a" }}
+            >
+              {partSaving ? ts.participation.saving : partSaved ? ts.participation.saved : ts.participation.save}
+            </button>
+          </div>
+          {partError && <p className="text-sm" style={{ color: "var(--sh-danger)" }}>{partError}</p>}
+
+          {leagueTeams.length === 0 ? (
+            <div className="rounded-2xl border py-14 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
+              {ts.participation.none}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {leagueTeams.map((team) => {
+                const on = !!partIn[team.id];
+                return (
+                  <div key={team.id} className="flex items-center justify-between gap-4 rounded-xl border px-4 py-3" style={card}>
+                    <label className="flex items-center gap-3 cursor-pointer select-none min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={(e) => { setPartIn((p) => ({ ...p, [team.id]: e.target.checked })); setPartSaved(false); }}
+                        className="w-4 h-4 rounded accent-green-500 shrink-0"
+                      />
+                      <span className="font-semibold text-sm truncate" style={{ color: on ? "var(--sh-text)" : "var(--sh-muted)" }}>{team.name}</span>
+                    </label>
+                    {categories.length > 0 && (
+                      <select
+                        value={partCat[team.id] ?? ""}
+                        disabled={!on}
+                        onChange={(e) => { setPartCat((p) => ({ ...p, [team.id]: e.target.value })); setPartSaved(false); }}
+                        className="shrink-0 rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40"
+                        style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
+                      >
+                        <option value="">{ts.participation.noDivision}</option>
+                        {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === "groups" && isAdmin && (
         <div className="space-y-4">
           <div>

@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface Season { id: string; name: string }
-interface Category { id: string; name: string }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 
 interface Props {
@@ -16,18 +14,12 @@ interface Props {
   team: {
     id: string;
     name: string;
-    seasons: { seasonId: string; categoryId: string | null }[];
     manager: StaffMember | null;
     assistant: StaffMember | null;
   };
   managerRole?: string;
   assistantRole?: string;
-  seasons: Season[];
-  categories: Category[];
 }
-
-const selectClass =
-  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
 function StaffFields({
   prefix,
@@ -80,7 +72,7 @@ function StaffFields({
   );
 }
 
-export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons, categories }: Props) {
+export function EditTeamDialog({ slug, team, managerRole, assistantRole }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,18 +80,8 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
   const [hasAssistant, setHasAssistant] = useState(!!team.assistant);
   const [managerPlays, setManagerPlays] = useState(managerRole === "TEAM_MANAGER_PLAYER");
   const [assistantPlays, setAssistantPlays] = useState(assistantRole === "TEAM_ASSISTANT_PLAYER");
-  const initialRegs = team.seasons.length
-    ? team.seasons.map((s) => ({ seasonId: s.seasonId, categoryId: s.categoryId ?? "" }))
-    : (seasons.length ? [{ seasonId: "", categoryId: "" }] : []);
-  const [regs, setRegs] = useState<Array<{ seasonId: string; categoryId: string }>>(initialRegs);
 
-  function setReg(i: number, patch: Partial<{ seasonId: string; categoryId: string }>) {
-    setRegs((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  }
-  function addReg() { setRegs((rs) => [...rs, { seasonId: "", categoryId: "" }]); }
-  function removeReg(i: number) { setRegs((rs) => rs.filter((_, idx) => idx !== i)); }
-
-  function handleClose() { setOpen(false); setError(""); setRegs(initialRegs); }
+  function handleClose() { setOpen(false); setError(""); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -109,9 +91,6 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
 
     const body: Record<string, unknown> = {
       name: fd.get("name"),
-      seasons: regs
-        .filter((r) => r.seasonId)
-        .map((r) => ({ seasonId: r.seasonId, categoryId: r.categoryId || null })),
       manager: {
         name: fd.get("manager-name"),
         email: fd.get("manager-email"),
@@ -163,33 +142,6 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
             <Label htmlFor="name">Team name *</Label>
             <Input id="name" name="name" defaultValue={team.name} required />
           </div>
-
-          {seasons.length > 0 && (
-            <div className="space-y-2">
-              <Label>Seasons &amp; divisions</Label>
-              {regs.map((r, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <select value={r.seasonId} onChange={(e) => setReg(i, { seasonId: e.target.value })} className={selectClass}>
-                    <option value="">— Select season —</option>
-                    {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                  {categories.length > 0 && (
-                    <select value={r.categoryId} onChange={(e) => setReg(i, { categoryId: e.target.value })} className={selectClass}>
-                      <option value="">— No division —</option>
-                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  )}
-                  {regs.length > 1 && (
-                    <button type="button" onClick={() => removeReg(i)} title="Remove"
-                      className="text-lg leading-none px-1" style={{ color: "var(--sh-danger)" }}>×</button>
-                  )}
-                </div>
-              ))}
-              <button type="button" onClick={addReg} className="text-sm underline" style={{ color: "var(--sh-primary)" }}>
-                + Add to another season
-              </button>
-            </div>
-          )}
 
           <StaffFields
             prefix="manager"

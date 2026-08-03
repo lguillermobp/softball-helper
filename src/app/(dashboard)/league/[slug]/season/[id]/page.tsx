@@ -44,6 +44,18 @@ export default async function SeasonPage({ params }: PageProps) {
   const season = await prisma.season.findFirst({ where: { id, leagueId: league.id } });
   if (!season) notFound();
 
+  // All active league teams + whether/how they participate in THIS season
+  const allLeagueTeams = await prisma.team.findMany({
+    where: { leagueId: league.id, isActive: true },
+    select: { id: true, name: true, logoUrl: true, seasons: { where: { seasonId: id }, select: { categoryId: true } } },
+    orderBy: { name: "asc" },
+  });
+  const leagueTeamsProp = allLeagueTeams.map((t) => ({
+    id: t.id, name: t.name, logoUrl: t.logoUrl ?? null,
+    participating: t.seasons.length > 0,
+    categoryId: t.seasons[0]?.categoryId ?? null,
+  }));
+
   const games = await prisma.game.findMany({
     where: { seasonId: id },
     include: {
@@ -241,6 +253,7 @@ export default async function SeasonPage({ params }: PageProps) {
           isAdmin={isAdmin}
           games={serializedGames}
           teams={league.teams.map((t) => ({ id: t.id, name: t.name, group: standingsBucketOf(t), logoUrl: t.logoUrl ?? null }))}
+          leagueTeams={leagueTeamsProp}
           categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
           fields={serializedFields}
           officials={leagueOfficials.map(r => ({ id: r.user.id, name: r.user.name ?? r.user.id, role: r.role }))}

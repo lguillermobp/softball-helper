@@ -1144,8 +1144,6 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                         (m.role === "TEAM_MANAGER" || m.role === "TEAM_MANAGER_PLAYER"))?.role}
                       assistantRole={members.find(m => m.user.id === team.assistant?.id &&
                         (m.role === "TEAM_ASSISTANT" || m.role === "TEAM_ASSISTANT_PLAYER"))?.role}
-                      seasons={seasons.map((s) => ({ id: s.id, name: s.name }))}
-                      categories={categories.map((c) => ({ id: c.id, name: c.name }))}
                     />
                     <AddPlayerDialog slug={slug} teamId={team.id} teamName={team.name} requireDob={team.requireDob} />
                     <UploadPlayersDialog slug={slug} teamId={team.id} teamName={team.name} requireDob={team.requireDob} />
@@ -1516,7 +1514,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               {showInactive ? tl.teams.hideInactive : tl.teams.showInactive} ({inactiveTeams.length})
             </button>
           )}
-          {isAdmin && !isSuspended && <AddTeamDialog slug={slug} seasons={seasons.map((s) => ({ id: s.id, name: s.name }))} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />}
+          {isAdmin && !isSuspended && <AddTeamDialog slug={slug} />}
         </div>
       </div>
 

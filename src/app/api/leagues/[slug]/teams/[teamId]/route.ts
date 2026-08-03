@@ -98,17 +98,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const { name, manager, assistant, managerRole, assistantRole } = body;
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
-
-  // Season registrations: [{ seasonId, categoryId? }]. Tolerate the legacy single-season shape.
-  const rawSeasons: Array<{ seasonId?: string; categoryId?: string | null }> =
-    Array.isArray(body.seasons) ? body.seasons
-    : body.seasonId ? [{ seasonId: body.seasonId, categoryId: body.categoryId ?? null }]
-    : [];
-  const seasonRegsUnique = Array.from(
-    new Map(
-      rawSeasons.filter((s) => s?.seasonId).map((s) => [s.seasonId as string, { seasonId: s.seasonId as string, categoryId: s.categoryId || null }])
-    ).values()
-  );
   if (!manager?.name || !manager?.email)
     return NextResponse.json({ error: "Manager name and email are required" }, { status: 400 });
 
@@ -135,14 +124,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         assistantId: assistantResult?.user.id ?? null,
       },
     });
-
-    // Replace the team's season registrations with the submitted set
-    await tx.teamSeason.deleteMany({ where: { teamId } });
-    if (seasonRegsUnique.length) {
-      await tx.teamSeason.createMany({
-        data: seasonRegsUnique.map((s) => ({ teamId, seasonId: s.seasonId, categoryId: s.categoryId })),
-      });
-    }
 
     // Upsert player record for manager so they appear in the lineup
     await tx.player.upsert({

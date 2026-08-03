@@ -155,7 +155,8 @@ export const translations = {
       back: "← League",
       addGame: "+ Add game",
       status: { active: "Active", completed: "Completed", upcoming: "Upcoming" },
-      tabs: { schedule: "Schedule", standings: "Standings", groups: "Groups", hitting: "Hitting", pitching: "Pitching" },
+      tabs: { schedule: "Schedule", standings: "Standings", teams: "Teams", groups: "Groups", hitting: "Hitting", pitching: "Pitching" },
+      participation: { title: "Participating Teams", hint: "Choose which league teams play this season and their division.", none: "No teams in this league yet.", noDivision: "— No division —", save: "Save teams", saving: "Saving…", saved: "✓ Saved" },
       schedule: {
         none: "No games scheduled yet.",
         noneAdmin: " Click «+ Add game» to schedule the first one.",
@@ -400,7 +401,8 @@ export const translations = {
       back: "← Liga",
       addGame: "+ Agregar juego",
       status: { active: "Activa", completed: "Completada", upcoming: "Próxima" },
-      tabs: { schedule: "Calendario", standings: "Clasificación", groups: "Grupos", hitting: "Bateo", pitching: "Pitcheo" },
+      tabs: { schedule: "Calendario", standings: "Clasificación", teams: "Equipos", groups: "Grupos", hitting: "Bateo", pitching: "Pitcheo" },
+      participation: { title: "Equipos participantes", hint: "Elige qué equipos de la liga juegan esta temporada y su división.", none: "Aún no hay equipos en esta liga.", noDivision: "— Sin división —", save: "Guardar equipos", saving: "Guardando…", saved: "✓ Guardado" },
       schedule: {
         none: "Aún no hay juegos programados.",
         noneAdmin: " Haz clic en «+ Agregar juego» para programar el primero.",
@@ -645,7 +647,8 @@ export const translations = {
       back: "← リーグ",
       addGame: "+ 試合追加",
       status: { active: "アクティブ", completed: "終了", upcoming: "予定" },
-      tabs: { schedule: "スケジュール", standings: "順位表", groups: "グループ", hitting: "打撃", pitching: "投球" },
+      tabs: { schedule: "スケジュール", standings: "順位表", teams: "チーム", groups: "グループ", hitting: "打撃", pitching: "投球" },
+      participation: { title: "参加チーム", hint: "このシーズンに参加するリーグのチームとその区分を選択します。", none: "このリーグにはまだチームがありません。", noDivision: "— 区分なし —", save: "チームを保存", saving: "保存中…", saved: "✓ 保存済み" },
       schedule: {
         none: "試合がまだスケジュールされていません。",
         noneAdmin: "«+ 試合追加» をクリックして最初の試合を追加してください。",
