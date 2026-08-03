@@ -72,12 +72,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(updated);
   }
 
-  // group-only update — admin only
+  // group-only update — admin only. A group is a short letters-only code (max 3).
   if ("group" in body && Object.keys(body).length === 1) {
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const group = String(body.group ?? "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 3);
     const updated = await prisma.team.update({
       where: { id: teamId },
-      data: { group: body.group || null },
+      data: { group: group || null },
     });
     return NextResponse.json(updated);
   }

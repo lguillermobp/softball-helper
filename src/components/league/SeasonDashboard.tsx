@@ -1454,9 +1454,9 @@ ${body}
                     )}
                     <input
                       type="text"
-                      maxLength={4}
+                      maxLength={3}
                       value={groupValues[team.id]}
-                      onChange={(e) => setGroupValues((p) => ({ ...p, [team.id]: e.target.value.toUpperCase() }))}
+                      onChange={(e) => setGroupValues((p) => ({ ...p, [team.id]: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3) }))}
                       placeholder={tg.placeholder}
                       className="w-16 rounded-md border px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"
                       style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }}
