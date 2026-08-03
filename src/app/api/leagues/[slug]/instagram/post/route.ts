@@ -608,7 +608,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
 
-    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ({ ...ts.team, group: ts.category?.name ?? ts.team.group })) });
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => { const div = ts.category?.name ?? null; const grp = ts.team.group?.trim() || null; return { ...ts.team, group: div && grp ? `${div} · ${grp}` : (div ?? grp) }; }) });
     const targetKeys = "group" in body
       ? sortedGroupKeys.filter(k => k === (body.group ?? ""))
       : sortedGroupKeys;
@@ -799,7 +799,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       },
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
-    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ({ ...ts.team, group: ts.category?.name ?? ts.team.group })) });
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => { const div = ts.category?.name ?? null; const grp = ts.team.group?.trim() || null; return { ...ts.team, group: div && grp ? `${div} · ${grp}` : (div ?? grp) }; }) });
     const requestedGroup = searchParams.get("group");
     const groupKey = requestedGroup !== null
       ? sortedGroupKeys.find(k => k === requestedGroup) ?? sortedGroupKeys[0]

@@ -58,17 +58,21 @@ export default async function SeasonPage({ params }: PageProps) {
   });
 
   // ── Compute standings from completed games ──────────────────────────────────
-  // Standings split by the team's division (its category in THIS season); teams
-  // with no division fall back to their manual group so single-division seasons
-  // behave exactly as before.
-  const divisionOf = (t: { group: string | null; seasons: { category: { name: string } | null }[] }) =>
-    t.seasons[0]?.category?.name ?? t.group ?? null;
+  // Standings bucket = division (the team's category in THIS season) → group
+  // subdivision. e.g. "U15 · A", "U15 · B", or just "U15" when a division has no
+  // groups, or just the group when there is no division. Schedule stays global
+  // within the category-season; only standings are partitioned this finely.
+  const standingsBucketOf = (t: { group: string | null; seasons: { category: { name: string } | null }[] }) => {
+    const div = t.seasons[0]?.category?.name ?? null;
+    const grp = t.group?.trim() || null;
+    return div && grp ? `${div} · ${grp}` : (div ?? grp ?? null);
+  };
 
   type SlimTeam = { id: string; name: string; group: string | null; logoUrl: string | null };
   const zero = (team: SlimTeam) => ({ team, gp: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0 });
 
   const statsMap = new Map<string, ReturnType<typeof zero>>(
-    league.teams.map((t) => [t.id, zero({ id: t.id, name: t.name, group: divisionOf(t), logoUrl: t.logoUrl ?? null })])
+    league.teams.map((t) => [t.id, zero({ id: t.id, name: t.name, group: standingsBucketOf(t), logoUrl: t.logoUrl ?? null })])
   );
 
   for (const game of games) {
@@ -236,7 +240,7 @@ export default async function SeasonPage({ params }: PageProps) {
           seasonStatus={season.status}
           isAdmin={isAdmin}
           games={serializedGames}
-          teams={league.teams.map((t) => ({ id: t.id, name: t.name, group: divisionOf(t), logoUrl: t.logoUrl ?? null }))}
+          teams={league.teams.map((t) => ({ id: t.id, name: t.name, group: standingsBucketOf(t), logoUrl: t.logoUrl ?? null }))}
           categories={league.categories.map((c) => ({ id: c.id, name: c.name }))}
           fields={serializedFields}
           officials={leagueOfficials.map(r => ({ id: r.user.id, name: r.user.name ?? r.user.id, role: r.role }))}
