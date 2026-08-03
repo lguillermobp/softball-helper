@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none" preserveAspectRatio="xMidYMid slice">
+  <g stroke="#4ade80" stroke-opacity="0.16" fill="none">
+    <!-- diamond field -->
+    <polygon points="240,340 400,180 560,340 400,500" stroke-width="2"/>
+    <path d="M 150 430 A 360 360 0 0 1 650 430" stroke-width="1.5" stroke-dasharray="2 10"/>
+    <circle cx="400" cy="340" r="26" stroke-width="1.5"/>
+    <rect x="392" y="172" width="16" height="16" rx="2" transform="rotate(45 400 180)" stroke-width="1.5"/>
+  </g>
+  <!-- baseball (small, tight stitches) -->
+  <g transform="translate(940 150)">
+    <circle r="90" fill="#4ade80" fill-opacity="0.06" stroke="#4ade80" stroke-opacity="0.22" stroke-width="2"/>
+    <path d="M -62 -62 Q -20 0 -62 62" stroke="#4ade80" stroke-opacity="0.3" stroke-width="2.5" fill="none"/>
+    <path d="M 62 -62 Q 20 0 62 62" stroke="#4ade80" stroke-opacity="0.3" stroke-width="2.5" fill="none"/>
+    <g stroke="#4ade80" stroke-opacity="0.28" stroke-width="1.6">
+      <path d="M -50 -50 l 8 -4 M -46 -34 l 8 -4 M -44 -16 l 8 -3 M -44 2 l 8 -1 M -46 20 l 8 2 M -49 37 l 8 4 M -54 52 l 8 5"/>
+      <path d="M 50 -50 l -8 -4 M 46 -34 l -8 -4 M 44 -16 l -8 -3 M 44 2 l -8 -1 M 46 20 l -8 2 M 49 37 l -8 4 M 54 52 l -8 5"/>
+    </g>
+  </g>
+</svg>

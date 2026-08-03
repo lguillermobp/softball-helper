@@ -111,6 +111,7 @@ model League {
   city                 String?
   state                String?
   status               LeagueStatus @default(ACTIVE)
+  type                 LeagueType   @default(SOFTBALL)
   planId               String
   stripeCustomerId     String?
   stripeSubscriptionId String?
@@ -150,6 +151,12 @@ enum LeagueStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
+}
+
+enum LeagueType {
+  SOFTBALL
+  BASEBALL
+  KICKBALL
 }
 
 // ─── League Subscriptions ─────────────────────────────────────────────────────

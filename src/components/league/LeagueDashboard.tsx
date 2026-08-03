@@ -117,7 +117,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; type: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string };
   subscription?: SubscriptionProp | null;
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
@@ -334,7 +334,29 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [timezone,       setTimezone]       = useState(league.timezone || "UTC");
   const [savingNotify,   setSavingNotify]   = useState(false);
   const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
+  const [leagueType,     setLeagueType]     = useState(league.type);
+  const [typeSaving,     setTypeSaving]     = useState(false);
   const isSuspended = league.status === "SUSPENDED";
+
+  const SPORTS: Record<string, { label: string; bg: string; icon: string }> = {
+    SOFTBALL: { label: tl.overview.softball, bg: "/league-bg/softball.svg", icon: "🥎" },
+    BASEBALL: { label: tl.overview.baseball, bg: "/league-bg/baseball.svg", icon: "⚾" },
+    KICKBALL: { label: tl.overview.kickball, bg: "/league-bg/kickball.svg", icon: "⚽" },
+  };
+  const sport = SPORTS[leagueType] ?? SPORTS.SOFTBALL;
+
+  async function saveType(next: string) {
+    const prev = leagueType;
+    setLeagueType(next);
+    setTypeSaving(true);
+    try {
+      const res = await fetch(`/api/leagues/${slug}/type`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: next }),
+      });
+      if (!res.ok) setLeagueType(prev);
+    } catch { setLeagueType(prev); }
+    finally { setTypeSaving(false); }
+  }
 
   async function saveNotifications() {
     setSavingNotify(true); setNotifyMsg(null);
@@ -486,6 +508,24 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
         )}
       </div>
 
+      {/* Sport hero banner with per-type background */}
+      <div className="relative overflow-hidden rounded-2xl border" style={card}>
+        <div className="absolute inset-0" aria-hidden style={{ backgroundImage: `url(${sport.bg})`, backgroundSize: "cover", backgroundPosition: "center right" }} />
+        <div className="relative flex items-center gap-4 p-5 sm:p-6">
+          {leagueLogoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={leagueLogoUrl} alt={league.name} className="w-14 h-14 rounded-xl object-cover shrink-0" style={{ border: "1px solid var(--sh-border2)" }} />
+          )}
+          <div>
+            <h3 className="text-xl font-black leading-tight" style={head}>{league.name}</h3>
+            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold"
+              style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)", border: "1px solid var(--sh-border2)" }}>
+              <span>{sport.icon}</span><span>{sport.label}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Top row: slim info card + stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="col-span-2 sm:col-span-1 rounded-2xl border p-5" style={card}>
@@ -503,6 +543,21 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
             }}>
               {league.status === "ACTIVE" ? tl.overview.active : league.status === "SUSPENDED" ? tl.overview.suspended : tl.overview.archived}
             </span>
+          </p>
+          <p className="text-sm mt-1 flex items-center gap-1" style={muted}>
+            <span>{sport.icon} {tl.overview.sport}:</span>
+            {isAdmin && !isSuspended ? (
+              <select value={leagueType} onChange={(e) => saveType(e.target.value)} disabled={typeSaving}
+                className="rounded border px-1.5 py-0.5 text-sm font-semibold outline-none disabled:opacity-50"
+                style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}>
+                <option value="SOFTBALL">{tl.overview.softball}</option>
+                <option value="BASEBALL">{tl.overview.baseball}</option>
+                <option value="KICKBALL">{tl.overview.kickball}</option>
+              </select>
+            ) : (
+              <span className="font-semibold" style={head}>{sport.label}</span>
+            )}
+            {typeSaving && <span className="text-xs" style={dim}>{tl.overview.saving}</span>}
           </p>
         </div>
         {[

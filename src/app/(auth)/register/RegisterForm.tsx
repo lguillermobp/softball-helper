@@ -300,6 +300,23 @@ export function RegisterForm({ loggedInUser }: Props) {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <Label className={labelCls}>{r.steps.league.sport}</Label>
+                  <input type="hidden" {...leagueForm.register("type")} />
+                  <div className="grid grid-cols-3 gap-2">
+                    {([["SOFTBALL", r.steps.league.softball, "🥎"], ["BASEBALL", r.steps.league.baseball, "⚾"], ["KICKBALL", r.steps.league.kickball, "⚽"]] as const).map(([val, label, icon]) => {
+                      const active = (leagueForm.watch("type") ?? "SOFTBALL") === val;
+                      return (
+                        <button key={val} type="button" onClick={() => leagueForm.setValue("type", val)}
+                          className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-3 transition-colors ${active ? "border-green-500 bg-green-500/15 text-white" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}>
+                          <span className="text-2xl">{icon}</span>
+                          <span className="text-sm font-medium">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/10 bg-transparent"
                     onClick={() => loggedInUser ? router.push("/dashboard") : setStep(1)}>

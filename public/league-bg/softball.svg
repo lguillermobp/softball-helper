@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none" preserveAspectRatio="xMidYMid slice">
+  <g stroke="#facc15" stroke-opacity="0.16" fill="none">
+    <!-- diamond field -->
+    <polygon points="240,340 400,180 560,340 400,500" stroke-width="2"/>
+    <path d="M 150 430 A 360 360 0 0 1 650 430" stroke-width="1.5" stroke-dasharray="2 10"/>
+    <circle cx="400" cy="340" r="26" stroke-width="1.5"/>
+    <rect x="392" y="172" width="16" height="16" rx="2" transform="rotate(45 400 180)" stroke-width="1.5"/>
+  </g>
+  <!-- softball (larger, bright, wide stitches) -->
+  <g transform="translate(940 150)">
+    <circle r="104" fill="#facc15" fill-opacity="0.08" stroke="#facc15" stroke-opacity="0.24" stroke-width="2"/>
+    <path d="M -70 -72 Q -22 0 -70 72" stroke="#facc15" stroke-opacity="0.32" stroke-width="2.5" fill="none"/>
+    <path d="M 70 -72 Q 22 0 70 72" stroke="#facc15" stroke-opacity="0.32" stroke-width="2.5" fill="none"/>
+    <g stroke="#facc15" stroke-opacity="0.3" stroke-width="1.8">
+      <path d="M -56 -54 l 10 -5 M -52 -34 l 10 -5 M -50 -12 l 10 -3 M -50 10 l 10 -1 M -52 30 l 10 3 M -56 50 l 10 5"/>
+      <path d="M 56 -54 l -10 -5 M 52 -34 l -10 -5 M 50 -12 l -10 -3 M 50 10 l -10 -1 M 52 30 l -10 3 M 56 50 l -10 5"/>
+    </g>
+  </g>
+</svg>

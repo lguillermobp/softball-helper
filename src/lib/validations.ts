@@ -19,6 +19,7 @@ export const leagueSetupSchema = z.object({
   name: z.string().min(2, "League name must be at least 2 characters"),
   city: z.string().optional(),
   state: z.string().optional(),
+  type: z.enum(["SOFTBALL", "BASEBALL", "KICKBALL"]).optional(),
   planId: z.string().min(1, "Please select a plan"),
   couponCode: z.string().optional(),
 });

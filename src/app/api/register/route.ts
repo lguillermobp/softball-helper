@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (!leagueParsed.success)
       return NextResponse.json({ error: "Invalid league data" }, { status: 400 });
 
-    const { name: leagueName, city, state, planId, couponCode } = leagueParsed.data;
+    const { name: leagueName, city, state, type: leagueType, planId, couponCode } = leagueParsed.data;
     const logoDataUrl: string | undefined = body.logoDataUrl;
 
     const plan = await prisma.plan.findFirst({ where: { id: planId, isActive: true } });
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       const result = await prisma.$transaction(async (tx) => {
         const league = await tx.league.create({
           data: {
-            name: leagueName, slug: finalSlug, city, state, planId: plan.id,
+            name: leagueName, slug: finalSlug, city, state, planId: plan.id, ...(leagueType ? { type: leagueType } : {}),
             ...(coupon ? { appliedCouponId: coupon.id } : {}),
           },
         });
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
       const league = await tx.league.create({
         data: {
-          name: leagueName, slug: finalSlug, city, state, planId: plan.id,
+          name: leagueName, slug: finalSlug, city, state, planId: plan.id, ...(leagueType ? { type: leagueType } : {}),
           ...(coupon ? { appliedCouponId: coupon.id } : {}),
         },
       });
