@@ -594,7 +594,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id: body.seasonId, leagueId: league.id },
       select: {
         name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true, showPct: true,
-        teams: { select: { team: { select: { id: true, name: true, logoUrl: true, group: true } } } },
+        teams: { select: { team: { select: { id: true, name: true, logoUrl: true, group: true } }, category: { select: { name: true } } } },
         games: {
           where: { status: "COMPLETED", isPractice: false },
           select: {
@@ -608,7 +608,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
 
-    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ts.team) });
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ({ ...ts.team, group: ts.category?.name ?? ts.team.group })) });
     const targetKeys = "group" in body
       ? sortedGroupKeys.filter(k => k === (body.group ?? ""))
       : sortedGroupKeys;
@@ -786,7 +786,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       where: { id: seasonId, leagueId: league.id },
       select: {
         name: true, pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true, showPct: true,
-        teams: { select: { team: { select: { id: true, name: true, logoUrl: true, group: true } } } },
+        teams: { select: { team: { select: { id: true, name: true, logoUrl: true, group: true } }, category: { select: { name: true } } } },
         games: {
           where: { status: "COMPLETED", isPractice: false },
           select: {
@@ -799,7 +799,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       },
     });
     if (!season) return NextResponse.json({ error: "Season not found" }, { status: 404 });
-    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ts.team) });
+    const { groupMap, logoUrlMap, tbs, sortedGroupKeys } = computeSeasonStats({ ...season, teams: season.teams.map((ts) => ({ ...ts.team, group: ts.category?.name ?? ts.team.group })) });
     const requestedGroup = searchParams.get("group");
     const groupKey = requestedGroup !== null
       ? sortedGroupKeys.find(k => k === requestedGroup) ?? sortedGroupKeys[0]

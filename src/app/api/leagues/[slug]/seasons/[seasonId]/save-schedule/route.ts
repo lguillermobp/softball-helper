@@ -49,6 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         data: {
           leagueId: league.id,
           seasonId,
+          categoryId: g.categoryId ?? null,
           homeTeamId: g.homeTeamId,
           awayTeamId: g.awayTeamId,
           fieldId: g.fieldId,

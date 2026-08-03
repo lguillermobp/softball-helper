@@ -22,6 +22,7 @@ export interface ProposedGame {
   homeTeamName: string;
   awayTeamId: string;
   awayTeamName: string;
+  categoryId: string | null;   // division these teams play in this season
 }
 
 export interface GenerateResult {
@@ -69,11 +70,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   const rangeEnd   = new Date(endDate   ?? season.endDate);
   if (rangeStart > rangeEnd) return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
 
-  // Load teams in season and fields in league
-  const [teams, rawFields] = await Promise.all([
-    prisma.team.findMany({ where: { seasons: { some: { seasonId } }, leagueId: league.id, isActive: true }, select: { id: true, name: true } }),
+  // Load teams in season (with their division for this season) and fields in league
+  const [rawTeams, rawFields] = await Promise.all([
+    prisma.team.findMany({
+      where: { seasons: { some: { seasonId } }, leagueId: league.id, isActive: true },
+      select: { id: true, name: true, seasons: { where: { seasonId }, select: { categoryId: true } } },
+    }),
     prisma.field.findMany({ where: { leagueId: league.id }, orderBy: { name: "asc" } }),
   ]);
+  const teams = rawTeams.map((t) => ({ id: t.id, name: t.name, categoryId: t.seasons[0]?.categoryId ?? null }));
 
   if (teams.length < 2) return NextResponse.json({ error: "Need at least 2 teams in the season" }, { status: 400 });
 
@@ -90,11 +95,15 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (fields.length === 0) return NextResponse.json({ error: "No fields have slot configuration. Set a start time on at least one field." }, { status: 400 });
 
-  // Generate all unique pairs
+  // Generate unique pairs — only between teams in the same division
   const pairs: [typeof teams[0], typeof teams[0]][] = [];
   for (let i = 0; i < teams.length; i++)
     for (let j = i + 1; j < teams.length; j++)
-      pairs.push([teams[i], teams[j]]);
+      if (teams[i].categoryId === teams[j].categoryId)
+        pairs.push([teams[i], teams[j]]);
+
+  if (pairs.length === 0)
+    return NextResponse.json({ error: "No teams share a division to play each other. Assign teams to the same division." }, { status: 400 });
 
   // Track counts
   const pairCount = new Map<string, number>();
@@ -150,17 +159,20 @@ export async function POST(req: NextRequest, { params }: Params) {
         const twinId = `twin-${++twinSeq}`;
         const slotStart = baseMinutes + slot * 2 * field.slotDurationMins;
 
+        const divisionId = teamA.categoryId; // same as teamB's (paired within division)
         proposed.push({
           twinId, gameNum: 1, date: dateStr, fieldId: field.id, fieldName: field.name,
           startTime: formatMinutes(slotStart),
           homeTeamId: teamA.id, homeTeamName: teamA.name,
           awayTeamId: teamB.id, awayTeamName: teamB.name,
+          categoryId: divisionId,
         });
         proposed.push({
           twinId, gameNum: 2, date: dateStr, fieldId: field.id, fieldName: field.name,
           startTime: formatMinutes(slotStart + field.slotDurationMins),
           homeTeamId: teamB.id, homeTeamName: teamB.name,
           awayTeamId: teamA.id, awayTeamName: teamA.name,
+          categoryId: divisionId,
         });
 
         pairCount.set(pairKey(teamA.id, teamB.id), (pairCount.get(pairKey(teamA.id, teamB.id)) ?? 0) + 1);
