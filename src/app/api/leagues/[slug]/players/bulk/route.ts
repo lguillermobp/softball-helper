@@ -31,11 +31,11 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const team = await prisma.team.findFirst({
     where: { id: teamId, leagueId: league.id },
-    include: { season: { select: { requireDob: true } } },
+    include: { seasons: { select: { season: { select: { requireDob: true } } } } },
   });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  const requireDob = team.season?.requireDob ?? false;
+  const requireDob = team.seasons.some((s) => s.season.requireDob);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

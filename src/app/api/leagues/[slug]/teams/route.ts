@@ -51,9 +51,21 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
-  const { name, seasonId, categoryId, manager, assistant, managerRole, assistantRole } = await req.json();
+  const body = await req.json();
+  const { name, manager, assistant, managerRole, assistantRole } = body;
   if (!name)
     return NextResponse.json({ error: "name is required" }, { status: 400 });
+
+  // Season registrations: [{ seasonId, categoryId? }]. Tolerate the legacy single-season shape.
+  const rawSeasons: Array<{ seasonId?: string; categoryId?: string | null }> =
+    Array.isArray(body.seasons) ? body.seasons
+    : body.seasonId ? [{ seasonId: body.seasonId, categoryId: body.categoryId ?? null }]
+    : [];
+  const seasonRegs = rawSeasons
+    .filter((s) => s?.seasonId)
+    .map((s) => ({ seasonId: s.seasonId as string, categoryId: s.categoryId || null }));
+  // De-dupe by seasonId (unique per team+season)
+  const seasonRegsUnique = Array.from(new Map(seasonRegs.map((s) => [s.seasonId, s])).values());
 
   const resolvedManagerRole: "TEAM_MANAGER" | "TEAM_MANAGER_PLAYER" =
     managerRole === "TEAM_MANAGER_PLAYER" ? "TEAM_MANAGER_PLAYER" : "TEAM_MANAGER";
@@ -73,10 +85,11 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: {
         leagueId: league.id,
         name,
-        seasonId: seasonId || null,
-        categoryId: categoryId || null,
         managerId: managerResult?.user.id ?? null,
         assistantId: assistantResult?.user.id ?? null,
+        seasons: seasonRegsUnique.length
+          ? { create: seasonRegsUnique.map((s) => ({ seasonId: s.seasonId, categoryId: s.categoryId })) }
+          : undefined,
       },
     });
 

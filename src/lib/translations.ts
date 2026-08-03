@@ -111,7 +111,7 @@ export const translations = {
         showPlayers: "Show players", hidePlayers: "Hide players",
         approve: "Approve", unapprove: "Unapprove", reactivate: "Reactivate", deactivate: "Deactivate", delete: "Delete",
         photo: "Photo", jersey: "#", name: "Name", account: "Account",
-        addPlayer: "+ Add player", csvUpload: "↑ CSV", edit: "Edit",
+        addPlayer: "+ Add player", csvUpload: "↑ CSV", edit: "Edit", noSeason: "— No season —", viewStats: "View stats",
       },
       members: { title: "Members", name: "Name", email: "Email", phone: "Phone", role: "Role", verified: "Verified", resend: "Resend", resetPassword: "Reset password", resetSending: "Sending…", resetSent: "✓ Sent" },
       fields: {
@@ -356,7 +356,7 @@ export const translations = {
         showPlayers: "Ver jugadores", hidePlayers: "Ocultar jugadores",
         approve: "Aprobar", unapprove: "Desaprobar", reactivate: "Reactivar", deactivate: "Desactivar", delete: "Eliminar",
         photo: "Foto", jersey: "#", name: "Nombre", account: "Cuenta",
-        addPlayer: "+ Jugador", csvUpload: "↑ CSV", edit: "Editar",
+        addPlayer: "+ Jugador", csvUpload: "↑ CSV", edit: "Editar", noSeason: "— Sin temporada —", viewStats: "Ver estadísticas",
       },
       members: { title: "Miembros", name: "Nombre", email: "Correo", phone: "Teléfono", role: "Rol", verified: "Verificado", resend: "Reenviar", resetPassword: "Restablecer contraseña", resetSending: "Enviando…", resetSent: "✓ Enviado" },
       fields: {
@@ -601,7 +601,7 @@ export const translations = {
         showPlayers: "選手を表示", hidePlayers: "選手を非表示",
         approve: "承認", unapprove: "承認取消", reactivate: "再アクティブ化", deactivate: "非アクティブ化", delete: "削除",
         photo: "写真", jersey: "#", name: "名前", account: "アカウント",
-        addPlayer: "+ 選手を追加", csvUpload: "↑ CSV", edit: "編集",
+        addPlayer: "+ 選手を追加", csvUpload: "↑ CSV", edit: "編集", noSeason: "— シーズンなし —", viewStats: "統計を見る",
       },
       members: { title: "メンバー", name: "名前", email: "メール", phone: "電話", role: "役割", verified: "認証済み", resend: "再送信", resetPassword: "パスワードをリセット", resetSending: "送信中…", resetSent: "✓ 送信済み" },
       fields: {

@@ -241,7 +241,7 @@ model Season {
   createdAt      DateTime     @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  teams  Team[]
+  teams  TeamSeason[]
   games  Game[]
 
   @@map("seasons")
@@ -261,9 +261,9 @@ model Category {
   name        String
   description String?
 
-  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  teams  Team[]
-  games  Game[]
+  league     League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teamSeasons TeamSeason[]
+  games      Game[]
 
   @@map("categories")
 }
@@ -273,8 +273,6 @@ model Category {
 model Team {
   id          String     @id @default(cuid())
   leagueId    String
-  seasonId    String?
-  categoryId  String?
   managerId   String?
   assistantId String?
   name        String
@@ -285,10 +283,9 @@ model Team {
   createdAt   DateTime   @default(now())
 
   league    League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  season    Season?   @relation(fields: [seasonId], references: [id])
-  category  Category? @relation(fields: [categoryId], references: [id])
   manager   User?     @relation("TeamManager", fields: [managerId], references: [id])
   assistant User?     @relation("TeamAssistant", fields: [assistantId], references: [id])
+  seasons    TeamSeason[]
   homeGames  Game[]             @relation("HomeGames")
   awayGames  Game[]             @relation("AwayGames")
   players    Player[]
@@ -296,6 +293,25 @@ model Team {
   publicPage TeamPublicPage?
 
   @@map("teams")
+}
+
+// ─── Team ↔ Season registration (a team plays in a division within a season) ──
+
+model TeamSeason {
+  id         String   @id @default(cuid())
+  teamId     String
+  seasonId   String
+  categoryId String?
+  createdAt  DateTime @default(now())
+
+  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  season   Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@unique([teamId, seasonId])
+  @@index([seasonId])
+  @@index([categoryId])
+  @@map("team_seasons")
 }
 
 // ─── Fields ──────────────────────────────────────────────────────────────────

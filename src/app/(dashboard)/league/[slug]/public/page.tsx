@@ -141,7 +141,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
     const [seasonTeams, completedGames] = await Promise.all([
       prisma.team.findMany({
-        where: { seasonId: latestSeason.id, isActive: true },
+        where: { seasons: { some: { seasonId: latestSeason.id } }, isActive: true },
         select: { id: true, name: true, logoUrl: true, group: true },
         orderBy: { name: "asc" },
       }),
@@ -272,7 +272,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
     if (latestSeason) {
       scheduleTeams = await prisma.team.findMany({
-        where: { seasonId: latestSeason.id, isActive: true },
+        where: { seasons: { some: { seasonId: latestSeason.id } }, isActive: true },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       });

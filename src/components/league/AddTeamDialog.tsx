@@ -17,8 +17,9 @@ const selectClass =
 const STR = {
   en: {
     trigger: "+ Add team", title: "New Team", teamName: "Team name",
-    season: "Season (optional)", noSeason: "— No season —",
-    category: "Category (optional)", noCategory: "— No category —",
+    seasonsLabel: "Seasons & divisions", pickSeason: "— Select season —",
+    category: "Division (optional)", noCategory: "— No division —",
+    addSeasonRow: "+ Add to another season", removeRow: "Remove",
     manager: "Manager", assistant: "Assistant",
     fullName: "Full name", email: "Email address", phone: "Mobile phone (optional)",
     managerPlays: "Manager also plays (Manager-player)", removeManager: "Remove manager",
@@ -29,8 +30,9 @@ const STR = {
   },
   es: {
     trigger: "+ Agregar equipo", title: "Nuevo equipo", teamName: "Nombre del equipo",
-    season: "Temporada (opcional)", noSeason: "— Sin temporada —",
-    category: "Categoría (opcional)", noCategory: "— Sin categoría —",
+    seasonsLabel: "Temporadas y divisiones", pickSeason: "— Seleccionar temporada —",
+    category: "División (opcional)", noCategory: "— Sin división —",
+    addSeasonRow: "+ Agregar a otra temporada", removeRow: "Quitar",
     manager: "Manager", assistant: "Asistente",
     fullName: "Nombre completo", email: "Correo electrónico", phone: "Teléfono móvil (opcional)",
     managerPlays: "El manager también juega (Manager-jugador)", removeManager: "Quitar manager",
@@ -80,8 +82,17 @@ export function AddTeamDialog({ slug, seasons, categories }: {
   const [hasAssistant,  setHasAssistant]  = useState(false);
   const [managerPlays,  setManagerPlays]  = useState(false);
   const [assistantPlays, setAssistantPlays] = useState(false);
+  const [regs, setRegs] = useState<Array<{ seasonId: string; categoryId: string }>>(
+    seasons.length ? [{ seasonId: "", categoryId: "" }] : []
+  );
 
-  function handleClose() { setOpen(false); setHasManager(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); }
+  function setReg(i: number, patch: Partial<{ seasonId: string; categoryId: string }>) {
+    setRegs((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function addReg() { setRegs((rs) => [...rs, { seasonId: "", categoryId: "" }]); }
+  function removeReg(i: number) { setRegs((rs) => rs.filter((_, idx) => idx !== i)); }
+
+  function handleClose() { setOpen(false); setHasManager(false); setHasAssistant(false); setManagerPlays(false); setAssistantPlays(false); setError(""); setRegs(seasons.length ? [{ seasonId: "", categoryId: "" }] : []); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -91,8 +102,9 @@ export function AddTeamDialog({ slug, seasons, categories }: {
 
     const body: Record<string, unknown> = {
       name: fd.get("name"),
-      seasonId: fd.get("seasonId") || undefined,
-      categoryId: fd.get("categoryId") || undefined,
+      seasons: regs
+        .filter((r) => r.seasonId)
+        .map((r) => ({ seasonId: r.seasonId, categoryId: r.categoryId || null })),
     };
 
     if (hasManager) {
@@ -140,22 +152,29 @@ export function AddTeamDialog({ slug, seasons, categories }: {
           </div>
 
           {seasons.length > 0 && (
-            <div className="space-y-1">
-              <Label htmlFor="seasonId">{L.season}</Label>
-              <select id="seasonId" name="seasonId" className={selectClass}>
-                <option value="">{L.noSeason}</option>
-                {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          {categories.length > 0 && (
-            <div className="space-y-1">
-              <Label htmlFor="categoryId">{L.category}</Label>
-              <select id="categoryId" name="categoryId" className={selectClass}>
-                <option value="">{L.noCategory}</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            <div className="space-y-2">
+              <Label>{L.seasonsLabel}</Label>
+              {regs.map((r, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <select value={r.seasonId} onChange={(e) => setReg(i, { seasonId: e.target.value })} className={selectClass}>
+                    <option value="">{L.pickSeason}</option>
+                    {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  {categories.length > 0 && (
+                    <select value={r.categoryId} onChange={(e) => setReg(i, { categoryId: e.target.value })} className={selectClass}>
+                      <option value="">{L.noCategory}</option>
+                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )}
+                  {regs.length > 1 && (
+                    <button type="button" onClick={() => removeReg(i)} title={L.removeRow}
+                      className="text-lg leading-none px-1" style={{ color: "var(--sh-danger)" }}>×</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addReg} className="text-sm underline" style={{ color: "var(--sh-primary)" }}>
+                {L.addSeasonRow}
+              </button>
             </div>
           )}
 

@@ -47,11 +47,10 @@ interface TeamPublicPageConfig {
   showSchedule: boolean;
   socialLinks: Record<string, string> | null;
 }
+interface TeamSeasonReg { seasonId: string; seasonName: string; categoryId: string | null; categoryName: string | null }
 interface Team {
   id: string; name: string; logoUrl: string | null; status: string; isActive: boolean;
-  seasonId: string | null; categoryId: string | null;
-  season: { id: string; name: string } | null;
-  category: { id: string; name: string } | null;
+  seasons: TeamSeasonReg[];
   manager: StaffMember | null;
   assistant: StaffMember | null;
   players: Player[];
@@ -1033,7 +1032,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
           ${leagueLogo}
           <div>
             <div style="font-size:22px;font-weight:800;line-height:1.1;">${league.name}</div>
-            ${team.category ? `<div style="font-size:13px;color:#555;margin-top:4px;">${team.category.name}</div>` : ""}
+            ${(() => { const cats = [...new Set(team.seasons.map((s) => s.categoryName).filter(Boolean))]; return cats.length ? `<div style="font-size:13px;color:#555;margin-top:4px;">${cats.join(", ")}</div>` : ""; })()}
           </div>
         </div>
 
@@ -1090,32 +1089,27 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
                 )}
               </div>
               <div className="flex gap-2 flex-wrap">
-                {team.season && (
-                  <span className="text-xs rounded-full px-2.5 py-0.5 font-medium" style={{ background: "#1a3d1a", color: "#4ade80" }}>
-                    📅 {team.season.name}
-                  </span>
+                {team.seasons.length === 0 && (
+                  <span className="text-xs" style={{ color: "var(--sh-inactive)" }}>{tl.teams.noSeason}</span>
                 )}
-                {team.category && (
-                  <span className="text-xs rounded-full px-2.5 py-0.5 font-medium" style={{ background: "#1e3a5f", color: "#93c5fd" }}>
-                    🏷️ {team.category.name}
-                  </span>
-                )}
+                {team.seasons.map((reg) => (
+                  <Link
+                    key={reg.seasonId}
+                    href={`/league/${slug}/season/${reg.seasonId}/team/${team.id}/stats`}
+                    title={tl.teams.viewStats}
+                    className="text-xs rounded-full px-2.5 py-0.5 font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-80"
+                    style={{ background: "#1a3d1a", color: "#4ade80" }}
+                  >
+                    📅 {reg.seasonName}{reg.categoryName ? ` · 🏷️ ${reg.categoryName}` : ""}
+                  </Link>
+                ))}
               </div>
             </div>
             </div>  {/* end logo+name flex */}
 
-            {/* Right: stats link + action buttons */}
-            {(team.seasonId || isAdmin || isStaff) && (
+            {/* Right: action buttons */}
+            {(isAdmin || isStaff) && (
               <div className="flex items-center gap-1.5 flex-wrap sm:justify-end sm:shrink-0">
-                {team.seasonId && (
-                  <Link
-                    href={`/league/${slug}/season/${team.seasonId}/team/${team.id}/stats`}
-                    className="text-xs font-semibold px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80"
-                    style={{ color: "var(--sh-primary)", borderColor: "var(--sh-border2)", background: "transparent" }}
-                  >
-                    📊 Stats
-                  </Link>
-                )}
             {(isAdmin || isStaff) && (
               <>
                 <button

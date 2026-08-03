@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // Load teams in season and fields in league
   const [teams, rawFields] = await Promise.all([
-    prisma.team.findMany({ where: { seasonId, leagueId: league.id, isActive: true }, select: { id: true, name: true } }),
+    prisma.team.findMany({ where: { seasons: { some: { seasonId } }, leagueId: league.id, isActive: true }, select: { id: true, name: true } }),
     prisma.field.findMany({ where: { leagueId: league.id }, orderBy: { name: "asc" } }),
   ]);
 

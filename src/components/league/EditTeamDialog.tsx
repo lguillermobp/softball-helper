@@ -16,8 +16,7 @@ interface Props {
   team: {
     id: string;
     name: string;
-    seasonId: string | null;
-    categoryId: string | null;
+    seasons: { seasonId: string; categoryId: string | null }[];
     manager: StaffMember | null;
     assistant: StaffMember | null;
   };
@@ -89,8 +88,18 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
   const [hasAssistant, setHasAssistant] = useState(!!team.assistant);
   const [managerPlays, setManagerPlays] = useState(managerRole === "TEAM_MANAGER_PLAYER");
   const [assistantPlays, setAssistantPlays] = useState(assistantRole === "TEAM_ASSISTANT_PLAYER");
+  const initialRegs = team.seasons.length
+    ? team.seasons.map((s) => ({ seasonId: s.seasonId, categoryId: s.categoryId ?? "" }))
+    : (seasons.length ? [{ seasonId: "", categoryId: "" }] : []);
+  const [regs, setRegs] = useState<Array<{ seasonId: string; categoryId: string }>>(initialRegs);
 
-  function handleClose() { setOpen(false); setError(""); }
+  function setReg(i: number, patch: Partial<{ seasonId: string; categoryId: string }>) {
+    setRegs((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function addReg() { setRegs((rs) => [...rs, { seasonId: "", categoryId: "" }]); }
+  function removeReg(i: number) { setRegs((rs) => rs.filter((_, idx) => idx !== i)); }
+
+  function handleClose() { setOpen(false); setError(""); setRegs(initialRegs); }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -100,8 +109,9 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
 
     const body: Record<string, unknown> = {
       name: fd.get("name"),
-      seasonId: fd.get("seasonId") || null,
-      categoryId: fd.get("categoryId") || null,
+      seasons: regs
+        .filter((r) => r.seasonId)
+        .map((r) => ({ seasonId: r.seasonId, categoryId: r.categoryId || null })),
       manager: {
         name: fd.get("manager-name"),
         email: fd.get("manager-email"),
@@ -155,22 +165,29 @@ export function EditTeamDialog({ slug, team, managerRole, assistantRole, seasons
           </div>
 
           {seasons.length > 0 && (
-            <div className="space-y-1">
-              <Label htmlFor="seasonId">Season</Label>
-              <select id="seasonId" name="seasonId" defaultValue={team.seasonId ?? ""} className={selectClass}>
-                <option value="">— No season —</option>
-                {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          {categories.length > 0 && (
-            <div className="space-y-1">
-              <Label htmlFor="categoryId">Category</Label>
-              <select id="categoryId" name="categoryId" defaultValue={team.categoryId ?? ""} className={selectClass}>
-                <option value="">— No category —</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            <div className="space-y-2">
+              <Label>Seasons &amp; divisions</Label>
+              {regs.map((r, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <select value={r.seasonId} onChange={(e) => setReg(i, { seasonId: e.target.value })} className={selectClass}>
+                    <option value="">— Select season —</option>
+                    {seasons.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  {categories.length > 0 && (
+                    <select value={r.categoryId} onChange={(e) => setReg(i, { categoryId: e.target.value })} className={selectClass}>
+                      <option value="">— No division —</option>
+                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )}
+                  {regs.length > 1 && (
+                    <button type="button" onClick={() => removeReg(i)} title="Remove"
+                      className="text-lg leading-none px-1" style={{ color: "var(--sh-danger)" }}>×</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addReg} className="text-sm underline" style={{ color: "var(--sh-primary)" }}>
+                + Add to another season
+              </button>
             </div>
           )}
 

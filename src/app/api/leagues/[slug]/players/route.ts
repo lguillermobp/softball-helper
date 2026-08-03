@@ -60,11 +60,11 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const team = await prisma.team.findFirst({
     where: { id: teamId, leagueId: league.id },
-    include: { season: { select: { requireDob: true } } },
+    include: { seasons: { select: { season: { select: { requireDob: true } } } } },
   });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  if (team.season?.requireDob && !dob)
+  if (team.seasons.some((s) => s.season.requireDob) && !dob)
     return NextResponse.json({ error: "Date of birth is required for this season" }, { status: 400 });
 
   if (email) {

@@ -314,8 +314,12 @@ export default async function LeaguePage({ params }: PageProps) {
       teams: {
         include: {
           publicPage: true,
-          season:    { select: { id: true, name: true, requireDob: true } },
-          category:  { select: { id: true, name: true } },
+          seasons: {
+            include: {
+              season:   { select: { id: true, name: true, requireDob: true, startDate: true } },
+              category: { select: { id: true, name: true } },
+            },
+          },
           manager:   { select: { id: true, name: true, email: true, phone: true } },
           assistant: { select: { id: true, name: true, email: true, phone: true } },
           players: {
@@ -355,9 +359,10 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const teams = fullLeague.teams.map((t) => ({
     id: t.id, name: t.name, logoUrl: t.logoUrl ?? null, status: t.status, isActive: t.isActive,
-    seasonId: t.seasonId, categoryId: t.categoryId,
-    season: t.season, category: t.category,
-    requireDob: t.season?.requireDob ?? false,
+    seasons: [...t.seasons]
+      .sort((a, b) => b.season.startDate.getTime() - a.season.startDate.getTime())
+      .map((r) => ({ seasonId: r.seasonId, seasonName: r.season.name, categoryId: r.categoryId, categoryName: r.category?.name ?? null })),
+    requireDob: t.seasons.some((r) => r.season.requireDob),
     manager:   t.manager   ? { id: t.manager.id,   name: t.manager.name,   email: t.manager.email,   phone: t.manager.phone }   : null,
     assistant: t.assistant ? { id: t.assistant.id, name: t.assistant.name, email: t.assistant.email, phone: t.assistant.phone } : null,
     players: t.players.map((p) => ({

@@ -28,6 +28,7 @@ export default async function TeamPublicPage({ params }: PageProps) {
     include: {
       publicPage: true,
       league: { select: { id: true, name: true, slug: true } },
+      seasons: { include: { season: { select: { id: true, startDate: true } } } },
       manager:   { select: { id: true, name: true } },
       assistant: { select: { id: true, name: true } },
       players: {
@@ -45,21 +46,25 @@ export default async function TeamPublicPage({ params }: PageProps) {
   const hasSocial = Object.values(social).some(Boolean);
   const logoUrl = team.logoUrl;
 
+  // A team can play multiple seasons; use its most recent for the public standings snapshot.
+  const primarySeasonId = [...team.seasons]
+    .sort((a, b) => b.season.startDate.getTime() - a.season.startDate.getTime())[0]?.season.id ?? null;
+
   // ── Standings ────────────────────────────────────────────────────────────────
   let groupRows: StandingRow[] = [];
 
-  if (team.seasonId) {
+  if (primarySeasonId) {
     const [seasonCfg, allTeams, completedGames] = await Promise.all([
       prisma.season.findUnique({
-        where: { id: team.seasonId },
+        where: { id: primarySeasonId },
         select: { pointsWin: true, pointsTie: true, pointsLoss: true, tiebreakers: true, showPct: true },
       }),
       prisma.team.findMany({
-        where: { seasonId: team.seasonId },
+        where: { seasons: { some: { seasonId: primarySeasonId } } },
         select: { id: true, name: true, group: true, logoUrl: true },
       }),
       prisma.game.findMany({
-        where: { seasonId: team.seasonId, status: "COMPLETED", isPractice: false },
+        where: { seasonId: primarySeasonId, status: "COMPLETED", isPractice: false },
         select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
       }),
     ]);
@@ -118,9 +123,9 @@ export default async function TeamPublicPage({ params }: PageProps) {
 
   // ── Season stats (unofficial) ────────────────────────────────────────────────
   let seasonStats: Awaited<ReturnType<typeof computeSeasonStats>> = [];
-  if (cfg.showStats && team.seasonId) {
+  if (cfg.showStats && primarySeasonId) {
     const scorebooks = await prisma.managerScorebook.findMany({
-      where: { teamId, game: { seasonId: team.seasonId } },
+      where: { teamId, game: { seasonId: primarySeasonId } },
       select: { gameId: true, data: true },
     });
     const gameIds = scorebooks.map(s => s.gameId);

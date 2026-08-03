@@ -23,7 +23,7 @@ export default async function SeasonPage({ params }: PageProps) {
     include: {
       userRoles: { where: { userId: session.user.id } },
       categories: true,
-      teams: { where: { seasonId: id }, orderBy: { name: "asc" } },
+      teams: { where: { seasons: { some: { seasonId: id } } }, orderBy: { name: "asc" } },
       fields: { orderBy: { name: "asc" } },
     },
   });

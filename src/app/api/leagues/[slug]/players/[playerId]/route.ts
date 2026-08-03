@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const player = await prisma.player.findFirst({
     where: { id: playerId, leagueId: league.id },
-    include: { team: { select: { id: true, name: true, status: true, managerId: true, assistantId: true, season: { select: { requireDob: true } } } } },
+    include: { team: { select: { id: true, name: true, status: true, managerId: true, assistantId: true, seasons: { select: { season: { select: { requireDob: true } } } } } } },
   });
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const nationality: string | null | undefined = "nationality" in body ? (body.nationality || null) : undefined;
   const dob: Date | null | undefined = "dob" in body ? (body.dob ? new Date(body.dob) : null) : undefined;
 
-  if ("dob" in body && !dob && player.team.season?.requireDob)
+  if ("dob" in body && !dob && player.team.seasons.some((s) => s.season.requireDob))
     return NextResponse.json({ error: "Date of birth is required for this season" }, { status: 400 });
 
   const emailChanging = email !== undefined && email !== player.email;
