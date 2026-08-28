@@ -51,6 +51,7 @@ export default async function LeaguePage({ params }: PageProps) {
     startDate: s.startDate.toISOString(),
     endDate: s.endDate.toISOString(),
     status: s.status,
+    ageCutoffDate: s.ageCutoffDate ? s.ageCutoffDate.toISOString() : null,
   }));
 
   // ── Header (shared across all roles) ──────────────────────────────────────
@@ -336,6 +337,9 @@ export default async function LeaguePage({ params }: PageProps) {
   if (!fullLeague) notFound();
 
   const isAdmin = isMasterAdmin || role === "LEAGUE_ADMIN";
+  const isCategoryAdmin = !isAdmin && (await prisma.categoryAdmin.count({
+    where: { userId: sessionUser.id, category: { leagueId: league.id } },
+  })) > 0;
 
   // Load subscription info
   const subInfo = await getLeagueSubscriptionInfo(league.id);
@@ -421,6 +425,7 @@ export default async function LeaguePage({ params }: PageProps) {
         <LeagueDashboard
           slug={slug}
           isAdmin={isAdmin}
+          isCategoryAdmin={isCategoryAdmin}
           isMasterAdmin={isMasterAdmin}
           currentUserId={sessionUser.id!}
           technician={technicianData}

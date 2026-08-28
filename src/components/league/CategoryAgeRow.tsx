@@ -13,7 +13,37 @@ export function CategoryAgeRow({ cat, slug, canEdit }: { cat: Cat; slug: string;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [showAdmins, setShowAdmins] = useState(false);
+  const [admins, setAdmins] = useState<{ id: string; name: string | null; email: string }[] | null>(null);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
+  const [adminErr, setAdminErr] = useState("");
+
   const hasAges = cat.minAge != null && cat.maxAge != null;
+
+  async function loadAdmins() {
+    const res = await fetch(`/api/leagues/${slug}/categories/${cat.id}/admins`);
+    if (res.ok) setAdmins((await res.json()).admins);
+  }
+  async function toggleAdmins() {
+    const next = !showAdmins;
+    setShowAdmins(next);
+    if (next && admins === null) await loadAdmins();
+  }
+  async function addAdmin() {
+    if (!adminEmail.trim()) return;
+    setAdminBusy(true); setAdminErr("");
+    const res = await fetch(`/api/leagues/${slug}/categories/${cat.id}/admins`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: adminEmail.trim() }),
+    });
+    setAdminBusy(false);
+    if (!res.ok) { setAdminErr((await res.json()).error ?? "Failed to add"); return; }
+    setAdminEmail(""); await loadAdmins();
+  }
+  async function removeAdmin(userId: string) {
+    await fetch(`/api/leagues/${slug}/categories/${cat.id}/admins?userId=${encodeURIComponent(userId)}`, { method: "DELETE" });
+    await loadAdmins();
+  }
 
   async function save() {
     setSaving(true); setError("");
@@ -52,6 +82,12 @@ export function CategoryAgeRow({ cat, slug, canEdit }: { cat: Cat; slug: string;
                 {hasAges ? "Edit" : "Set ages"}
               </button>
             )}
+            {canEdit && (
+              <button onClick={toggleAdmins} className="text-xs px-2 py-1 rounded-md border"
+                style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>
+                Admins{admins ? ` (${admins.length})` : ""}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -75,6 +111,35 @@ export function CategoryAgeRow({ cat, slug, canEdit }: { cat: Cat; slug: string;
           <button onClick={() => { setEditing(false); setError(""); }} className="text-xs px-2 py-1.5 rounded-md border"
             style={{ borderColor: "var(--sh-border2)", color: "var(--sh-secondary)", background: "transparent" }}>Cancel</button>
           {error && <span className="text-xs w-full" style={{ color: "#f87171" }}>{error}</span>}
+        </div>
+      )}
+
+      {showAdmins && (
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sh-border)" }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: "var(--sh-muted)" }}>Category admins — run this division&apos;s tryouts &amp; draft</p>
+          {admins === null ? (
+            <p className="text-xs" style={{ color: "var(--sh-muted)" }}>Loading…</p>
+          ) : admins.length === 0 ? (
+            <p className="text-xs mb-2" style={{ color: "var(--sh-muted)" }}>No admins yet.</p>
+          ) : (
+            <ul className="space-y-1 mb-2">
+              {admins.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span style={{ color: "var(--sh-text)" }}>{a.name ?? a.email} <span style={{ color: "var(--sh-muted)" }}>· {a.email}</span></span>
+                  <button onClick={() => removeAdmin(a.id)} className="text-xs px-2 py-0.5 rounded-md border"
+                    style={{ borderColor: "#7f1d1d", color: "#f87171", background: "transparent" }}>Remove</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex items-center gap-2">
+            <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@email.com"
+              className="flex-1 rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }} />
+            <button onClick={addAdmin} disabled={adminBusy} className="text-xs px-3 py-1.5 rounded-md font-semibold disabled:opacity-50"
+              style={{ background: "var(--sh-primary)", color: "#04120a" }}>{adminBusy ? "Adding…" : "Add admin"}</button>
+          </div>
+          {adminErr && <p className="text-xs mt-1" style={{ color: "#f87171" }}>{adminErr}</p>}
         </div>
       )}
     </div>

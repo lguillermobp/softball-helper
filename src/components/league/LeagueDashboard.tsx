@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AddSeasonDialog } from "@/components/league/AddSeasonDialog";
 import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
 import { CategoryAgeRow } from "@/components/league/CategoryAgeRow";
+import { ProspectsSection } from "@/components/league/ProspectsSection";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { EditTeamDialog } from "@/components/league/EditTeamDialog";
 import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
@@ -26,9 +27,9 @@ import { flagUrl } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions" | "public-page";
+type Section = "overview" | "seasons" | "categories" | "prospects" | "teams" | "members" | "fields" | "conditions" | "public-page";
 
-interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
+interface Season { id: string; name: string; startDate: string; endDate: string; status: string; ageCutoffDate: string | null }
 interface Category { id: string; name: string; description: string | null; minAge: number | null; maxAge: number | null }
 interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; dob: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
@@ -115,6 +116,7 @@ interface SubscriptionProp {
 interface Props {
   slug: string;
   isAdmin: boolean;
+  isCategoryAdmin?: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
   league: { id: string; name: string; city: string | null; state: string | null; status: string; type: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string; usesTryoutDraft: boolean };
@@ -298,10 +300,11 @@ const FIELD_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
 // Nav items — labels filled dynamically from translations in the component
-const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
+const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean; tryoutOnly?: boolean }[] = [
   { key: "overview",    icon: "⚾" },
   { key: "seasons",     icon: "📅" },
   { key: "categories",  icon: "🏷️" },
+  { key: "prospects",   icon: "⭐", tryoutOnly: true },
   { key: "teams",       icon: "👥" },
   { key: "members",     icon: "🙋", adminOnly: true },
   { key: "fields",      icon: "🏟️" },
@@ -311,7 +314,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, league, subscription, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
+export function LeagueDashboard({ slug, isAdmin, isCategoryAdmin = false, isMasterAdmin, currentUserId, league, subscription, technician: initialTechnician, availableTechnicians = [], seasons, categories, teams, members, fields, officials = [], conditions, publicPage: initialPublicPage }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stripeParam  = searchParams.get("stripe");
@@ -427,10 +430,12 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
 
   const activeTeams   = teams.filter((t) => t.isActive);
   const inactiveTeams = teams.filter((t) => !t.isActive);
-  const navItems = NAV_KEYS.filter((n) => !n.adminOnly || isAdmin).map((n) => ({
-    ...n,
-    label: tl.nav[n.key as keyof typeof tl.nav] ?? n.key,
-  }));
+  const navItems = NAV_KEYS
+    .filter((n) => (!n.adminOnly || isAdmin) && (!n.tryoutOnly || (usesTryoutDraft && (isAdmin || isCategoryAdmin))))
+    .map((n) => ({
+      ...n,
+      label: n.key === "prospects" ? "Prospects" : (tl.nav[n.key as keyof typeof tl.nav] ?? n.key),
+    }));
 
   async function toggleActive(team: Team) {
     const res = await fetch(`/api/leagues/${slug}/teams/${team.id}`, {
@@ -1746,6 +1751,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     overview:    Overview,
     seasons:     Seasons,
     categories:  Categories,
+    prospects:   <ProspectsSection slug={slug} seasons={seasons} categories={categories} canManage={isAdmin || isCategoryAdmin} isSuspended={isSuspended} />,
     teams:       Teams,
     members:     Members,
     fields:      Fields,
