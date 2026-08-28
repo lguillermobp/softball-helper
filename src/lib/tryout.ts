@@ -41,6 +41,23 @@ export async function adminCategoryIds(userId: string, isMasterAdmin: boolean, l
   return rows.map((r) => r.categoryId);
 }
 
+/**
+ * Load a tryout by id within a league and confirm the user may administer it.
+ * Returns `{ league, tryout }` or `{ error, status }`.
+ */
+export async function loadTryoutForAdmin(slug: string, tryoutId: string, userId: string, isMasterAdmin: boolean) {
+  const league = await prisma.league.findUnique({ where: { slug }, select: { id: true, status: true } });
+  if (!league) return { error: "Not found" as const, status: 404 };
+  const tryout = await prisma.tryout.findFirst({
+    where: { id: tryoutId, season: { leagueId: league.id } },
+    select: { id: true, categoryId: true, seasonId: true, status: true },
+  });
+  if (!tryout) return { error: "Tryout not found" as const, status: 404 };
+  if (!(await canAdminCategory(userId, isMasterAdmin, tryout.categoryId)))
+    return { error: "Forbidden" as const, status: 403 };
+  return { league, tryout };
+}
+
 /** Whole-year age on a fixed cutoff date (e.g. "age as of Dec 31"). */
 export function ageOnDate(dob: Date, cutoff: Date): number {
   let age = cutoff.getFullYear() - dob.getFullYear();
