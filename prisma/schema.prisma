@@ -35,6 +35,8 @@ model User {
   createdTickets       Ticket[]         @relation("TicketCreator")
   assignedTickets      Ticket[]         @relation("TicketAssignee")
   ticketMessages       TicketMessage[]
+  categoryAdminRoles   CategoryAdmin[]
+  tryoutEvaluations    TryoutEvaluator[]
 
   @@map("users")
 }
@@ -127,6 +129,7 @@ model League {
   notifyManagers       Boolean          @default(false)
   instagramEnabled     Boolean          @default(false)
   timezone             String           @default("UTC")
+  usesTryoutDraft      Boolean          @default(false)
   appliedCouponId      String?
   appliedCoupon        Coupon?          @relation(fields: [appliedCouponId], references: [id])
 
@@ -142,6 +145,7 @@ model League {
   publicPage    LeaguePublicPage?
   tickets       Ticket[]
   subscriptions LeagueSubscription[]
+  prospects     Prospect[]
 
   @@map("leagues")
 }
@@ -238,11 +242,14 @@ model Season {
   defaultGameDurationMins Int     @default(90)
   tiebreakers             String  @default("RD,RF,RA")
   requireDob              Boolean @default(false)
+  ageCutoffDate           DateTime?
   createdAt      DateTime     @default(now())
 
-  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  teams  TeamSeason[]
-  games  Game[]
+  league    League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teams     TeamSeason[]
+  games     Game[]
+  prospects Prospect[]
+  tryouts   Tryout[]
 
   @@map("seasons")
 }
@@ -260,10 +267,15 @@ model Category {
   leagueId    String
   name        String
   description String?
+  minAge      Int?
+  maxAge      Int?
 
-  league     League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  league      League          @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   teamSeasons TeamSeason[]
-  games      Game[]
+  games       Game[]
+  admins      CategoryAdmin[]
+  prospects   Prospect[]
+  tryouts     Tryout[]
 
   @@map("categories")
 }
@@ -335,8 +347,9 @@ model Field {
   timezone                 String      @default("UTC")
   createdAt                DateTime    @default(now())
 
-  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  games  Game[]
+  league  League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  games   Game[]
+  tryouts Tryout[]
 
   @@map("fields")
 }
@@ -443,6 +456,7 @@ model Player {
   pitcherStints    GamePitcherStint[]
   substitutionsIn  GameSubstitution[] @relation("SubIn")
   substitutionsOut GameSubstitution[] @relation("SubOut")
+  prospect         Prospect?
 
   @@unique([email, teamId])
   @@map("players")
@@ -783,4 +797,156 @@ model TicketMessage {
 
   @@index([ticketId])
   @@map("ticket_messages")
+}
+
+// ─── Tryout & Draft ───────────────────────────────────────────────────────────
+// Active only when League.usesTryoutDraft is true.
+
+model CategoryAdmin {
+  id         String   @id @default(cuid())
+  categoryId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, userId])
+  @@index([userId])
+  @@map("category_admins")
+}
+
+enum ProspectStatus {
+  REGISTERED
+  DRAFTED
+}
+
+model Prospect {
+  id          String         @id @default(cuid())
+  leagueId    String
+  seasonId    String
+  categoryId  String
+  name        String
+  email       String?
+  phone       String?
+  dob         DateTime?
+  photoUrl    String?
+  nationality String?
+  status      ProspectStatus @default(REGISTERED)
+  playerId    String?        @unique
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season   Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+  player   Player?  @relation(fields: [playerId], references: [id])
+  participations TryoutParticipant[]
+
+  @@index([seasonId, categoryId])
+  @@map("prospects")
+}
+
+enum TryoutRunMode {
+  BY_SKILL
+  BY_PLAYER
+}
+
+enum TryoutStatus {
+  SETUP
+  LIVE
+  DONE
+}
+
+model Tryout {
+  id                   String        @id @default(cuid())
+  seasonId             String
+  categoryId           String
+  name                 String?
+  scheduledAt          DateTime?
+  fieldId              String?
+  ratingMin            Int           @default(1)
+  ratingMax            Int           @default(5)
+  runMode              TryoutRunMode?
+  status               TryoutStatus  @default(SETUP)
+  currentParticipantId String?
+  currentSkillId       String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  season   Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+  field    Field?   @relation(fields: [fieldId], references: [id])
+
+  skills       TryoutSkill[]
+  evaluators   TryoutEvaluator[]
+  participants TryoutParticipant[]
+  scores       TryoutScore[]
+
+  @@index([seasonId, categoryId])
+  @@map("tryouts")
+}
+
+model TryoutSkill {
+  id       String @id @default(cuid())
+  tryoutId String
+  name     String
+  order    Int    @default(0)
+
+  tryout Tryout        @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  scores TryoutScore[]
+
+  @@index([tryoutId])
+  @@map("tryout_skills")
+}
+
+model TryoutEvaluator {
+  id                  String  @id @default(cuid())
+  tryoutId            String
+  userId              String
+  attendanceConfirmed Boolean @default(false)
+
+  tryout Tryout        @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores TryoutScore[]
+
+  @@unique([tryoutId, userId])
+  @@map("tryout_evaluators")
+}
+
+model TryoutParticipant {
+  id                  String  @id @default(cuid())
+  tryoutId            String
+  prospectId          String
+  sequenceOrder       Int     @default(0)
+  attendanceConfirmed Boolean @default(false)
+
+  tryout   Tryout        @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  prospect Prospect      @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  scores   TryoutScore[]
+
+  @@unique([tryoutId, prospectId])
+  @@index([tryoutId])
+  @@map("tryout_participants")
+}
+
+model TryoutScore {
+  id            String   @id @default(cuid())
+  tryoutId      String
+  participantId String
+  skillId       String
+  evaluatorId   String
+  rating        Int
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tryout      Tryout            @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  participant TryoutParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  skill       TryoutSkill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  evaluator   TryoutEvaluator   @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, skillId, evaluatorId])
+  @@index([tryoutId])
+  @@map("tryout_scores")
 }
