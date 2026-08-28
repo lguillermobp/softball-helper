@@ -9,6 +9,7 @@ import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
 import { CategoryAgeRow } from "@/components/league/CategoryAgeRow";
 import { ProspectsSection } from "@/components/league/ProspectsSection";
 import { TryoutsSection } from "@/components/league/TryoutsSection";
+import { DraftSection } from "@/components/league/DraftSection";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { EditTeamDialog } from "@/components/league/EditTeamDialog";
 import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
@@ -28,7 +29,7 @@ import { flagUrl } from "@/lib/countries";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Section = "overview" | "seasons" | "categories" | "prospects" | "tryouts" | "teams" | "members" | "fields" | "conditions" | "public-page";
+type Section = "overview" | "seasons" | "categories" | "prospects" | "tryouts" | "draft" | "teams" | "members" | "fields" | "conditions" | "public-page";
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string; ageCutoffDate: string | null }
 interface Category { id: string; name: string; description: string | null; minAge: number | null; maxAge: number | null }
@@ -307,6 +308,7 @@ const NAV_KEYS: { key: Section; icon: string; adminOnly?: boolean; tryoutOnly?: 
   { key: "categories",  icon: "🏷️" },
   { key: "prospects",   icon: "⭐", tryoutOnly: true },
   { key: "tryouts",     icon: "🧢", tryoutOnly: true },
+  { key: "draft",       icon: "🎯", tryoutOnly: true },
   { key: "teams",       icon: "👥" },
   { key: "members",     icon: "🙋", adminOnly: true },
   { key: "fields",      icon: "🏟️" },
@@ -436,7 +438,7 @@ export function LeagueDashboard({ slug, isAdmin, isCategoryAdmin = false, isMast
     .filter((n) => (!n.adminOnly || isAdmin) && (!n.tryoutOnly || (usesTryoutDraft && (isAdmin || isCategoryAdmin))))
     .map((n) => ({
       ...n,
-      label: n.key === "prospects" ? "Prospects" : n.key === "tryouts" ? "Tryouts" : (tl.nav[n.key as keyof typeof tl.nav] ?? n.key),
+      label: n.key === "prospects" ? "Prospects" : n.key === "tryouts" ? "Tryouts" : n.key === "draft" ? "Draft" : (tl.nav[n.key as keyof typeof tl.nav] ?? n.key),
     }));
 
   async function toggleActive(team: Team) {
@@ -1755,6 +1757,7 @@ export function LeagueDashboard({ slug, isAdmin, isCategoryAdmin = false, isMast
     categories:  Categories,
     prospects:   <ProspectsSection slug={slug} seasons={seasons} categories={categories} canManage={isAdmin || isCategoryAdmin} isSuspended={isSuspended} />,
     tryouts:     <TryoutsSection slug={slug} seasons={seasons} categories={categories} fields={fields.map((f) => ({ id: f.id, name: f.name }))} canManage={isAdmin || isCategoryAdmin} isSuspended={isSuspended} />,
+    draft:       <DraftSection slug={slug} seasons={seasons} categories={categories} canManage={isAdmin || isCategoryAdmin} />,
     teams:       Teams,
     members:     Members,
     fields:      Fields,

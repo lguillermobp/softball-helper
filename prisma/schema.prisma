@@ -250,6 +250,7 @@ model Season {
   games     Game[]
   prospects Prospect[]
   tryouts   Tryout[]
+  drafts    Draft[]
 
   @@map("seasons")
 }
@@ -276,6 +277,7 @@ model Category {
   admins      CategoryAdmin[]
   prospects   Prospect[]
   tryouts     Tryout[]
+  drafts      Draft[]
 
   @@map("categories")
 }
@@ -303,6 +305,7 @@ model Team {
   players    Player[]
   scorebooks ManagerScorebook[]
   publicPage TeamPublicPage?
+  draftPicks DraftPick[]
 
   @@map("teams")
 }
@@ -848,6 +851,7 @@ model Prospect {
   category Category @relation(fields: [categoryId], references: [id])
   player   Player?  @relation(fields: [playerId], references: [id])
   participations TryoutParticipant[]
+  draftPicks     DraftPick[]
 
   @@index([seasonId, categoryId])
   @@map("prospects")
@@ -955,4 +959,45 @@ model TryoutScore {
   @@unique([participantId, skillId, evaluatorId])
   @@index([tryoutId])
   @@map("tryout_scores")
+}
+
+// ─── Draft ────────────────────────────────────────────────────────────────────
+
+model Draft {
+  id            String   @id @default(cuid())
+  seasonId      String
+  categoryId    String
+  status        String   @default("SETUP") // SETUP | LIVE | DONE
+  snake         Boolean  @default(true)
+  targetPerTeam Int?
+  pickOrder     String[] // team ids, in the drawn order
+  currentPick   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  season   Season      @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  category Category    @relation(fields: [categoryId], references: [id])
+  picks    DraftPick[]
+
+  @@unique([seasonId, categoryId])
+  @@map("drafts")
+}
+
+model DraftPick {
+  id         String   @id @default(cuid())
+  draftId    String
+  teamId     String
+  prospectId String
+  round      Int      @default(0)
+  pickNumber Int      @default(0)
+  isKeeper   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  draft    Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  prospect Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, prospectId])
+  @@index([draftId])
+  @@map("draft_picks")
 }
