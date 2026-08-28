@@ -355,7 +355,7 @@ export default async function LeaguePage({ params }: PageProps) {
       ])
     : [null, []];
 
-  const categories = fullLeague.categories.map((c) => ({ id: c.id, name: c.name, description: c.description }));
+  const categories = fullLeague.categories.map((c) => ({ id: c.id, name: c.name, description: c.description, minAge: c.minAge, maxAge: c.maxAge }));
 
   const teams = fullLeague.teams.map((t) => ({
     id: t.id, name: t.name, logoUrl: t.logoUrl ?? null, status: t.status, isActive: t.isActive,
@@ -425,7 +425,7 @@ export default async function LeaguePage({ params }: PageProps) {
           currentUserId={sessionUser.id!}
           technician={technicianData}
           availableTechnicians={availableTechnicians}
-          league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, type: league.type, logoUrl: fullLeague.logoUrl ?? null, bannerUrl: fullLeague.bannerUrl ?? null, plan: { name: league.plan.name, stripePriceId: league.plan.stripePriceId ?? null }, stripeCustomerId: league.stripeCustomerId ?? null, subscriptionStatus: league.subscriptionStatus ?? null, notifyGameEnd: fullLeague.notifyGameEnd, notifyEmail: fullLeague.notifyEmail ?? null, notifyManagers: fullLeague.notifyManagers, instagramEnabled: fullLeague.instagramEnabled, timezone: fullLeague.timezone }}
+          league={{ id: league.id, name: league.name, city: league.city, state: league.state, status: league.status, type: league.type, logoUrl: fullLeague.logoUrl ?? null, bannerUrl: fullLeague.bannerUrl ?? null, plan: { name: league.plan.name, stripePriceId: league.plan.stripePriceId ?? null }, stripeCustomerId: league.stripeCustomerId ?? null, subscriptionStatus: league.subscriptionStatus ?? null, notifyGameEnd: fullLeague.notifyGameEnd, notifyEmail: fullLeague.notifyEmail ?? null, notifyManagers: fullLeague.notifyManagers, instagramEnabled: fullLeague.instagramEnabled, timezone: fullLeague.timezone, usesTryoutDraft: fullLeague.usesTryoutDraft }}
           subscription={{
             effectiveStatus: subInfo.effectiveStatus,
             gamesUsed: subInfo.gamesUsed,

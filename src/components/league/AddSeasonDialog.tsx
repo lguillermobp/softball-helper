@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function AddSeasonDialog({ slug }: { slug: string }) {
+export function AddSeasonDialog({ slug, requireCutoff = false }: { slug: string; requireCutoff?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,6 +26,7 @@ export function AddSeasonDialog({ slug }: { slug: string }) {
         startDate: fd.get("startDate"),
         endDate: fd.get("endDate"),
         status: fd.get("status"),
+        ageCutoffDate: fd.get("ageCutoffDate") || undefined,
       }),
     });
     setLoading(false);
@@ -75,6 +76,15 @@ export function AddSeasonDialog({ slug }: { slug: string }) {
               <option value="COMPLETED">Completed</option>
             </select>
           </div>
+          {requireCutoff && (
+            <div className="space-y-1">
+              <Label htmlFor="ageCutoffDate">Age cutoff date *</Label>
+              <Input id="ageCutoffDate" name="ageCutoffDate" type="date" required />
+              <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
+                A prospect&apos;s age is figured as of this date, so it stays fixed all season (e.g. Dec 31).
+              </p>
+            </div>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

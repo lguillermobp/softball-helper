@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
 import { AddSeasonDialog } from "@/components/league/AddSeasonDialog";
 import { AddCategoryDialog } from "@/components/league/AddCategoryDialog";
+import { CategoryAgeRow } from "@/components/league/CategoryAgeRow";
 import { AddTeamDialog } from "@/components/league/AddTeamDialog";
 import { EditTeamDialog } from "@/components/league/EditTeamDialog";
 import { AddPlayerDialog } from "@/components/league/AddPlayerDialog";
@@ -28,7 +29,7 @@ import { flagUrl } from "@/lib/countries";
 type Section = "overview" | "seasons" | "categories" | "teams" | "members" | "fields" | "conditions" | "public-page";
 
 interface Season { id: string; name: string; startDate: string; endDate: string; status: string }
-interface Category { id: string; name: string; description: string | null }
+interface Category { id: string; name: string; description: string | null; minAge: number | null; maxAge: number | null }
 interface Player { id: string; name: string; email: string | null; jerseyNumber: string | null; nationality: string | null; photoUrl: string | null; dob: string | null; userId: string | null; invitePending: boolean }
 interface StaffMember { id: string; name: string | null; email: string; phone: string | null }
 interface PublicPageConfig {
@@ -116,7 +117,7 @@ interface Props {
   isAdmin: boolean;
   isMasterAdmin?: boolean;
   currentUserId: string;
-  league: { id: string; name: string; city: string | null; state: string | null; status: string; type: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string };
+  league: { id: string; name: string; city: string | null; state: string | null; status: string; type: string; logoUrl: string | null; bannerUrl: string | null; plan: { name: string; stripePriceId: string | null }; stripeCustomerId: string | null; subscriptionStatus: string | null; notifyGameEnd: boolean; notifyEmail: string | null; notifyManagers: boolean; instagramEnabled: boolean; timezone: string; usesTryoutDraft: boolean };
   subscription?: SubscriptionProp | null;
   technician?: TechnicianOption | null;
   availableTechnicians?: TechnicianOption[];
@@ -331,6 +332,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
   const [notifyManagers, setNotifyManagers] = useState(league.notifyManagers);
   const [igEnabled,      setIgEnabled]      = useState(league.instagramEnabled);
   const [timezone,       setTimezone]       = useState(league.timezone || "UTC");
+  const [usesTryoutDraft, setUsesTryoutDraft] = useState(league.usesTryoutDraft);
   const [savingNotify,   setSavingNotify]   = useState(false);
   const [notifyMsg,      setNotifyMsg]      = useState<string | null>(null);
   const [leagueType,     setLeagueType]     = useState(league.type);
@@ -363,7 +365,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       const res = await fetch(`/api/leagues/${slug}/notifications`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers, instagramEnabled: igEnabled, timezone }),
+        body: JSON.stringify({ notifyGameEnd: notifyOn, notifyEmail, notifyManagers, instagramEnabled: igEnabled, timezone, usesTryoutDraft }),
       });
       const data = await res.json();
       if (!res.ok) { setNotifyMsg(data.error ?? "Failed to save"); return; }
@@ -372,6 +374,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
       setNotifyManagers(data.notifyManagers);
       setIgEnabled(data.instagramEnabled);
       setTimezone(data.timezone || "UTC");
+      setUsesTryoutDraft(data.usesTryoutDraft);
       setNotifyMsg("Saved ✓");
       setTimeout(() => setNotifyMsg(null), 2500);
     } finally {
@@ -680,6 +683,20 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
               />
               <span className="text-sm" style={{ color: "var(--sh-text)" }}>Allow posting to Instagram</span>
             </label>
+            <label className="flex items-start gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={usesTryoutDraft}
+                onChange={e => setUsesTryoutDraft(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-green-500"
+              />
+              <span className="text-sm" style={{ color: "var(--sh-text)" }}>
+                Run this league with tryouts &amp; a draft
+                <span className="block text-xs" style={{ color: "var(--sh-muted)" }}>
+                  Adds prospect registration, tryouts and the draft. Categories then require an age range and seasons an age cutoff.
+                </span>
+              </span>
+            </label>
             <div className="flex items-center gap-2">
               <button
                 onClick={saveNotifications}
@@ -799,7 +816,7 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.seasons.title}</h2>
-        {isAdmin && !isSuspended && <AddSeasonDialog slug={slug} />}
+        {isAdmin && !isSuspended && <AddSeasonDialog slug={slug} requireCutoff={usesTryoutDraft} />}
       </div>
       {seasons.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
@@ -835,11 +852,17 @@ export function LeagueDashboard({ slug, isAdmin, isMasterAdmin, currentUserId, l
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold" style={head}>{tl.categories.title}</h2>
-        {isAdmin && !isSuspended && <AddCategoryDialog slug={slug} />}
+        {isAdmin && !isSuspended && <AddCategoryDialog slug={slug} requireAge={usesTryoutDraft} />}
       </div>
       {categories.length === 0 ? (
         <div className="rounded-2xl border py-10 text-center text-sm" style={{ ...card, color: "var(--sh-primary)" }}>
           {tl.categories.none}{isAdmin && ` ${tl.categories.noneHint}`}
+        </div>
+      ) : usesTryoutDraft ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {categories.map((cat) => (
+            <CategoryAgeRow key={cat.id} cat={cat} slug={slug} canEdit={isAdmin && !isSuspended} />
+          ))}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">

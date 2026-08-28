@@ -832,6 +832,12 @@ model Prospect {
   dob         DateTime?
   photoUrl    String?
   nationality String?
+  parent1Name  String?
+  parent1Email String?
+  parent1Phone String?
+  parent2Name  String?
+  parent2Email String?
+  parent2Phone String?
   status      ProspectStatus @default(REGISTERED)
   playerId    String?        @unique
   createdAt   DateTime       @default(now())

@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
-  const { notifyGameEnd, notifyEmail, notifyManagers, instagramEnabled, timezone } = await req.json();
+  const { notifyGameEnd, notifyEmail, notifyManagers, instagramEnabled, timezone, usesTryoutDraft } = await req.json();
 
   const updated = await prisma.league.update({
     where: { id: league.id },
@@ -30,8 +30,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(typeof notifyManagers === "boolean" && { notifyManagers }),
       ...(typeof instagramEnabled === "boolean" && { instagramEnabled }),
       ...(typeof timezone === "string" && timezone && { timezone }),
+      ...(typeof usesTryoutDraft === "boolean" && { usesTryoutDraft }),
     },
-    select: { notifyGameEnd: true, notifyEmail: true, notifyManagers: true, instagramEnabled: true, timezone: true },
+    select: { notifyGameEnd: true, notifyEmail: true, notifyManagers: true, instagramEnabled: true, timezone: true, usesTryoutDraft: true },
   });
 
   return NextResponse.json(updated);

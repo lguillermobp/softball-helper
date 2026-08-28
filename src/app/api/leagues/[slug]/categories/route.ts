@@ -20,11 +20,18 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
-  const { name, description } = await req.json();
+  const { name, description, minAge, maxAge } = await req.json();
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
+  const min = minAge === "" || minAge == null ? null : Math.trunc(Number(minAge));
+  const max = maxAge === "" || maxAge == null ? null : Math.trunc(Number(maxAge));
+  if ((min != null && (!Number.isFinite(min) || min < 0)) || (max != null && (!Number.isFinite(max) || max < 0)))
+    return NextResponse.json({ error: "Ages must be positive numbers" }, { status: 400 });
+  if (min != null && max != null && min > max)
+    return NextResponse.json({ error: "Minimum age can't be greater than maximum age" }, { status: 400 });
+
   const category = await prisma.category.create({
-    data: { leagueId: league.id, name, description: description ?? null },
+    data: { leagueId: league.id, name, description: description ?? null, minAge: min, maxAge: max },
   });
 
   return NextResponse.json(category, { status: 201 });

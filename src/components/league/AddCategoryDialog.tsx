@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function AddCategoryDialog({ slug }: { slug: string }) {
+export function AddCategoryDialog({ slug, requireAge = false }: { slug: string; requireAge?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,8 @@ export function AddCategoryDialog({ slug }: { slug: string }) {
       body: JSON.stringify({
         name: fd.get("name"),
         description: fd.get("description") || undefined,
+        minAge: fd.get("minAge") || undefined,
+        maxAge: fd.get("maxAge") || undefined,
       }),
     });
     setLoading(false);
@@ -54,6 +56,18 @@ export function AddCategoryDialog({ slug }: { slug: string }) {
             <Label htmlFor="description">Description (optional)</Label>
             <Input id="description" name="description" placeholder="Short description" />
           </div>
+          {requireAge && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="minAge">Min age *</Label>
+                <Input id="minAge" name="minAge" type="number" min="0" placeholder="e.g. 12" required />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="maxAge">Max age *</Label>
+                <Input id="maxAge" name="maxAge" type="number" min="0" placeholder="e.g. 16" required />
+              </div>
+            </div>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

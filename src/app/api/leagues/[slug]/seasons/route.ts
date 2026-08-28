@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (league.status === "SUSPENDED") return NextResponse.json({ error: "This league is currently suspended." }, { status: 423 });
 
-  const { name, startDate, endDate, status } = await req.json();
+  const { name, startDate, endDate, status, ageCutoffDate } = await req.json();
   if (!name || !startDate || !endDate)
     return NextResponse.json({ error: "name, startDate and endDate are required" }, { status: 400 });
 
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       status: status ?? "UPCOMING",
+      ageCutoffDate: ageCutoffDate ? new Date(ageCutoffDate) : null,
     },
   });
 
