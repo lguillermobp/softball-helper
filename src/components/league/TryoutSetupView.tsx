@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Skill { id: string; name: string; order: number }
 interface Evaluator { id: string; attendanceConfirmed: boolean; user: { id: string; name: string | null; email: string } }
@@ -22,7 +23,12 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
   const [skillName, setSkillName] = useState("");
   const [coachEmail, setCoachEmail] = useState("");
   const [err, setErr] = useState("");
+  const router = useRouter();
   const base = `/api/leagues/${slug}/tryouts/${tryoutId}`;
+
+  async function start(runMode: "BY_PLAYER" | "BY_SKILL") {
+    if (await call(`${base}/start`, "POST", { runMode })) router.push(`/league/${slug}/tryout/${tryoutId}/run`);
+  }
 
   const reload = useCallback(async () => {
     const res = await fetch(base);
@@ -73,9 +79,10 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
 
       {err && <p className="text-sm" style={{ color: "#f87171" }}>{err}</p>}
       {!isSetup && (
-        <p className="text-sm px-3 py-2 rounded-lg" style={{ background: "rgba(74,222,128,.12)", color: "#4ade80" }}>
-          This tryout has started — setup is locked.
-        </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap px-3 py-2 rounded-lg" style={{ background: "rgba(74,222,128,.12)" }}>
+          <span className="text-sm" style={{ color: "#4ade80" }}>This tryout has started — setup is locked.</span>
+          <a href={`/league/${slug}/tryout/${tryoutId}/run`} className="text-sm px-3 py-1.5 rounded-md font-semibold" style={{ background: "var(--sh-primary)", color: "#04120a" }}>Go to run screen →</a>
+        </div>
       )}
 
       {/* Skills */}
@@ -159,14 +166,18 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
         )}
       </section>
 
-      {/* Readiness */}
+      {/* Readiness + start */}
       {isSetup && (
         <section className="rounded-xl border p-4 flex items-center justify-between gap-3 flex-wrap" style={card}>
           <div className="text-sm" style={{ color: ready ? "var(--sh-primary)" : "var(--sh-muted)" }}>
-            {ready ? "✓ Ready to run — at least 1 skill, 1 coach and 2 players." : "Add at least 1 skill, 1 coach and 2 players to run this tryout."}
+            {ready ? "✓ Ready to run — choose how to run it:" : "Add at least 1 skill, 1 coach and 2 players to run this tryout."}
           </div>
-          <button disabled title="Run-day is the next phase" className="text-sm px-4 py-2 rounded-md font-semibold opacity-60 cursor-not-allowed"
-            style={{ background: "var(--sh-primary)", color: "#04120a" }}>Start tryout →</button>
+          {ready && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => start("BY_PLAYER")} className="text-sm px-4 py-2 rounded-md font-semibold border" style={{ borderColor: "var(--sh-primary)", color: "var(--sh-primary)", background: "transparent" }}>Start by player</button>
+              <button onClick={() => start("BY_SKILL")} className="text-sm px-4 py-2 rounded-md font-semibold" style={{ background: "var(--sh-primary)", color: "#04120a" }}>Start by skill</button>
+            </div>
+          )}
         </section>
       )}
     </div>

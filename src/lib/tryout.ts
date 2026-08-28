@@ -58,6 +58,30 @@ export async function loadTryoutForAdmin(slug: string, tryoutId: string, userId:
   return { league, tryout };
 }
 
+/**
+ * Load a tryout for the live run: allowed for a category admin OR an assigned evaluator.
+ * Returns `{ league, tryout, isAdmin, evaluator }` or `{ error, status }`.
+ */
+export async function loadTryoutForRun(slug: string, tryoutId: string, userId: string, isMasterAdmin: boolean) {
+  const league = await prisma.league.findUnique({ where: { slug }, select: { id: true } });
+  if (!league) return { error: "Not found" as const, status: 404 };
+  const tryout = await prisma.tryout.findFirst({
+    where: { id: tryoutId, season: { leagueId: league.id } },
+    select: {
+      id: true, categoryId: true, seasonId: true, status: true, runMode: true,
+      ratingMin: true, ratingMax: true, currentParticipantId: true, currentSkillId: true, name: true,
+    },
+  });
+  if (!tryout) return { error: "Tryout not found" as const, status: 404 };
+  const isAdmin = await canAdminCategory(userId, isMasterAdmin, tryout.categoryId);
+  const evaluator = await prisma.tryoutEvaluator.findUnique({
+    where: { tryoutId_userId: { tryoutId, userId } },
+    select: { id: true, attendanceConfirmed: true },
+  });
+  if (!isAdmin && !evaluator) return { error: "Forbidden" as const, status: 403 };
+  return { league, tryout, isAdmin, evaluator };
+}
+
 /** Whole-year age on a fixed cutoff date (e.g. "age as of Dec 31"). */
 export function ageOnDate(dob: Date, cutoff: Date): number {
   let age = cutoff.getFullYear() - dob.getFullYear();
