@@ -1,7 +1,9 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/set-password", "/api/auth", "/api/register", "/api/ig-img", "/league", "/league-bg", "/team", "/demo", "/help", "/api/help"];
+// NOTE: only the Stripe *webhook* is public — Stripe calls it with no session.
+// /api/stripe/checkout and /api/stripe/portal stay protected (hit by a signed-in admin).
+const PUBLIC_PATHS = ["/", "/login", "/register", "/set-password", "/api/auth", "/api/register", "/api/ig-img", "/league", "/league-bg", "/team", "/demo", "/help", "/api/help", "/api/stripe/webhook"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
