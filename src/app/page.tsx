@@ -55,7 +55,7 @@ function ScoreboardWidget() {
         ))}
       </div>
       <div className="px-4 py-2 text-center" style={{ borderTop: "1px solid rgba(74,222,128,0.1)", background: "rgba(0,0,0,0.4)" }}>
-        <span className="text-xs tracking-widest" style={{ color: "rgba(240,253,244,0.25)" }}>SOFTBALLHELPER.COM</span>
+        <span className="text-xs tracking-widest" style={{ color: "rgba(240,253,244,0.25)" }}>DUGOUTADMIN.COM</span>
       </div>
     </div>
   );
@@ -189,7 +189,7 @@ function ContactSection({ defaultSubject }: { defaultSubject?: string }) {
 
         {status === "success" ? (
           <div className="text-center py-12 rounded-2xl border" style={{ borderColor: "var(--sh-border-soft)", background: "var(--sh-section-bg)" }}>
-            <div className="text-5xl mb-4">🥎</div>
+            <div className="text-5xl mb-4">⚾</div>
             <h3 className="text-xl font-black uppercase mb-2" style={{ color: "#4ade80" }}>{tc.successTitle}</h3>
             <p style={{ color: "var(--sh-text-muted)" }}>{tc.successMsg}</p>
           </div>
@@ -283,9 +283,9 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent 0%, #4ade80 40%, #4ade80 60%, transparent 100%)" }} />
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-2xl">🥎</span>
+            <span className="text-2xl">⚾</span>
             <span className="text-xl font-black tracking-tight" style={{ color: "var(--sh-text)" }}>
-              Softball<span style={{ color: "#4ade80" }}>Helper</span>
+              Dugout<span style={{ color: "#4ade80" }}> Admin</span>
             </span>
           </div>
 
@@ -488,7 +488,7 @@ export default function HomePage() {
         <DiamondFieldSvg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none" style={{ color: "#4ade80", opacity: 0.05 }} />
 
         <div className="relative mx-auto max-w-6xl px-4 text-center">
-          <span className="block text-6xl sm:text-8xl mb-6">🥎</span>
+          <span className="block text-6xl sm:text-8xl mb-6">⚾</span>
           <h2 className="text-4xl sm:text-6xl font-black uppercase italic mb-4"
             style={{ color: "var(--sh-text)", letterSpacing: "-0.02em" }}>
             {t.cta.title}
@@ -510,14 +510,14 @@ export default function HomePage() {
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🥎</span>
+            <span className="text-xl">⚾</span>
             <span className="font-black" style={{ color: "var(--sh-text)" }}>
-              Softball<span style={{ color: "#4ade80" }}>Helper</span>
+              Dugout<span style={{ color: "#4ade80" }}> Admin</span>
             </span>
           </div>
           <div className="flex items-center gap-4">
             <a href="#contact" className="text-sm hover:underline" style={{ color: "var(--sh-text-faint)" }}>{t.nav.contactUs}</a>
-            <p className="text-sm" style={{ color: "var(--sh-text-faint)" }}>© {new Date().getFullYear()} SoftballHelper. {t.footer}</p>
+            <p className="text-sm" style={{ color: "var(--sh-text-faint)" }}>© {new Date().getFullYear()} Dugout Admin. {t.footer}</p>
           </div>
         </div>
       </footer>

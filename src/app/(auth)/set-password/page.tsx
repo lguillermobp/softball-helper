@@ -85,7 +85,7 @@ export default function SetPasswordPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-1" style={{ color: "#4ade80" }}>Set your password</h1>
           <p className="text-sm" style={{ color: "#86efac" }}>
-            Choose a password to activate your Softball Helper account.
+            Choose a password to activate your Dugout Admin account.
           </p>
         </div>
         <Suspense>

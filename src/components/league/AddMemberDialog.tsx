@@ -66,7 +66,7 @@ export function AddMemberDialog({ slug }: { slug: string }) {
             <Label htmlFor="email">Email address *</Label>
             <Input id="email" name="email" type="email" placeholder="user@example.com" required />
             <p className="text-xs" style={{ color: "var(--sh-muted)" }}>
-              If they already have a Softball Helper account they will be linked automatically and notified. Otherwise an invitation to set up their profile will be sent.
+              If they already have a Dugout Admin account they will be linked automatically and notified. Otherwise an invitation to set up their profile will be sent.
             </p>
           </div>
           <div className="space-y-1">

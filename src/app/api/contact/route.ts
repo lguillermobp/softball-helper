@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const CONTACT_RECIPIENT = "lguillermobp@gmail.com";
-const FROM = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Dugout Admin <onboarding@resend.dev>";
 
 export async function POST(req: NextRequest) {
   const { name, email, subject, message } = await req.json();
@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
     from: FROM,
     to: CONTACT_RECIPIENT,
     replyTo: email,
-    subject: `[SoftballHelper Contact] ${subject}`,
+    subject: `[Dugout Admin Contact] ${subject}`,
     html: `
       <div style="font-family:sans-serif;max-width:540px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:20px;margin-bottom:4px;">New contact message</h1>
-        <p style="color:#86efac;font-size:13px;margin-bottom:24px;">Via SoftballHelper homepage</p>
+        <p style="color:#86efac;font-size:13px;margin-bottom:24px;">Via Dugout Admin homepage</p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           <tr><td style="color:#4ade80;font-weight:600;padding:6px 0;width:90px;">Name</td><td style="color:#f0fdf4;padding:6px 0;">${name}</td></tr>
           <tr><td style="color:#4ade80;font-weight:600;padding:6px 0;">Email</td><td style="color:#f0fdf4;padding:6px 0;"><a href="mailto:${email}" style="color:#86efac;">${email}</a></td></tr>

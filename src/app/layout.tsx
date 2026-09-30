@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Softball Helper",
-  description: "Multi-tenant softball league management platform",
+  title: "Dugout Admin",
+  description: "Multi-tenant league management for baseball, softball & kickball",
 };
 
 export default function RootLayout({

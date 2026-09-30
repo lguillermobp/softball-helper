@@ -5,7 +5,7 @@ import { Resend } from "resend";
 import { logAudit, getRequestMeta } from "@/lib/audit";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
-const FROM      = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
+const FROM      = process.env.EMAIL_FROM ?? "Dugout Admin <onboarding@resend.dev>";
 
 interface Params { params: Promise<{ slug: string }> }
 
@@ -133,7 +133,7 @@ function buildEmail(opts: {
     </div>` : ""}
 
     <p style="font-size:12px;color:#374151;margin:28px 0 0;text-align:center;">
-      Sent via Softball Helper · ${opts.leagueName}
+      Sent via Dugout Admin · ${opts.leagueName}
     </p>
   </div>
 </body>

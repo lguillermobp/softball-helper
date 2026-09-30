@@ -99,7 +99,7 @@ function buildGameSvg(
   <text x="860" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}" font-weight="bold" letter-spacing="2">HOME</text>
   <line x1="40" y1="876" x2="1040" y2="876" stroke="${C.divider}" stroke-width="1"/>
   <text x="540" y="914" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}">${esc(footer)}</text>
-  <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">softballhelper.com</text>
+  <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">dugoutadmin.com</text>
 </svg>`;
 }
 

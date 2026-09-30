@@ -6,7 +6,7 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-const FROM = process.env.EMAIL_FROM ?? "Softball Helper <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Dugout Admin <onboarding@resend.dev>";
 const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "http://localhost:3001";
 
 export async function createVerificationToken(email: string): Promise<string> {
@@ -26,11 +26,11 @@ export async function sendVerificationEmail(email: string, name: string | null) 
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: "Verify your Softball Helper email",
+    subject: "Verify your Dugout Admin email",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">Welcome${name ? `, ${name}` : ""}!</h1>
-        <p style="color:#86efac;margin-bottom:24px;">Please verify your email address to activate your Softball Helper account.</p>
+        <p style="color:#86efac;margin-bottom:24px;">Please verify your email address to activate your Dugout Admin account.</p>
         <a href="${url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
           Verify email
         </a>
@@ -54,12 +54,12 @@ export async function sendStaffInviteEmail(
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `You've been added to ${leagueName} on Softball Helper`,
+    subject: `You've been added to ${leagueName} on Dugout Admin`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">Welcome, ${name}!</h1>
         <p style="color:#86efac;margin-bottom:8px;">You've been added to <strong style="color:#f0fdf4;">${leagueName}</strong> as <strong style="color:#f0fdf4;">${roleLabel}</strong>.</p>
-        <p style="color:#86efac;margin-bottom:24px;">Click below to verify your email and set your password to access Softball Helper.</p>
+        <p style="color:#86efac;margin-bottom:24px;">Click below to verify your email and set your password to access Dugout Admin.</p>
         <a href="${url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
           Verify email &amp; set password
         </a>
@@ -79,14 +79,14 @@ export async function sendRoleNotificationEmail(
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `You've been added to ${leagueName} on Softball Helper`,
+    subject: `You've been added to ${leagueName} on Dugout Admin`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">You're in${name ? `, ${name}` : ""}!</h1>
         <p style="color:#86efac;margin-bottom:8px;">You've been added to <strong style="color:#f0fdf4;">${leagueName}</strong> as <strong style="color:#f0fdf4;">${roleDescription}</strong>.</p>
-        <p style="color:#86efac;margin-bottom:24px;">Log in to Softball Helper to access your league.</p>
+        <p style="color:#86efac;margin-bottom:24px;">Log in to Dugout Admin to access your league.</p>
         <a href="${APP_URL}/login" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
-          Go to Softball Helper
+          Go to Dugout Admin
         </a>
       </div>
     `,
@@ -106,12 +106,12 @@ export async function sendPlayerInviteEmail(
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `You've been added to ${teamName} on Softball Helper`,
+    subject: `You've been added to ${teamName} on Dugout Admin`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">Welcome, ${name}!</h1>
         <p style="color:#86efac;margin-bottom:8px;">You've been added to team <strong style="color:#f0fdf4;">${teamName}</strong> in <strong style="color:#f0fdf4;">${leagueName}</strong> as a player.</p>
-        <p style="color:#86efac;margin-bottom:24px;">Set up your Softball Helper account to track your stats and stay connected with your team.</p>
+        <p style="color:#86efac;margin-bottom:24px;">Set up your Dugout Admin account to track your stats and stay connected with your team.</p>
         <a href="${url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
           Verify email &amp; set password
         </a>
@@ -136,7 +136,7 @@ export async function sendPlayerAcceptInviteEmail(
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `Confirm your spot on ${teamName} — Softball Helper`,
+    subject: `Confirm your spot on ${teamName} — Dugout Admin`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">You've been added, ${playerName}!</h1>
@@ -165,11 +165,11 @@ export async function sendPasswordResetEmail(email: string, name: string | null)
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: "Reset your Softball Helper password",
+    subject: "Reset your Dugout Admin password",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">Password Reset${name ? `, ${name}` : ""}</h1>
-        <p style="color:#86efac;margin-bottom:24px;">A league administrator has requested a password reset for your Softball Helper account. Click below to set a new password.</p>
+        <p style="color:#86efac;margin-bottom:24px;">A league administrator has requested a password reset for your Dugout Admin account. Click below to set a new password.</p>
         <a href="${url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
           Set new password
         </a>
@@ -191,7 +191,7 @@ export async function sendMemberInviteEmail(
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `You've been added to ${leagueName} on Softball Helper`,
+    subject: `You've been added to ${leagueName} on Dugout Admin`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f2310;color:#f0fdf4;border-radius:12px;">
         <h1 style="color:#4ade80;font-size:22px;margin-bottom:8px;">You're in!</h1>
@@ -247,7 +247,7 @@ export async function sendGameEndNotification(opts: {
           <tr><td style="color:#4ade80;padding:4px 0;width:80px;">📅 Date</td><td style="color:#f0fdf4;">${date} at ${time}</td></tr>
           ${opts.fieldName ? `<tr><td style="color:#4ade80;padding:4px 0;">📍 Field</td><td style="color:#f0fdf4;">${opts.fieldName}</td></tr>` : ""}
         </table>
-        <p style="color:#4ade80;font-size:11px;margin-top:24px;opacity:0.6;">Softball Helper · Game end notification</p>
+        <p style="color:#4ade80;font-size:11px;margin-top:24px;opacity:0.6;">Dugout Admin · Game end notification</p>
       </div>
     `,
   });
@@ -298,7 +298,7 @@ export async function sendManagerGameEndNotification(opts: {
           <tr><td style="color:#4ade80;padding:4px 0;width:80px;">📅 Date</td><td style="color:#f0fdf4;">${date} at ${time}</td></tr>
           ${opts.fieldName ? `<tr><td style="color:#4ade80;padding:4px 0;">📍 Field</td><td style="color:#f0fdf4;">${opts.fieldName}</td></tr>` : ""}
         </table>
-        <p style="color:#4ade80;font-size:11px;margin-top:24px;opacity:0.6;">Softball Helper · Team notification</p>
+        <p style="color:#4ade80;font-size:11px;margin-top:24px;opacity:0.6;">Dugout Admin · Team notification</p>
       </div>
     `,
   });
@@ -332,7 +332,7 @@ export async function sendNewTicketToAssignee(opts: {
   await getResend().emails.send({
     from: FROM,
     to: opts.toEmail,
-    subject: `[SoftballHelper Support] New ticket: ${opts.title}`,
+    subject: `[Dugout Admin Support] New ticket: ${opts.title}`,
     html: ticketCard(
       `New support ticket assigned to you`,
       opts.body,
@@ -357,7 +357,7 @@ export async function sendNewTicketToLeagueAdmin(opts: {
     from: FROM,
     to: opts.toEmail,
     replyTo: opts.creatorEmail,
-    subject: `[SoftballHelper] League issue reported: ${opts.title}`,
+    subject: `[Dugout Admin] League issue reported: ${opts.title}`,
     html: ticketCard(
       `A league issue has been reported`,
       opts.body,
@@ -380,7 +380,7 @@ export async function sendTicketReplyNotification(opts: {
   await getResend().emails.send({
     from: FROM,
     to: opts.toEmail,
-    subject: `[SoftballHelper Support] New reply on: ${opts.ticketTitle}`,
+    subject: `[Dugout Admin Support] New reply on: ${opts.ticketTitle}`,
     html: ticketCard(
       `New reply on your ticket`,
       opts.replyBody,

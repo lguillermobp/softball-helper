@@ -41,7 +41,7 @@ export default async function AdminSubscriptionsPage() {
               <path d="M20 14 C18 12,18 10,16 9" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
               <path d="M20 18 C18 16,18 14,16 13" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
             </svg>
-            <span className="hidden sm:inline text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Softball Helper</span>
+            <span className="hidden sm:inline text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Dugout Admin</span>
           </div>
           <div className="flex flex-wrap items-center gap-2 justify-end">
             <ChangePasswordButton />

@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
   <text x="540" y="955" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
         font-size="20" fill="rgba(255,255,255,0.35)">${escSvg(footer)}</text>
   <text x="540" y="990" text-anchor="middle" font-family="DejaVu Sans,sans-serif"
-        font-size="18" fill="rgba(34,197,94,0.5)" letter-spacing="1">softballhelper.com</text>
+        font-size="18" fill="rgba(34,197,94,0.5)" letter-spacing="1">dugoutadmin.com</text>
 </svg>`;
 
     const png = await sharp(Buffer.from(svg)).png().toBuffer();

@@ -136,9 +136,9 @@ export function RegisterForm({ loggedInUser }: Props) {
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-1">
-            <span className="text-2xl">🥎</span>
+            <span className="text-2xl">⚾</span>
             <span className="text-2xl font-black text-white">
-              Softball<span className="text-green-400">Helper</span>
+              Dugout<span className="text-green-400"> Admin</span>
             </span>
           </Link>
           {loggedInUser ? (

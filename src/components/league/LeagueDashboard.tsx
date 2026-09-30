@@ -622,7 +622,7 @@ export function LeagueDashboard({ slug, isAdmin, isCategoryAdmin = false, isMast
             {notifyOn && (
               <input
                 type="email"
-                placeholder="admin@softballhelper.com"
+                placeholder="admin@dugoutadmin.com"
                 value={notifyEmail}
                 onChange={e => setNotifyEmail(e.target.value)}
                 className="w-full rounded-lg border px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"

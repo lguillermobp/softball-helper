@@ -57,9 +57,9 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-2">
-            <span className="text-2xl">🥎</span>
+            <span className="text-2xl">⚾</span>
             <span className="text-2xl font-black text-white">
-              Softball<span className="text-green-400">Helper</span>
+              Dugout<span className="text-green-400"> Admin</span>
             </span>
           </Link>
           <p className="text-sm text-white/40">{l.pageTitle}</p>

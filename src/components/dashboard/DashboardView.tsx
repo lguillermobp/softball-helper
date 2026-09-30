@@ -176,7 +176,7 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
               <path d="M20 14 C18 12, 18 10, 16 9" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
               <path d="M20 18 C18 16, 18 14, 16 13" stroke="var(--sh-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
             </svg>
-            <span className="text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Softball Helper</span>
+            <span className="text-lg font-bold tracking-tight" style={{ color: "var(--sh-primary)" }}>Dugout Admin</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2">

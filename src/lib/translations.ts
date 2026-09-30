@@ -12,9 +12,9 @@ export const translations = {
     nav:      { signin: "Sign in", getStarted: "Get started", contactUs: "Contact Us", watchDemo: "Watch Demo" },
     promo:    { badge: "Fall promo", pre: "Use code", post: "for 100% off your first season", cta: "Get started" },
     hero: {
-      badge: "Multi-league softball management",
+      badge: "Multi-sport league management",
       headline1: "Step up to the", headline2: "plate.",
-      tagline: "Manage your softball leagues, schedules, rosters, and standings — all from one dugout.",
+      tagline: "Manage your leagues, schedules, rosters, and standings — all from one dugout.",
       cta: "🏆 Start your league today", signin: "Sign in",
     },
     stats: [
@@ -35,10 +35,10 @@ export const translations = {
       title: "From signup to first pitch", subtitle: "Get your league running in minutes.",
       items: [{ icon: "👤", label: "Create account" }, { icon: "🏟️", label: "Set up league" }, { icon: "📋", label: "Add teams" }, { icon: "⚾", label: "Play ball!" }],
     },
-    cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Softball Helper to run their seasons.", button: "Create your league" },
+    cta:    { title: "Ready to play?", subtitle: "Join league commissioners already using Dugout Admin to run their seasons.", button: "Create your league" },
     contact: {
       sectionTitle: "Get in touch",
-      sectionSubtitle: "Have a question or want to bring SoftballHelper to your league? We'd love to hear from you.",
+      sectionSubtitle: "Have a question or want to bring Dugout Admin to your league? We'd love to hear from you.",
       name: "Your name", namePlaceholder: "Jane Smith",
       email: "Your email", emailPlaceholder: "jane@example.com",
       subject: "Subject",
@@ -52,7 +52,7 @@ export const translations = {
     },
     demo: {
       title: "See it in action",
-      subtitle: "Watch how SoftballHelper handles a full league season — schedules, rosters, scoring, and standings.",
+      subtitle: "Watch how Dugout Admin handles a full league season — schedules, rosters, scoring, and standings.",
       placeholder: "Demo video coming soon",
       placeholderSub: "We're putting together a full walkthrough. In the meantime, request a live demo and we'll walk you through it personally.",
       requestDemo: "Request a Demo",
@@ -258,9 +258,9 @@ export const translations = {
     nav:      { signin: "Iniciar sesión", getStarted: "Comenzar", contactUs: "Contáctanos", watchDemo: "Ver Demo" },
     promo:    { badge: "Promo de otoño", pre: "Usa el código", post: "para 100% de descuento en tu primera temporada", cta: "Comenzar" },
     hero: {
-      badge: "Gestión de ligas de sóftbol",
+      badge: "Gestión de ligas multideporte",
       headline1: "Sube al", headline2: "plato.",
-      tagline: "Administra tus ligas de sóftbol, calendarios, plantillas y clasificaciones — todo desde un solo dugout.",
+      tagline: "Administra tus ligas, calendarios, plantillas y clasificaciones — todo desde un solo dugout.",
       cta: "🏆 Crea tu liga gratis", signin: "Iniciar sesión",
     },
     stats: [
@@ -281,10 +281,10 @@ export const translations = {
       title: "Del registro al primer pitcheo", subtitle: "Pon tu liga en marcha en minutos.",
       items: [{ icon: "👤", label: "Crear cuenta" }, { icon: "🏟️", label: "Configurar liga" }, { icon: "📋", label: "Agregar equipos" }, { icon: "⚾", label: "¡A jugar!" }],
     },
-    cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Softball Helper para gestionar sus temporadas.", button: "Crea tu liga" },
+    cta:    { title: "¿Listo para jugar?", subtitle: "Únete a los comisionados que ya usan Dugout Admin para gestionar sus temporadas.", button: "Crea tu liga" },
     contact: {
       sectionTitle: "Contáctanos",
-      sectionSubtitle: "¿Tienes una pregunta o quieres llevar SoftballHelper a tu liga? Nos encantaría saber de ti.",
+      sectionSubtitle: "¿Tienes una pregunta o quieres llevar Dugout Admin a tu liga? Nos encantaría saber de ti.",
       name: "Tu nombre", namePlaceholder: "Juan Pérez",
       email: "Tu correo", emailPlaceholder: "juan@ejemplo.com",
       subject: "Asunto",
@@ -298,7 +298,7 @@ export const translations = {
     },
     demo: {
       title: "Míralo en acción",
-      subtitle: "Descubre cómo SoftballHelper gestiona una temporada completa — calendarios, plantillas, marcadores y clasificaciones.",
+      subtitle: "Descubre cómo Dugout Admin gestiona una temporada completa — calendarios, plantillas, marcadores y clasificaciones.",
       placeholder: "Video de demostración próximamente",
       placeholderSub: "Estamos preparando un recorrido completo. Mientras tanto, solicita una demo en vivo y te lo mostramos personalmente.",
       requestDemo: "Solicitar una Demo",
@@ -504,9 +504,9 @@ export const translations = {
     nav:      { signin: "サインイン", getStarted: "始める", contactUs: "お問い合わせ", watchDemo: "デモを見る" },
     promo:    { badge: "秋のプロモ", pre: "コード", post: "で初シーズンが100%オフ", cta: "始める" },
     hero: {
-      badge: "マルチリーグ ソフトボール管理",
+      badge: "マルチスポーツ・リーグ管理",
       headline1: "打席に", headline2: "立とう。",
-      tagline: "ソフトボールリーグのスケジュール、名簿、順位表をひとつのダグアウトから管理。",
+      tagline: "リーグのスケジュール、名簿、順位表をひとつのダグアウトから管理。",
       cta: "🏆 リーグを今すぐ作成", signin: "サインイン",
     },
     stats: [
@@ -527,7 +527,7 @@ export const translations = {
       title: "登録から初球まで", subtitle: "数分でリーグを開始できます。",
       items: [{ icon: "👤", label: "アカウント作成" }, { icon: "🏟️", label: "リーグ設定" }, { icon: "📋", label: "チーム追加" }, { icon: "⚾", label: "プレイボール！" }],
     },
-    cta:    { title: "プレイする準備はできた？", subtitle: "Softball Helperでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成" },
+    cta:    { title: "プレイする準備はできた？", subtitle: "Dugout Adminでシーズンを運営しているコミッショナーに加わりましょう。", button: "リーグを作成" },
     contact: {
       sectionTitle: "お問い合わせ",
       sectionSubtitle: "ご質問やリーグへの導入をご検討の方は、ぜひご連絡ください。",
@@ -544,7 +544,7 @@ export const translations = {
     },
     demo: {
       title: "実際に見てみよう",
-      subtitle: "SoftballHelperがシーズン全体をどのように管理するかをご覧ください — スケジュール、名簿、採点、順位表。",
+      subtitle: "Dugout Adminがシーズン全体をどのように管理するかをご覧ください — スケジュール、名簿、採点、順位表。",
       placeholder: "デモ動画は近日公開予定",
       placeholderSub: "ウォークスルー動画を準備中です。それまでの間、ライブデモをリクエストしていただければ直接ご案内します。",
       requestDemo: "デモをリクエスト",

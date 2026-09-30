@@ -392,7 +392,7 @@ export default async function LeaguePublicPage({ params }: PageProps) {
 
         {/* Footer */}
         <footer style={{ borderTop: "1px solid var(--pub-border)", paddingTop: 20, color: "var(--pub-accent)", fontSize: 12, opacity: 0.5, textAlign: "center" }}>
-          Powered by Softball Helper
+          Powered by Dugout Admin
         </footer>
       </div>
     </PublicPageWrapper>

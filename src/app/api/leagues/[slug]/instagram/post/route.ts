@@ -184,7 +184,7 @@ function buildScheduleSvg(
   <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
   ${body}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">dugoutadmin.com</text>
 </svg>`;
 }
 
@@ -293,7 +293,7 @@ async function buildTeamSvg(
   <line x1="0" y1="${HEADER_H}" x2="1080" y2="${HEADER_H}" stroke="${C.divider}" stroke-width="1"/>
   ${cards}
   <line x1="24" y1="${svgH - FOOTER_H + 8}" x2="1056" y2="${svgH - FOOTER_H + 8}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="1056" y="${svgH - FOOTER_H + 32}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+  <text x="1056" y="${svgH - FOOTER_H + 32}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">dugoutadmin.com</text>
 </svg>`;
 }
 
@@ -338,7 +338,7 @@ async function buildGameSvg(
   <text x="860" y="526" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" fill="${C.dim}" font-weight="bold" letter-spacing="2">HOME</text>
   <line x1="40" y1="876" x2="1040" y2="876" stroke="${C.divider}" stroke-width="1"/>
   <text x="540" y="914" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="22" fill="${C.dim}">${esc(footer)}</text>
-  <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">softballhelper.com</text>
+  <text x="540" y="952" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" fill="${C.green}">dugoutadmin.com</text>
 </svg>`;
 }
 
@@ -509,7 +509,7 @@ function buildStandingsSvg(
   ${headerCols}
   ${dataRows}
   <line x1="24" y1="${svgH - 42}" x2="1056" y2="${svgH - 42}" stroke="${C.divider}" stroke-width="1"/>
-  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">softballhelper.com</text>
+  <text x="1056" y="${svgH - 18}" text-anchor="end" font-family="DejaVu Sans,sans-serif" font-size="14" fill="${C.dim}">dugoutadmin.com</text>
 </svg>`;
 }
 
