@@ -290,12 +290,12 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none">
+          {/* Supported countries — compact flag row (name on hover) so all fit without clipping. */}
+          <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none">
             {FLAGS.map(({ code, name }) => (
-              <div key={code} title={name} className="flex flex-col items-center gap-1 group cursor-default shrink-0">
+              <div key={code} title={name} className="group cursor-default shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`https://flagcdn.com/w40/${code}.png`} alt={name} width={32} height={22} className="rounded-sm shadow-md transition-transform group-hover:scale-125 object-cover" />
-                <span className="hidden sm:block text-[9px] font-medium tracking-wide whitespace-nowrap" style={{ color: "var(--sh-text-faint)" }}>{name}</span>
+                <img src={`https://flagcdn.com/w40/${code}.png`} alt={name} width={28} height={20} className="rounded-sm shadow-md transition-transform group-hover:scale-125 object-cover" />
               </div>
             ))}
           </div>
