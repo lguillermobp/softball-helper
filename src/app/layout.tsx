@@ -14,8 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // metadataBase resolves the relative OG image to an absolute URL for scrapers.
+  // Kept on softballhelper.com (live today); switch to dugoutadmin.com once its DNS is up.
+  metadataBase: new URL("https://softballhelper.com"),
   title: "Dugout Admin",
   description: "Multi-tenant league management for baseball, softball & kickball",
+  openGraph: {
+    title: "Dugout Admin",
+    description: "Multi-tenant league management for baseball, softball & kickball",
+    siteName: "Dugout Admin",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Dugout Admin" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dugout Admin",
+    description: "Multi-tenant league management for baseball, softball & kickball",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({

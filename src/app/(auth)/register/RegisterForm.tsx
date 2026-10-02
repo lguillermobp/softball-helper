@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -135,11 +136,9 @@ export function RegisterForm({ loggedInUser }: Props) {
 
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-1">
-            <span className="text-2xl">⚾</span>
-            <span className="text-2xl font-black text-white">
-              Dugout<span className="text-green-400"> Admin</span>
-            </span>
+          <Link href="/" className="inline-flex flex-col items-center mb-1">
+            <Image src="/logo-mark.png" alt="Dugout Admin" width={140} height={162} priority className="h-auto w-[120px] sm:w-[140px]" />
+            <span className="sr-only">Dugout Admin</span>
           </Link>
           {loggedInUser ? (
             <p className="text-sm text-white/40">

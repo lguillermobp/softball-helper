@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,11 +57,9 @@ function LoginForm() {
 
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-2">
-            <span className="text-2xl">⚾</span>
-            <span className="text-2xl font-black text-white">
-              Dugout<span className="text-green-400"> Admin</span>
-            </span>
+          <Link href="/" className="inline-flex flex-col items-center mb-2">
+            <Image src="/logo-mark.png" alt="Dugout Admin" width={180} height={209} priority className="h-auto w-[150px] sm:w-[180px]" />
+            <span className="sr-only">Dugout Admin</span>
           </Link>
           <p className="text-sm text-white/40">{l.pageTitle}</p>
         </div>
