@@ -42,9 +42,9 @@ interface Params { params: Promise<{ slug: string }> }
 
 const IG_USER_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID!;
 const IG_TOKEN   = process.env.INSTAGRAM_ACCESS_TOKEN!;
-const BASE_URL      = (process.env.SOFTBALL_APP_URL ?? process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://softballhelper.com").replace(/\/$/, "");
-// Use the custom domain (softballhelper.com) — a Cloudflare WAF rule bypasses
-// bot protection for /api/ig-img/* so Instagram's crawler can reach the image.
+const BASE_URL      = (process.env.SOFTBALL_APP_URL ?? process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://dugoutadmin.com").replace(/\/$/, "");
+// Uses the primary custom domain (dugoutadmin.com) — the Cloudflare WAF rule
+// that bypasses bot protection for /api/ig-img/* must exist on this host.
 const IMAGE_BASE_URL = BASE_URL;
 
 function igApi(path: string, body: Record<string, string>) {

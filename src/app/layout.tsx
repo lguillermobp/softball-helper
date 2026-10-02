@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   // metadataBase resolves the relative OG image to an absolute URL for scrapers.
-  // Kept on softballhelper.com (live today); switch to dugoutadmin.com once its DNS is up.
-  metadataBase: new URL("https://softballhelper.com"),
+  // Primary domain after the softballhelper.com -> dugoutadmin.com cutover.
+  metadataBase: new URL("https://dugoutadmin.com"),
   title: "Dugout Admin",
   description: "Multi-tenant league management for baseball, softball & kickball",
   openGraph: {
