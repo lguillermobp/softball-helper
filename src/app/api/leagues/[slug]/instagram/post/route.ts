@@ -79,16 +79,25 @@ function logoCircle(uri: string | null, cx: number, cy: number, r: number, clipI
   return `<defs><clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>${bg}<image href="${uri}" x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice"/>`;
 }
 
-function gameCaption(homeTeam: string, awayTeam: string, homeScore: number, awayScore: number, leagueName: string, seasonName: string) {
+// Sport-specific hashtags based on the league type (Softball / Baseball / Kickball).
+function sportTags(type?: string | null): string {
+  switch ((type ?? "").toUpperCase()) {
+    case "BASEBALL": return "#baseball #beisbol";
+    case "KICKBALL": return "#kickball";
+    case "SOFTBALL": return "#softball #softbol";
+    default:         return "#softball #baseball #kickball";
+  }
+}
+function gameCaption(homeTeam: string, awayTeam: string, homeScore: number, awayScore: number, leagueName: string, seasonName: string, leagueType?: string | null) {
   const winner = homeScore > awayScore ? homeTeam : awayScore > homeScore ? awayTeam : null;
   const tie = homeScore === awayScore;
   const es = tie ? `Empate! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}` : `${winner} gana! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}`;
   const en = tie ? `It's a tie! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}` : `${winner} wins! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}`;
-  return `${es}\n${en}\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #beisbol`;
+  return `${es}\n${en}\n\n${leagueName} - ${seasonName}\n\n#dugoutadmin ${sportTags(leagueType)}`;
 }
-function standingsCaption(leagueName: string, seasonName: string, group: string | null = null) {
+function standingsCaption(leagueName: string, seasonName: string, group: string | null = null, leagueType?: string | null) {
   const g = group ? ` — Group ${group}` : "";
-  return `Clasificacion actualizada / Updated standings${g}\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #standings #clasificacion`;
+  return `Clasificacion actualizada / Updated standings${g}\n\n${leagueName} - ${seasonName}\n\n#dugoutadmin ${sportTags(leagueType)} #standings #clasificacion`;
 }
 
 const C = {
@@ -188,7 +197,7 @@ function buildScheduleSvg(
 </svg>`;
 }
 
-function scheduleCaption(league: string, season: string, date: string, groups: ScheduleGroup[]): string {
+function scheduleCaption(league: string, season: string, date: string, groups: ScheduleGroup[], leagueType?: string | null): string {
   const lines = groups.flatMap(grp => {
     const header = grp.field ? [`${grp.field.toUpperCase()}`] : [];
     const rows = grp.games.map(g => {
@@ -199,12 +208,12 @@ function scheduleCaption(league: string, season: string, date: string, groups: S
     });
     return [...header, ...rows];
   });
-  return `📅 ${date}\n\n${lines.join("\n")}\n\n${league} — ${season}\n\n#softball #softballhelper #schedule #calendario`;
+  return `📅 ${date}\n\n${lines.join("\n")}\n\n${league} — ${season}\n\n#dugoutadmin ${sportTags(leagueType)} #schedule #calendario`;
 }
 
 type RosterPlayer = { name: string; jerseyNumber: string | null; userId: string | null; photoUri?: string | null };
 
-function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[], managerName: string | null, assistantName: string | null) {
+function teamCaption(teamName: string, leagueName: string, players: RosterPlayer[], managerName: string | null, assistantName: string | null, leagueType?: string | null) {
   const staff = [managerName && `MGR: ${managerName}`, assistantName && `ASST: ${assistantName}`].filter(Boolean).join("  |  ");
   const lines = [...players]
     .sort((a, b) => {
@@ -212,7 +221,7 @@ function teamCaption(teamName: string, leagueName: string, players: RosterPlayer
       return na !== nb ? na - nb : a.name.localeCompare(b.name);
     })
     .map(p => p.jerseyNumber ? `#${p.jerseyNumber} ${p.name}` : p.name);
-  return `${teamName} — ${leagueName}${staff ? `\n${staff}` : ""}\n\nRoster / Plantilla\n\n${lines.join("\n")}\n\n#softball #softballhelper #team #equipo`;
+  return `${teamName} — ${leagueName}${staff ? `\n${staff}` : ""}\n\nRoster / Plantilla\n\n${lines.join("\n")}\n\n#dugoutadmin ${sportTags(leagueType)} #team #equipo`;
 }
 
 async function buildTeamSvg(
@@ -531,7 +540,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const league = await prisma.league.findUnique({
     where: { slug },
-    select: { id: true, name: true, logoUrl: true, instagramEnabled: true, timezone: true, userRoles: { where: { userId }, select: { role: true } } },
+    select: { id: true, name: true, logoUrl: true, type: true, instagramEnabled: true, timezone: true, userRoles: { where: { userId }, select: { role: true } } },
   });
   if (!league) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -583,7 +592,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const date = _d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: tz })
       + " · " + _d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
     const svg = await buildGameSvg(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, date, homeLogo, awayLogo, leagueLogo, game.protestStatus, protestTeamName);
-    const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name);
+    const cap = gameCaption(game.homeTeam.name, game.awayTeam.name, game.homeScore, game.awayScore, league.name, game.season.name, league.type);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();
@@ -621,7 +630,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       await Promise.all(rows.map(async (r, i) => { r.logoUri = await fetchLogoAsDataUri(logoUrlMap.get(r._id ?? "") ?? null); }));
       const groupName = groupKey || null;
       const svg = buildStandingsSvg(league.name, season.name, groupName, rows, season.showPct, leagueLogo);
-      const cap = standingsCaption(league.name, season.name, groupName);
+      const cap = standingsCaption(league.name, season.name, groupName, league.type);
       const result = await postOneImage(svg, cap);
       if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
       posts.push({ group: groupName, postId: result.postId! });
@@ -685,7 +694,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }));
 
     const svg = buildScheduleSvg(league.name, season?.name ?? "", dateLabel, groups, leagueLogo);
-    const cap = scheduleCaption(league.name, season?.name ?? "", dateLabel, groups);
+    const cap = scheduleCaption(league.name, season?.name ?? "", dateLabel, groups, league.type);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();
@@ -719,7 +728,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const mgrName  = team.manager?.name ?? null;
     const asstName = team.assistant?.name ?? null;
     const svg = await buildTeamSvg(team.name, league.name, teamLogo, leagueLogo, players, team.managerId, team.assistantId);
-    const cap = teamCaption(team.name, league.name, players, mgrName, asstName);
+    const cap = teamCaption(team.name, league.name, players, mgrName, asstName, league.type);
     const result = await postOneImage(svg, cap);
     if (!result.ok) return NextResponse.json({ error: result.error, detail: result.detail }, { status: 502 });
     await cleanupOldImages();

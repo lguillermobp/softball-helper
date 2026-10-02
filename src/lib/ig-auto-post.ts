@@ -103,12 +103,22 @@ function buildGameSvg(
 </svg>`;
 }
 
-function gameCaption(homeTeam: string, awayTeam: string, homeScore: number, awayScore: number, leagueName: string, seasonName: string) {
+// Sport-specific hashtags based on the league type (Softball / Baseball / Kickball).
+function sportTags(type?: string | null): string {
+  switch ((type ?? "").toUpperCase()) {
+    case "BASEBALL": return "#baseball #beisbol";
+    case "KICKBALL": return "#kickball";
+    case "SOFTBALL": return "#softball #softbol";
+    default:         return "#softball #baseball #kickball";
+  }
+}
+
+function gameCaption(homeTeam: string, awayTeam: string, homeScore: number, awayScore: number, leagueName: string, seasonName: string, leagueType?: string | null) {
   const winner = homeScore > awayScore ? homeTeam : awayScore > homeScore ? awayTeam : null;
   const tie = homeScore === awayScore;
   const es = tie ? `Empate! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}` : `${winner} gana! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}`;
   const en = tie ? `It's a tie! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}` : `${winner} wins! ${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}`;
-  return `${es}\n${en}\n\n${leagueName} - ${seasonName}\n\n#softball #softballhelper #beisbol`;
+  return `${es}\n${en}\n\n${leagueName} - ${seasonName}\n\n#dugoutadmin ${sportTags(leagueType)}`;
 }
 
 function igApi(igPath: string, body: Record<string, string>) {
@@ -135,10 +145,11 @@ export async function autoPostGameScoreCard(params: {
   scheduledAt: Date;
   protestStatus?: string | null;
   protestTeamName?: string | null;
+  leagueType?: string | null;
 }): Promise<void> {
   if (!IG_USER_ID || !IG_TOKEN) return;
 
-  const { leagueName, leagueLogoUrl, timezone, seasonName, homeTeam, awayTeam, homeScore, awayScore, homeLogoUrl, awayLogoUrl, scheduledAt, protestStatus, protestTeamName } = params;
+  const { leagueName, leagueLogoUrl, timezone, seasonName, homeTeam, awayTeam, homeScore, awayScore, homeLogoUrl, awayLogoUrl, scheduledAt, protestStatus, protestTeamName, leagueType } = params;
 
   const tz = timezone || "UTC";
   const _d = new Date(scheduledAt);
@@ -157,7 +168,7 @@ export async function autoPostGameScoreCard(params: {
   const img = await prisma.igImage.create({ data: { data: Buffer.from(jpeg) } });
   const imageUrl = `${BASE_URL}/api/ig-img/${img.id}`;
 
-  const container = await igApi(`/${IG_USER_ID}/media`, { image_url: imageUrl, caption: gameCaption(homeTeam, awayTeam, homeScore, awayScore, leagueName, seasonName) });
+  const container = await igApi(`/${IG_USER_ID}/media`, { image_url: imageUrl, caption: gameCaption(homeTeam, awayTeam, homeScore, awayScore, leagueName, seasonName, leagueType) });
   if (!container.id) { console.error("[ig-auto-post] container error:", container); return; }
   await new Promise(resolve => setTimeout(resolve, 4000));
   const publish = await igApi(`/${IG_USER_ID}/media_publish`, { creation_id: container.id });

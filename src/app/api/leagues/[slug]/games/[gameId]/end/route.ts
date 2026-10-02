@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const league = await prisma.league.findUnique({
     where: { slug },
     select: {
-      id: true, name: true, logoUrl: true, status: true,
+      id: true, name: true, logoUrl: true, status: true, type: true,
       notifyGameEnd: true, notifyEmail: true,
       notifyManagers: true, instagramEnabled: true, timezone: true,
       userRoles: { where: { userId }, select: { role: true } },
@@ -108,6 +108,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (league.instagramEnabled) {
     autoPostGameScoreCard({
       leagueName:      league.name,
+      leagueType:      league.type,
       leagueLogoUrl:   league.logoUrl,
       timezone:        league.timezone,
       seasonName:      game.season?.name ?? "",
