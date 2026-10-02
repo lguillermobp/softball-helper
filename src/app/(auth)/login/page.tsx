@@ -58,7 +58,9 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex flex-col items-center mb-2">
-            <Image src="/logo-mark.png" alt="Dugout Admin" width={180} height={209} priority className="h-auto w-[150px] sm:w-[180px]" />
+            <span className="rounded-2xl p-3" style={{ background: "#f4f2ec", boxShadow: "0 8px 30px rgba(0,0,0,0.35)" }}>
+              <Image src="/logo-mark.png" alt="Dugout Admin" width={160} height={186} priority className="h-auto w-[140px] sm:w-[160px]" />
+            </span>
             <span className="sr-only">Dugout Admin</span>
           </Link>
           <p className="text-sm text-white/40">{l.pageTitle}</p>

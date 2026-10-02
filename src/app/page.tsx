@@ -376,8 +376,10 @@ export default function HomePage() {
 
             {/* Right — logo emblem + live scoreboard widget */}
             <div className="flex-shrink-0 flex flex-col items-center gap-4">
-              <Image src="/logo-mark.png" alt="Dugout Admin" width={260} height={301} priority
-                className="h-auto w-[200px] sm:w-[240px] lg:w-[260px] drop-shadow-[0_8px_40px_rgba(74,222,128,0.18)]" />
+              <div className="rounded-3xl p-4 sm:p-5" style={{ background: "#f4f2ec", boxShadow: "0 12px 44px rgba(0,0,0,0.38)" }}>
+                <Image src="/logo-mark.png" alt="Dugout Admin" width={260} height={301} priority
+                  className="h-auto w-[180px] sm:w-[210px] lg:w-[230px]" />
+              </div>
               <ScoreboardWidget />
               <div className="flex items-center gap-2">
                 <div className="h-px w-8" style={{ background: "rgba(74,222,128,0.3)" }} />
@@ -513,7 +515,9 @@ export default function HomePage() {
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Image src="/logo-mark.png" alt="Dugout Admin" width={44} height={51} className="h-11 w-auto" />
+            <span className="rounded-xl p-1.5" style={{ background: "#f4f2ec" }}>
+              <Image src="/logo-mark.png" alt="Dugout Admin" width={40} height={46} className="h-10 w-auto" />
+            </span>
             <span className="font-black" style={{ color: "var(--sh-text)" }}>
               Dugout<span style={{ color: "#4ade80" }}> Admin</span>
             </span>

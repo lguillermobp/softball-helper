@@ -137,7 +137,9 @@ export function RegisterForm({ loggedInUser }: Props) {
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex flex-col items-center mb-1">
-            <Image src="/logo-mark.png" alt="Dugout Admin" width={140} height={162} priority className="h-auto w-[120px] sm:w-[140px]" />
+            <span className="rounded-2xl p-2.5" style={{ background: "#f4f2ec", boxShadow: "0 8px 30px rgba(0,0,0,0.35)" }}>
+              <Image src="/logo-mark.png" alt="Dugout Admin" width={120} height={139} priority className="h-auto w-[104px] sm:w-[120px]" />
+            </span>
             <span className="sr-only">Dugout Admin</span>
           </Link>
           {loggedInUser ? (
