@@ -22,5 +22,8 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Exclude Next internals AND any static asset file served from /public
+  // (favicon, icon.png, og.png, logo-mark.png, league-bg/*, …) from auth,
+  // so social scrapers and logged-out visitors can load them.
+  matcher: ["/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|avif|woff2?|ttf|txt|xml)$).*)"],
 };

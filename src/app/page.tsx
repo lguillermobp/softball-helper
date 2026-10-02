@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/ui/language-selector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -373,8 +374,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — live scoreboard widget */}
+            {/* Right — logo emblem + live scoreboard widget */}
             <div className="flex-shrink-0 flex flex-col items-center gap-4">
+              <Image src="/logo-mark.png" alt="Dugout Admin" width={260} height={301} priority
+                className="h-auto w-[200px] sm:w-[240px] lg:w-[260px] drop-shadow-[0_8px_40px_rgba(74,222,128,0.18)]" />
               <ScoreboardWidget />
               <div className="flex items-center gap-2">
                 <div className="h-px w-8" style={{ background: "rgba(74,222,128,0.3)" }} />
@@ -509,8 +512,8 @@ export default function HomePage() {
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <footer className="border-t py-8" style={{ borderColor: "var(--sh-border-soft)" }}>
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⚾</span>
+          <div className="flex items-center gap-3">
+            <Image src="/logo-mark.png" alt="Dugout Admin" width={44} height={51} className="h-11 w-auto" />
             <span className="font-black" style={{ color: "var(--sh-text)" }}>
               Dugout<span style={{ color: "#4ade80" }}> Admin</span>
             </span>
