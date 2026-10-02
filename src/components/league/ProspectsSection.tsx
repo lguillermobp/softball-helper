@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UploadProspectsDialog } from "./UploadProspectsDialog";
 
 interface Season { id: string; name: string; ageCutoffDate: string | null }
 interface Cat { id: string; name: string; minAge: number | null; maxAge: number | null }
@@ -168,7 +169,12 @@ export function ProspectsSection({ slug, seasons, categories, canManage, isSuspe
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-lg font-bold" style={{ color: "var(--sh-text)" }}>Prospects</h2>
-        {canRegister && <RegisterDialog slug={slug} seasons={seasons} categories={categories} defaultSeasonId={seasonId} onDone={load} />}
+        {canRegister && (
+          <div className="flex items-center gap-2">
+            <UploadProspectsDialog slug={slug} seasons={seasons} categories={categories} defaultSeasonId={seasonId} onDone={load} />
+            <RegisterDialog slug={slug} seasons={seasons} categories={categories} defaultSeasonId={seasonId} onDone={load} />
+          </div>
+        )}
       </div>
 
       {seasons.length === 0 ? (
