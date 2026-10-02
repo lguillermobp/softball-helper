@@ -22,21 +22,23 @@ import {
 } from "@/lib/validations";
 
 interface LoggedInUser { id: string; name: string | null; email: string | null }
+interface PlanOption { id: string; name: string; price: number; maxGames: number }
 
-interface Props { loggedInUser: LoggedInUser | null }
+interface Props { loggedInUser: LoggedInUser | null; plans: PlanOption[] }
 
-export function RegisterForm({ loggedInUser }: Props) {
+export function RegisterForm({ loggedInUser, plans }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
   const r = t.register;
-  const p = r.plans;
 
-  const PLANS = [
-    { id: "single",  name: "Single",  price: 99.90,  description: "Up to 100 games / year" },
-    { id: "double",  name: "Double",  price: 189.90, description: "Up to 200 games / year" },
-    { id: "triple",  name: "Triple",  price: 279.90, description: "Up to 300 games / year" },
-    { id: "homerun", name: "Homerun", price: 379.90, description: "Up to 500 games / year" },
-  ];
+  // Use the real plans (with their DB ids) passed from the server so the
+  // selected planId matches what the registration endpoint looks up.
+  const PLANS = plans.map((pl) => ({
+    id: pl.id,
+    name: pl.name,
+    price: pl.price,
+    description: `Up to ${pl.maxGames} games / year`,
+  }));
 
   // Logged-in users skip step 1
   const [step, setStep] = useState(loggedInUser ? 2 : 1);
