@@ -29,7 +29,35 @@ export async function GET(_: NextRequest, { params }: Params) {
       },
     },
   });
-  return NextResponse.json({ tryout });
+
+  // Managers / assistants of teams in this tryout's season + division — offered as
+  // quick-add evaluators so coaches don't have to be typed in by email.
+  const eligibleCoaches: { id: string; name: string | null; email: string; team: string; role: string }[] = [];
+  if (tryout) {
+    const teamRows = await prisma.teamSeason.findMany({
+      where: { seasonId: tryout.seasonId, categoryId: tryout.categoryId, team: { leagueId: r.league.id, isActive: true } },
+      select: {
+        team: {
+          select: {
+            name: true,
+            manager:   { select: { id: true, name: true, email: true } },
+            assistant: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
+    const seen = new Set<string>();
+    for (const ts of teamRows) {
+      for (const [u, role] of [[ts.team.manager, "Manager"], [ts.team.assistant, "Assistant"]] as const) {
+        if (u?.email && !seen.has(u.id)) {
+          seen.add(u.id);
+          eligibleCoaches.push({ id: u.id, name: u.name, email: u.email, team: ts.team.name, role });
+        }
+      }
+    }
+  }
+
+  return NextResponse.json({ tryout, eligibleCoaches });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {

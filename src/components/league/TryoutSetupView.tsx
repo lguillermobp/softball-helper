@@ -13,6 +13,7 @@ interface Tryout {
   skills: Skill[]; evaluators: Evaluator[]; participants: Participant[];
 }
 interface Prospect { id: string; name: string }
+interface EligibleCoach { id: string; name: string | null; email: string; team: string; role: string }
 
 const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" };
 const chip = "text-xs px-2 py-1 rounded-md border";
@@ -20,6 +21,7 @@ const chip = "text-xs px-2 py-1 rounded-md border";
 export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: string }) {
   const [t, setT] = useState<Tryout | null>(null);
   const [eligible, setEligible] = useState<Prospect[]>([]);
+  const [coaches, setCoaches] = useState<EligibleCoach[]>([]);
   const [skillName, setSkillName] = useState("");
   const [coachEmail, setCoachEmail] = useState("");
   const [err, setErr] = useState("");
@@ -33,8 +35,9 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
   const reload = useCallback(async () => {
     const res = await fetch(base);
     if (!res.ok) return;
-    const { tryout } = await res.json();
+    const { tryout, eligibleCoaches } = await res.json();
     setT(tryout);
+    setCoaches(eligibleCoaches ?? []);
     if (tryout) {
       const pr = await fetch(`/api/leagues/${slug}/prospects?seasonId=${tryout.seasonId}&categoryId=${tryout.categoryId}`);
       const d = await pr.json().catch(() => ({ prospects: [] }));
@@ -56,6 +59,8 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
   const isSetup = t.status === "SETUP";
   const participantIds = new Set(t.participants.map((p) => p.prospect.id));
   const notYet = eligible.filter((p) => !participantIds.has(p.id));
+  const evaluatorIds = new Set(t.evaluators.map((e) => e.user.id));
+  const coachesNotYet = coaches.filter((c) => !evaluatorIds.has(c.id));
   const ready = t.skills.length > 0 && t.evaluators.length > 0 && t.participants.length >= 2;
 
   async function move(idx: number, dir: -1 | 1) {
@@ -127,6 +132,20 @@ export function TryoutSetupView({ slug, tryoutId }: { slug: string; tryoutId: st
               style={{ borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" }} />
             <button onClick={async () => { if (await call(`${base}/evaluators`, "POST", { email: coachEmail })) setCoachEmail(""); }}
               className={chip} style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)" }}>Add coach</button>
+          </div>
+        )}
+        {isSetup && coachesNotYet.length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs font-semibold mb-1" style={{ color: "var(--sh-muted)" }}>Add from team managers in this division</p>
+            <div className="flex flex-wrap gap-2">
+              {coachesNotYet.map((c) => (
+                <button key={c.id} onClick={() => call(`${base}/evaluators`, "POST", { email: c.email })}
+                  className="text-sm px-3 py-1 rounded-full border" style={{ borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+                  title={`${c.role} · ${c.team} · ${c.email}`}>
+                  + {c.name ?? c.email} <span style={{ color: "var(--sh-muted)" }}>· {c.team}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </section>
