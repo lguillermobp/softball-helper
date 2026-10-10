@@ -37,8 +37,26 @@ model User {
   ticketMessages       TicketMessage[]
   categoryAdminRoles   CategoryAdmin[]
   tryoutEvaluations    TryoutEvaluator[]
+  ownedClubs           Club[]           @relation("ClubOwner")
 
   @@map("users")
+}
+
+// A Club is a league-independent team brand that groups a manager's teams
+// across leagues. Phase 1: identity + team linkage only.
+model Club {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User   @relation("ClubOwner", fields: [ownerId], references: [id])
+  teams Team[]
+
+  @@index([ownerId])
+  @@map("clubs")
 }
 
 // ─── NextAuth Tables ─────────────────────────────────────────────────────────
@@ -287,6 +305,7 @@ model Category {
 model Team {
   id          String     @id @default(cuid())
   leagueId    String
+  clubId      String?
   managerId   String?
   assistantId String?
   name        String
@@ -297,6 +316,7 @@ model Team {
   createdAt   DateTime   @default(now())
 
   league    League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  club      Club?     @relation(fields: [clubId], references: [id])
   manager   User?     @relation("TeamManager", fields: [managerId], references: [id])
   assistant User?     @relation("TeamAssistant", fields: [assistantId], references: [id])
   seasons    TeamSeason[]

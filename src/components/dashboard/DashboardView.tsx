@@ -186,6 +186,10 @@ export function DashboardView({ isMasterAdmin, isSupportTechnician, userName, al
               </div>
               <span className="text-sm" style={{ color: "var(--sh-secondary)" }}>{userName}</span>
             </div>
+            <Link href="/clubs" className="text-sm font-medium px-2.5 py-1 rounded-lg transition-colors hover:opacity-80"
+              style={{ color: "var(--sh-primary)" }}>
+              {locale === "es" ? "Clubes" : "Clubs"}
+            </Link>
             <Link href="/help" className="text-sm font-medium px-2.5 py-1 rounded-lg transition-colors hover:opacity-80"
               style={{ color: "var(--sh-primary)" }}>
               {locale === "es" ? "Ayuda" : "Help"}
