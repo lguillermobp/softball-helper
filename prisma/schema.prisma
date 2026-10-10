@@ -53,14 +53,58 @@ model Club {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner         User            @relation("ClubOwner", fields: [ownerId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
+  clubPlanId           String?
+
+  owner         User               @relation("ClubOwner", fields: [ownerId], references: [id])
+  plan          ClubPlan?          @relation(fields: [clubPlanId], references: [id])
   teams         Team[]
   profiles      PlayerProfile[]
   profileMerges ProfileMerge[]
   distinctPairs DistinctPair[]
+  subscriptions ClubSubscription[]
 
   @@index([ownerId])
   @@map("clubs")
+}
+
+// Phase 4 — club subscription tiers (separate from league Plan). Entitlements
+// gate premium perks (custom subdomain now, analytics later).
+model ClubPlan {
+  id             String  @id @default(cuid())
+  name           String  @unique
+  price          Float   @default(0)
+  stripePriceId  String?
+  allowSubdomain Boolean @default(false)
+  allowAnalytics Boolean @default(false)
+  maxTeams       Int?
+  isActive       Boolean @default(true)
+  sortOrder      Int     @default(0)
+
+  clubs         Club[]
+  subscriptions ClubSubscription[]
+
+  @@map("club_plans")
+}
+
+model ClubSubscription {
+  id                   String    @id @default(cuid())
+  clubId               String
+  clubPlanId           String
+  stripeSubscriptionId String?
+  status               String    @default("ACTIVE")
+  startDate            DateTime  @default(now())
+  endDate              DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime  @default(now())
+
+  club Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  plan ClubPlan @relation(fields: [clubPlanId], references: [id])
+
+  @@index([clubId])
+  @@map("club_subscriptions")
 }
 
 // Phase 2 — the club's master roster: one canonical person, matched across

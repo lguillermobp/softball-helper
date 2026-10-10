@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { clubEntitlements } from "@/lib/club";
 
 // A user may create/own a club if they manage at least one team (directly) or are a master admin.
 async function managesAnyTeam(userId: string): Promise<boolean> {
@@ -17,16 +18,34 @@ export async function GET() {
   const me = session?.user as any;
   if (!me?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const clubs = await prisma.club.findMany({
+  const rawClubs = await prisma.club.findMany({
     where: { ownerId: me.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true, name: true, slug: true, subdomain: true, createdAt: true,
+      subscriptionStatus: true, stripeCustomerId: true,
+      plan: { select: { name: true, allowSubdomain: true, allowAnalytics: true, maxTeams: true } },
       teams: {
         orderBy: { name: "asc" },
         select: { id: true, name: true, league: { select: { name: true, slug: true } } },
       },
     },
+  });
+  const clubs = rawClubs.map((c) => {
+    const ent = clubEntitlements({ subscriptionStatus: c.subscriptionStatus, plan: c.plan });
+    return {
+      id: c.id, name: c.name, slug: c.slug, subdomain: c.subdomain, createdAt: c.createdAt, teams: c.teams,
+      planName: ent.planName,
+      hasBilling: !!c.stripeCustomerId,
+      canSetSubdomain: ent.subdomain || !!c.subdomain, // entitled, or grandfathered (already has one)
+    };
+  });
+
+  // Purchasable paid plans (those with a Stripe price configured).
+  const plans = await prisma.clubPlan.findMany({
+    where: { isActive: true, stripePriceId: { not: null } },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, name: true, price: true },
   });
 
   // Teams the user directly manages that aren't in a club yet — available to attach.
@@ -36,7 +55,7 @@ export async function GET() {
     select: { id: true, name: true, league: { select: { name: true, slug: true } } },
   });
 
-  return NextResponse.json({ clubs, attachableTeams, canCreate: me.isMasterAdmin || attachableTeams.length > 0 || clubs.length > 0 });
+  return NextResponse.json({ clubs, attachableTeams, plans, canCreate: me.isMasterAdmin || attachableTeams.length > 0 || clubs.length > 0 });
 }
 
 export async function POST(req: NextRequest) {

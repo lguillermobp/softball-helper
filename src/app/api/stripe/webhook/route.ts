@@ -20,6 +20,25 @@ export async function POST(req: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // Club subscription (Phase 4) — routed by metadata.clubId.
+      const clubId = session.metadata?.clubId;
+      if (clubId) {
+        const clubPlanId = session.metadata?.clubPlanId;
+        const clubSubId  = session.subscription as string | null;
+        await prisma.club.update({
+          where: { id: clubId },
+          data: {
+            stripeCustomerId:     session.customer as string,
+            stripeSubscriptionId: clubSubId ?? undefined,
+            subscriptionStatus:   "active",
+            ...(clubPlanId ? { clubPlanId } : {}),
+          },
+        });
+        if (clubPlanId) await createClubSubscription(clubId, clubPlanId, clubSubId);
+        break;
+      }
+
       const leagueId = session.metadata?.leagueId;
       if (!leagueId) break;
 
@@ -57,6 +76,12 @@ export async function POST(req: NextRequest) {
             data:  { status: "CANCELLED", cancelledAt: new Date() },
           });
           await createLeagueSubscription(league.id, subId);
+        } else {
+          const club = await prisma.club.findFirst({ where: { stripeSubscriptionId: subId }, select: { id: true, clubPlanId: true } });
+          if (club?.clubPlanId) {
+            await prisma.clubSubscription.updateMany({ where: { clubId: club.id, status: "ACTIVE" }, data: { status: "CANCELLED", cancelledAt: new Date() } });
+            await createClubSubscription(club.id, club.clubPlanId, subId);
+          }
         }
       }
       break;
@@ -69,6 +94,10 @@ export async function POST(req: NextRequest) {
       if (!subId) break;
 
       await prisma.league.updateMany({
+        where: { stripeSubscriptionId: subId },
+        data:  { subscriptionStatus: "past_due" },
+      });
+      await prisma.club.updateMany({
         where: { stripeSubscriptionId: subId },
         data:  { subscriptionStatus: "past_due" },
       });
@@ -85,6 +114,14 @@ export async function POST(req: NextRequest) {
         where: { stripeSubscriptionId: sub.id, status: "ACTIVE" },
         data:  { status: "CANCELLED", cancelledAt: new Date() },
       });
+      await prisma.club.updateMany({
+        where: { stripeSubscriptionId: sub.id },
+        data:  { subscriptionStatus: "cancelled" },
+      });
+      await prisma.clubSubscription.updateMany({
+        where: { stripeSubscriptionId: sub.id, status: "ACTIVE" },
+        data:  { status: "CANCELLED", cancelledAt: new Date() },
+      });
       break;
     }
 
@@ -94,6 +131,10 @@ export async function POST(req: NextRequest) {
                    : sub.status === "past_due" ? "past_due"
                    : "cancelled";
       await prisma.league.updateMany({
+        where: { stripeSubscriptionId: sub.id },
+        data:  { subscriptionStatus: status },
+      });
+      await prisma.club.updateMany({
         where: { stripeSubscriptionId: sub.id },
         data:  { subscriptionStatus: status },
       });
@@ -131,5 +172,20 @@ async function createLeagueSubscription(leagueId: string, stripeSubId: string | 
       endDate,
       status:               "ACTIVE",
     },
+  });
+}
+
+async function createClubSubscription(clubId: string, clubPlanId: string, stripeSubId: string | null) {
+  const now     = new Date();
+  const endDate = new Date(now);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+
+  await prisma.clubSubscription.updateMany({
+    where: { clubId, status: "ACTIVE" },
+    data:  { status: "CANCELLED", cancelledAt: now },
+  });
+
+  await prisma.clubSubscription.create({
+    data: { clubId, clubPlanId, stripeSubscriptionId: stripeSubId, startDate: now, endDate, status: "ACTIVE" },
   });
 }

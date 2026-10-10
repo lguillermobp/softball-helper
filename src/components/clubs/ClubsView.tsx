@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface TeamRef { id: string; name: string; league: { name: string; slug: string } }
-interface Club { id: string; name: string; slug: string; subdomain: string | null; createdAt: string; teams: TeamRef[] }
+interface PlanRef { id: string; name: string; price: number }
+interface Club { id: string; name: string; slug: string; subdomain: string | null; createdAt: string; teams: TeamRef[]; planName: string; hasBilling: boolean; canSetSubdomain: boolean }
 
 function SubdomainField({ clubId, slug, current, onDone }: { clubId: string; slug: string; current: string | null; onDone: () => void }) {
   const [val, setVal] = useState(current ?? "");
@@ -83,6 +84,7 @@ function CreateClubDialog({ onDone }: { onDone: () => void }) {
 export function ClubsView() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [attachable, setAttachable] = useState<TeamRef[]>([]);
+  const [plans, setPlans] = useState<PlanRef[]>([]);
   const [canCreate, setCanCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -91,11 +93,21 @@ export function ClubsView() {
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/clubs");
-    const d = await res.json().catch(() => ({ clubs: [], attachableTeams: [] }));
-    if (res.ok) { setClubs(d.clubs); setAttachable(d.attachableTeams); setCanCreate(d.canCreate); }
+    const d = await res.json().catch(() => ({ clubs: [], attachableTeams: [], plans: [] }));
+    if (res.ok) { setClubs(d.clubs); setAttachable(d.attachableTeams); setPlans(d.plans ?? []); setCanCreate(d.canCreate); }
     setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);
+
+  async function stripeGo(url: string, clubId: string, planId?: string) {
+    setErr("");
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clubId, ...(planId ? { planId } : {}) }) });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok && d.url) window.location.href = d.url;
+    else setErr(d.error ?? "Could not reach Stripe.");
+  }
+  const upgrade = (clubId: string) => { if (plans.length) void stripeGo("/api/stripe/club-checkout", clubId, plans[0].id); };
+  const manageBilling = (clubId: string) => void stripeGo("/api/stripe/club-portal", clubId);
 
   async function call(url: string, method: string, body?: unknown) {
     setErr("");
@@ -135,16 +147,30 @@ export function ClubsView() {
               <section key={c.id} className="rounded-xl border p-4 space-y-3" style={card}>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
-                    <h2 className="font-bold" style={{ color: "var(--sh-text)" }}>{c.name}</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-bold" style={{ color: "var(--sh-text)" }}>{c.name}</h2>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "var(--sh-bg-card2)", color: "var(--sh-primary)" }}>{c.planName}</span>
+                    </div>
                     <p className="text-xs font-mono" style={{ color: "var(--sh-muted)" }}>{c.slug}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {c.hasBilling && <button onClick={() => manageBilling(c.id)} className="text-xs" style={{ color: "var(--sh-secondary)" }}>Manage billing</button>}
                     <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{c.teams.length} team{c.teams.length !== 1 ? "s" : ""}</span>
                     <Link href={`/clubs/${c.id}`} className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>Master roster →</Link>
                   </div>
                 </div>
 
-                <SubdomainField clubId={c.id} slug={c.slug} current={c.subdomain} onDone={load} />
+                {c.canSetSubdomain ? (
+                  <SubdomainField clubId={c.id} slug={c.slug} current={c.subdomain} onDone={load} />
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap text-sm rounded-lg px-3 py-2" style={{ background: "var(--sh-bg-card2)" }}>
+                    <span style={{ color: "var(--sh-muted)" }}>Custom subdomain available on <b style={{ color: "var(--sh-text)" }}>Team Pro</b>.</span>
+                    {plans.length > 0
+                      ? <button onClick={() => upgrade(c.id)} className="text-xs px-2 py-1 rounded-md font-semibold" style={{ background: "var(--sh-primary)", color: "#04120a" }}>Upgrade</button>
+                      : <span className="text-xs" style={{ color: "var(--sh-muted)" }}>(plans coming soon)</span>}
+                    <a href={`/club/${c.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>View public page →</a>
+                  </div>
+                )}
 
                 <ul className="space-y-1">
                   {c.teams.map((t) => (

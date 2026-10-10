@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { loadOwnedClub } from "@/lib/club";
+import { loadOwnedClub, clubEntitlements } from "@/lib/club";
 import { validateSubdomain } from "@/lib/subdomain";
 
 interface Params { params: Promise<{ clubId: string }> }
@@ -22,6 +22,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!raw) {
     await prisma.club.update({ where: { id: clubId }, data: { subdomain: null } });
     return NextResponse.json({ subdomain: null });
+  }
+
+  // Gate: a club with no subdomain must be entitled (Team Pro+) to claim one.
+  // Clubs that already have one are grandfathered (may change or keep it).
+  if (!club.subdomain) {
+    const billing = await prisma.club.findUnique({
+      where: { id: clubId },
+      select: { subscriptionStatus: true, plan: { select: { name: true, allowSubdomain: true, allowAnalytics: true, maxTeams: true } } },
+    });
+    if (!clubEntitlements(billing!).subdomain)
+      return NextResponse.json({ error: "Custom subdomains are available on Team Pro — upgrade the club to claim one." }, { status: 402 });
   }
 
   const v = validateSubdomain(raw);
