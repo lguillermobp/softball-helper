@@ -8,7 +8,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface TeamRef { id: string; name: string; league: { name: string; slug: string } }
-interface Club { id: string; name: string; slug: string; createdAt: string; teams: TeamRef[] }
+interface Club { id: string; name: string; slug: string; subdomain: string | null; createdAt: string; teams: TeamRef[] }
+
+function SubdomainField({ clubId, slug, current, onDone }: { clubId: string; slug: string; current: string | null; onDone: () => void }) {
+  const [val, setVal] = useState(current ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  async function save() {
+    setSaving(true); setMsg("");
+    const res = await fetch(`/api/clubs/${clubId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain: val }) });
+    setSaving(false);
+    if (!res.ok) { setMsg((await res.json().catch(() => ({}))).error ?? "Failed"); return; }
+    onDone();
+  }
+  const publicHref = current ? `https://${current}.dugoutadmin.com` : `/club/${slug}`;
+  return (
+    <div className="flex items-center gap-2 flex-wrap text-sm rounded-lg px-3 py-2" style={{ background: "var(--sh-bg-card2)" }}>
+      <span style={{ color: "var(--sh-muted)" }}>Site:</span>
+      <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="your-club"
+        className="rounded-md border px-2 py-1 text-sm w-36" style={inputStyle} />
+      <span className="text-xs" style={{ color: "var(--sh-muted)" }}>.dugoutadmin.com</span>
+      <button onClick={save} disabled={saving} className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: "var(--sh-border2)", color: "var(--sh-primary)", background: "transparent" }}>
+        {saving ? "…" : "Save"}
+      </button>
+      <a href={publicHref} target="_blank" rel="noreferrer" className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>View public page →</a>
+      {msg && <span className="text-xs" style={{ color: "#f87171" }}>{msg}</span>}
+    </div>
+  );
+}
 
 const card = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card)" } as const;
 const inputStyle = { borderColor: "var(--sh-border)", background: "var(--sh-bg-card2)", color: "var(--sh-text)" } as const;
@@ -116,6 +143,8 @@ export function ClubsView() {
                     <Link href={`/clubs/${c.id}`} className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>Master roster →</Link>
                   </div>
                 </div>
+
+                <SubdomainField clubId={c.id} slug={c.slug} current={c.subdomain} onDone={load} />
 
                 <ul className="space-y-1">
                   {c.teams.map((t) => (

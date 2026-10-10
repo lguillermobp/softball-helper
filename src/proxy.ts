@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { RESERVED_SUBDOMAINS } from "@/lib/subdomain";
 
 // NOTE: only the Stripe *webhook* is public — Stripe calls it with no session.
 // /api/stripe/checkout and /api/stripe/portal stay protected (hit by a signed-in admin).
-const PUBLIC_PATHS = ["/", "/login", "/register", "/set-password", "/api/auth", "/api/register", "/api/ig-img", "/league", "/league-bg", "/team", "/demo", "/help", "/api/help", "/api/stripe/webhook"];
+// /club is the public club site (reached directly, or via a subdomain rewrite below).
+const PUBLIC_PATHS = ["/", "/login", "/register", "/set-password", "/api/auth", "/api/register", "/api/ig-img", "/league", "/league-bg", "/team", "/demo", "/help", "/api/help", "/api/stripe/webhook", "/club"];
 
 const PRIMARY_HOST = "dugoutadmin.com";
 const LEGACY_HOSTS = new Set(["softballhelper.com", "www.softballhelper.com"]);
@@ -18,6 +20,19 @@ export default auth((req) => {
   if (LEGACY_HOSTS.has(host) && pathname !== "/api/stripe/webhook") {
     const dest = new URL(`${pathname}${req.nextUrl.search}`, `https://${PRIMARY_HOST}`);
     return NextResponse.redirect(dest, 308);
+  }
+
+  // Club subdomain → rewrite to the public club site (no auth). A single-label
+  // subdomain of the primary host that isn't reserved maps to /club/<label>.
+  const hostname = host.split(":")[0];
+  if (hostname.endsWith("." + PRIMARY_HOST)) {
+    const label = hostname.slice(0, -(PRIMARY_HOST.length + 1));
+    if (label && !label.includes(".") && label !== "www" && !RESERVED_SUBDOMAINS.has(label)
+        && !pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/club/${label}`;
+      return NextResponse.rewrite(url);
+    }
   }
 
   const isPublic = PUBLIC_PATHS.some(

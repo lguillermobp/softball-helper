@@ -21,7 +21,7 @@ export async function GET() {
     where: { ownerId: me.id },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, name: true, slug: true, createdAt: true,
+      id: true, name: true, slug: true, subdomain: true, createdAt: true,
       teams: {
         orderBy: { name: "asc" },
         select: { id: true, name: true, league: { select: { name: true, slug: true } } },
