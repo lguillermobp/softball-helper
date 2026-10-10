@@ -132,8 +132,12 @@ export function SeasonDashboard({
   const [cfgDuration,    setCfgDuration]    = useState(seasonConfig.defaultGameDurationMins);
   const [cfgTiebreakers, setCfgTiebreakers] = useState<string[]>(seasonConfig.tiebreakers);
   const [cfgRequireDob,  setCfgRequireDob]  = useState(seasonConfig.requireDob);
+  const [cfgName,        setCfgName]        = useState(seasonName);
   const [cfgSaving,      setCfgSaving]      = useState(false);
   const [cfgError,       setCfgError]       = useState("");
+
+  // Displayed season name (editable via the config modal)
+  const [displayName, setDisplayName] = useState(seasonName);
 
   // Live copies used by the rest of the UI (updated on save)
   const [liveConfig, setLiveConfig] = useState(seasonConfig);
@@ -149,6 +153,7 @@ export function SeasonDashboard({
     setCfgShowPct(liveConfig.showPct); setCfgPrintDark(liveConfig.printDark);
     setCfgTwin(liveConfig.defaultTwinGames); setCfgDuration(liveConfig.defaultGameDurationMins);
     setCfgTiebreakers(liveConfig.tiebreakers); setCfgRequireDob(liveConfig.requireDob);
+    setCfgName(displayName);
     setCfgError(""); setConfigOpen(true);
   }
 
@@ -158,6 +163,7 @@ export function SeasonDashboard({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        name: cfgName,
         pointsWin: cfgWin, pointsTie: cfgTie, pointsLoss: cfgLoss,
         showPct: cfgShowPct, printDark: cfgPrintDark,
         defaultTwinGames: cfgTwin, defaultGameDurationMins: cfgDuration,
@@ -167,6 +173,7 @@ export function SeasonDashboard({
     setCfgSaving(false);
     if (!res.ok) { const d = await res.json(); setCfgError(d.error ?? "Failed to save"); return; }
     const updated = await res.json();
+    if (updated.name) setDisplayName(updated.name);
     setLiveConfig({
       pointsWin: updated.pointsWin, pointsTie: updated.pointsTie, pointsLoss: updated.pointsLoss,
       showPct: updated.showPct, printDark: updated.printDark,
@@ -721,7 +728,7 @@ ${body}
       {/* ── Season info row ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>{seasonName}</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--sh-text)" }}>{displayName}</h1>
           <p className="text-sm mt-1" style={{ color: "var(--sh-primary)" }}>
             {new Date(startDate).toLocaleDateString()} – {new Date(endDate).toLocaleDateString()}
             {" · "}
@@ -1602,6 +1609,17 @@ ${body}
           onClick={e => e.stopPropagation()}
         >
           <h2 className="font-bold text-lg" style={{ color: "var(--sh-text)" }}>⚙️ Season Configuration</h2>
+
+          {/* Season name */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sh-primary)" }}>Season Name</p>
+            <input
+              type="text" value={cfgName} maxLength={60}
+              onChange={e => setCfgName(e.target.value)}
+              className="w-full text-sm rounded-lg border px-3 py-2"
+              style={{ background: "var(--sh-bg-card2)", borderColor: "var(--sh-border2)", color: "var(--sh-text)" }}
+            />
+          </div>
 
           {/* Points */}
           <div>

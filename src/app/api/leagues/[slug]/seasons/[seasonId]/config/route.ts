@@ -24,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const body = await req.json();
   const {
+    name,
     pointsWin, pointsTie, pointsLoss,
     showPct, printDark,
     defaultTwinGames, defaultGameDurationMins,
@@ -33,6 +34,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const VALID_TB = new Set(["RD", "RF", "RA", "W"]);
 
   const data: Record<string, unknown> = {};
+  if (typeof name === "string") {
+    const n = name.trim();
+    if (n.length < 2 || n.length > 60)
+      return NextResponse.json({ error: "Season name must be 2–60 characters." }, { status: 400 });
+    data.name = n;
+  }
   if (pointsWin               !== undefined) data.pointsWin               = Math.max(0, Number(pointsWin));
   if (pointsTie               !== undefined) data.pointsTie               = Math.max(0, Number(pointsTie));
   if (pointsLoss              !== undefined) data.pointsLoss              = Math.max(0, Number(pointsLoss));
