@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { linkClubPlayers } from "@/lib/club-linking";
 
 interface Params { params: Promise<{ clubId: string }> }
 
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (team.clubId) return NextResponse.json({ error: "That team is already in another club." }, { status: 409 });
 
   await prisma.team.update({ where: { id: teamId }, data: { clubId } });
+  // Auto-link the newly attached team's players into the club's master roster.
+  await linkClubPlayers(clubId).catch((e) => console.error("[clubs] auto-link failed:", e));
   return NextResponse.json({ success: true });
 }
 
