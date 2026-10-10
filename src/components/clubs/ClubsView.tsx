@@ -111,7 +111,10 @@ export function ClubsView() {
                     <h2 className="font-bold" style={{ color: "var(--sh-text)" }}>{c.name}</h2>
                     <p className="text-xs font-mono" style={{ color: "var(--sh-muted)" }}>{c.slug}</p>
                   </div>
-                  <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{c.teams.length} team{c.teams.length !== 1 ? "s" : ""}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: "var(--sh-muted)" }}>{c.teams.length} team{c.teams.length !== 1 ? "s" : ""}</span>
+                    <Link href={`/clubs/${c.id}`} className="text-xs font-semibold" style={{ color: "var(--sh-primary)" }}>Master roster →</Link>
+                  </div>
                 </div>
 
                 <ul className="space-y-1">

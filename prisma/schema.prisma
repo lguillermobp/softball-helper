@@ -52,11 +52,67 @@ model Club {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner User   @relation("ClubOwner", fields: [ownerId], references: [id])
-  teams Team[]
+  owner         User            @relation("ClubOwner", fields: [ownerId], references: [id])
+  teams         Team[]
+  profiles      PlayerProfile[]
+  profileMerges ProfileMerge[]
+  distinctPairs DistinctPair[]
 
   @@index([ownerId])
   @@map("clubs")
+}
+
+// Phase 2 — the club's master roster: one canonical person, matched across
+// league Player rows by email (set) + name + DOB. Club-scoped.
+model PlayerProfile {
+  id        String    @id @default(cuid())
+  clubId    String
+  name      String
+  dob       DateTime?
+  emails    String[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  club    Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  players Player[]
+
+  @@index([clubId])
+  @@map("player_profiles")
+}
+
+// A reversible record of a profile merge (survivor absorbs merged).
+model ProfileMerge {
+  id             String    @id @default(cuid())
+  clubId         String
+  survivorId     String
+  mergedName     String
+  mergedDob      DateTime?
+  mergedEmails   String[]
+  movedPlayerIds String[]
+  addedEmails    String[]
+  setDob         Boolean   @default(false)
+  undone         Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId])
+  @@map("profile_merges")
+}
+
+// "Keep separate" — two profiles a manager marked as different people.
+model DistinctPair {
+  id        String   @id @default(cuid())
+  clubId    String
+  profile1  String
+  profile2  String
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, profile1, profile2])
+  @@index([clubId])
+  @@map("distinct_pairs")
 }
 
 // ─── NextAuth Tables ─────────────────────────────────────────────────────────
@@ -467,12 +523,14 @@ model Player {
   teamId       String
   leagueId     String
   userId       String?
+  profileId    String?
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
 
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user   User?  @relation(fields: [userId], references: [id])
+  team    Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  league  League         @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user    User?          @relation(fields: [userId], references: [id])
+  profile PlayerProfile? @relation(fields: [profileId], references: [id])
   gameLineups      GameLineup[]
   atBatsAsBatter   GameAtBat[]        @relation("BatterAtBats")
   atBatsAsPitcher  GameAtBat[]        @relation("PitcherAtBats")
